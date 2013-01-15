@@ -26,7 +26,7 @@ function PLUGIN:Init()
 	end
 	
 	-- Read our little file.
-	local f = file.Read( "exsto_downloads.txt", "DATA" )
+	local f = file.Read( "exsto_downloads.txt", "DATA" ):Trim()
 	
 	-- Clean it
 	local tbl = string.Explode( "\n", f )
