@@ -63,7 +63,12 @@ function FEL.Init()
 		FEL.Config = util.KeyValuesToTable( file.Read( FEL.ConfigFile ) )
 	end
 	
-	if !mysqloo and SERVER then require( "mysqloo" ) end
+	if !mysql and FEL.Config.mysql_enabled and SERVER then
+		local s, err = pcall( require, "mysqloo" )
+		if !s then
+			ErrorNoHalt( "FEL --> Unable to load 'mysqloo'.  Make the bin is located in lua/bin and libmysql with srcds." )
+		end
+	end
 end
 FEL.Init()
 
