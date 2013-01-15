@@ -1,0 +1,46 @@
+== Setup: ==
+Once you are inside the server, Exsto should say hello and do its meet and greet process with you.  In a listen server, you can skip this step; you should already be set as the srv_owner.  On a dedicated server, run the following command through RCON or the dedicated server console:
+
+
+exsto rank *YOUR NAME HERE* srv_owner
+
+
+~~ Replace *YOUR NAME HERE* with your garrys mod name, it can be partial or full. ~~
+
+
+
+
+
+
+== Starting the Menu:==
+You can either open the menu in two ways.  One way, is toggle based through a console command; which allows you to easily use the advanced features in the menu.  To open the menu via toggle, type the following into chat.
+
+
+!menu
+
+
+You can also use it via a hold-down bind.  Run the code below to achieve that effect.
+
+
+bind *key* +ExMenu
+
+
+~~ Replace *key* with the key you want to use, like p or k ~~
+
+To change pages, all you do is either click on the Exsto logo, which will make a little list, or click on the green arrows to the right of the menu.
+
+
+
+
+
+
+
+== Commands: ==
+Chat and console commands are incredibly easy and self-explanatory to use.  For example, if you wish to kick asshat for runining your life, run the following command.
+
+
+exsto kick asshat You are ruining my life man!
+
+
+~~ With Exsto, you do not need to provide a full name for player targeting to work. ~~
+~~ Also, for ending arguments such as in the above command, you do not need to place it into a string.  You can if you want, but it isn't required. ~~

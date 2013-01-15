@@ -1,0 +1,11 @@
+"AddonInfo"
+{
+	"name"				"Exsto"
+	"version"				"1.0"
+	"up_date"				""
+	"author_name"			"Prefanatic"
+	"author_email"			"dumbplanet424@yahoo.com"
+	"author_url"			"http://94.23.154.153/"
+	"info"				"An administration mod for Garry's Mod"
+	"override"			"0"
+}
