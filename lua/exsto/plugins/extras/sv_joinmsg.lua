@@ -40,17 +40,13 @@ function PLUGIN:PlayerConnect( name, addr )
 	local countryVar = exsto.GetVar( "country-on-connect" ).Value
 	local append = "has connected!"
 	
-	local rank = exsto.UserDB:GetData( steamid, "Rank" ) -- To see if we've been here.
-	if !rank then append = "has connected for the first time!" end
+	--local rank = exsto.UserDB:GetData( steamid, "Rank" ) -- To see if we've been here.
+	--if !rank then append = "has connected for the first time!" end
 	
 	local countryStyle = ""
 	if GeoIP and countryVar == true then
 		local data = GeoIP.Get( string.Explode( ":", addr )[1] )
 		countryStyle = "[" .. data.country_name .. "] "
-	end
-	
-	if exsto.GetVar( "hatred-connect" ).Value == true and name == "Hatred" then
-		exsto.Print( exsto_CHAT_ALL, COLOR.NORM, "Please, don't feed the ", COLOR.NAME, "old man." )
 	end
 	
 	if var == "admins-only" then
@@ -68,6 +64,10 @@ function PLUGIN:PlayerConnect( name, addr )
 	end
 	
 	exsto.Print( exsto_CHAT_ALL, COLOR.NAME, name, " ", countryStyle, COLOR.NORM, append );
+	
+	if exsto.GetVar( "hatred-connect" ).Value == true and name == "Hatred" then
+		exsto.Print( exsto_CHAT_ALL, COLOR.NORM, "Please, don't feed the ", COLOR.NAME, "old man." )
+	end
 
 end
 

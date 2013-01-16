@@ -52,9 +52,7 @@ if SERVER then
 	
 	function PLUGIN:player_connect( data )
 		if !data.networkid then return end
-		
-		print( "Checking", data.networkid )
-
+	
 		local bannedAt, banLen, banReason = exsto.BanDB:GetData( data.networkid, "BannedAt, Length, Reason" )
 		print( bannedAt, banLen, banReason )
 		if !bannedAt or !banLen or !banReason then return end
@@ -69,6 +67,9 @@ if SERVER then
 		-- Make sure we remove his ban if it has expired.
 		if banLen + bannedAt <= os.time() then exsto.BanDB:DropRow( steam ) self:ResendToAll() return end
 		if timeleft and banReason then self:Drop( data.userid, "BANNED! Time left: " .. timeleft .. " - Reason: " .. banReason ) return end
+		
+		-- Call our after-ban hook
+		hook.Call( "ExPlayerConnect", nil, data )
 	
 	end
 	
@@ -411,6 +412,7 @@ elseif CLIENT then
 	local function save()
 		PLUGIN.Recieved = true
 		if PLUGIN.Panel then
+			PLUGIN.Panel:EndLoad() 
 			if PLUGIN.List and PLUGIN.List:IsValid() then
 				PLUGIN.List:Update()
 			else
@@ -424,6 +426,7 @@ elseif CLIENT then
 		if !self.List then return end 
 		if !panel then return end
 
+		panel:PushLoad()
 		self.Bans = nil 
 		self.Recieved = false
 		RunConsoleCommand( "_ResendBans" ) 
@@ -436,7 +439,7 @@ elseif CLIENT then
 	end 	
 
 	function PLUGIN:Build( panel ) 
-		self.List = exsto.CreateListView( 10, 30, panel:GetWide() - 20, panel:GetTall() - 60, panel ) 
+		self.List = exsto.CreateListView( 10, 10, panel:GetWide() - 20, panel:GetTall() - 60, panel ) 
 		self.List:AddColumn( "Player" ) 
 		self.List:AddColumn( "SteamID" ) 
 		self.List:AddColumn( "Reason" ) 
@@ -475,20 +478,20 @@ elseif CLIENT then
 			self:ReloadList( panel ) 
 		end      
 	end 
-	
-	local banpg = exsto.Menu.CreatePage( "banlist", 
-		function( panel )
-			if !PLUGIN.Recieved then
-				RunConsoleCommand( "_ResendBans" ) 
-			else
-				PLUGIN.Build( PLUGIN, panel ) 
-			end
-			PLUGIN.Panel = panel
-		end 
-	)
-	banpg:SetTitle( "Ban List" )
-	banpg:SetFrameSize( 600, 360 )
-	banpg:Build()
+
+	Menu:CreatePage({ 
+		Title = "Ban List", 
+		Short = "banlist", 
+	},      function( panel )
+		if !PLUGIN.Recieved then
+			panel:PushLoad()
+			RunConsoleCommand( "_ResendBans" ) 
+		else
+			PLUGIN:Build( panel ) 
+		end
+		PLUGIN.Panel = panel
+	end 
+	) 
 
 end 
 

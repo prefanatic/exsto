@@ -233,6 +233,14 @@ function plugin:Print( enum, ... )
 	exsto.Print( enum, ... )
 end
 
+function plugin:Debug( msg )
+	exsto.Debug( "Plugins --> " .. self.Info.Name .. " --> " .. msg )
+end
+
+function plugin:Error( msg )
+	exsto.ErrorNoHalt( "Plugins --> " .. self.Info.Name .. " --> " .. msg )
+end
+
 function plugin:AddVariable( tbl )
 	table.insert( self.Variables, tbl )
 end
