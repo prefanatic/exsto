@@ -136,7 +136,20 @@ function exsto.Menu.Open()
 	exsto.Menu._Opened = true
 end
 
+local temp = false
+local function shit()
+	if !exsto.Menu then return end
+	if exsto.Menu.OpenLock == false and temp == true then
+		exsto.Menu.Close()
+		temp = false
+	elseif exsto.Menu.OpenLock == true and temp == false then
+		temp = true
+	end
+end
+hook.Add( "Think", "WHYDOWEHAVETODOTHIS", shit )
+
 function exsto.Menu.Close()
+	if exsto.Menu.OpenLock then return end -- We're locked open.  Wait until this thing becomes false
 	local posInfo = {}
 	
 	-- Throw in mouse info too.

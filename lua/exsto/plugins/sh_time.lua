@@ -115,7 +115,7 @@ if SERVER then
 		Optional = { Victim = nil },
 		Category = "Time",
 	})
-	PLUGIN:RequestQuickmenuSlot( "gettotaltime", "Get Total Time" )
+	PLUGIN:RequestQuickmenuSlot( "gettotaltime", "Time Played" )
 	
 end
 

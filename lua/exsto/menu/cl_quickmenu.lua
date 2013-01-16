@@ -23,20 +23,38 @@ local qm = {
 }
 
 local function playerObjectClick( lst, lineID, line )
-	-- TODO: Multiselect.  For now, just go.
-	qm.ExecTbl[ "PLAYER" ] = { line.Data.Ply }
+	timer.Simple( 0.01, function()
+		-- TODO: Multiselect.  For now, just go.
+		if line._PREVENTCLICK then return end
+				
+		qm.ExecTbl[ "PLAYER" ] = { line.Data.Ply }
+		
+		qm.Parent.ComWindow:Populate( "..." )
+		
+		qm.Parent.ComWindow:SetVisible( true )
+		qm.Parent.ComWindow:SetPos( 4, 28 )
+		
+		qm.Parent.PlayerListScroller:SetPos( -qm.Parent:GetWide() - 2, 28 )
+		
+		-- Button stuff
+		qm.Parent.BackButton._Disabled = false
+		qm.Parent.BackButton:SetImage( "exsto/back_highlight.png" )
+		qm.Parent.BackButton._WorkingIndex = -1
+	end )
+end
+
+local function playerObjectRightClick( lst, lineID, line )
+	-- Breaks exsto's modular design, but I don't care.
+	if !exsto.Commands[ "kick" ] or !exsto.Commands[ "ban" ] then return end
+		
+	-- Prevent playerObjectClick from running because OnRowRightClick gets called with OnRowClick.... What the fuck!
+	line._PREVENTCLICK = true
+	timer.Simple( 0.02, function() line._PREVENTCLICK = false end )
 	
-	qm.Parent.ComWindow:Populate( "..." )
-	
-	qm.Parent.ComWindow:SetVisible( true )
-	qm.Parent.ComWindow:SetPos( 4, 28 )
-	
-	qm.Parent.PlayerListScroller:SetPos( qm.Parent:GetWide() + 2, 28 )
-	
-	-- Button stuff
-	qm.Parent.BackButton._Disabled = false
-	qm.Parent.BackButton:SetImage( "exsto/back_highlight.png" )
-	qm.Parent.BackButton._WorkingIndex = -1
+	local menu = DermaMenu()
+		menu:AddOption( "Kick", function() RunConsoleCommand( exsto.Commands[ "kick" ].CallerID, line.Data.Ply:Nick() ) qm.Parent.PlayerList:Update() end )
+		menu:AddOption( "Ban", function() RunConsoleCommand( exsto.Commands[ "ban" ].CallerID, line.Data.Ply:Nick() ) qm.Parent.PlayerList:Update() end )
+	menu:Open()
 end
 
 local function categoryPaint( cat )
@@ -53,10 +71,11 @@ local function buttonBackClick( btn )
 	
 	if ( btn._WorkingIndex - 1 ) == 0 then -- We need to go back to the command list.
 		local currentBox = qm.Parent.ComWindow.Objects[ btn._WorkingIndex ]
-			currentBox:SetPos( qm.Parent:GetWide(), 0 )
+			currentBox:SetPos( qm.Parent:GetWide() + 2, 0 )
 			
 		-- Bring back the command list.
 		qm.Parent.ComWindow.CommandList:SetPos( 0, 0 )
+		qm.Parent.ComWindow:Clean()
 		btn._WorkingIndex = -1
 		return
 	end
@@ -69,7 +88,7 @@ local function buttonBackClick( btn )
 	-- If we made it through all those special instances, just move back a page.
 	local currentBox = qm.Parent.ComWindow.Objects[ btn._WorkingIndex ]
 	local prevBox = qm.Parent.ComWindow.Objects[ btn._WorkingIndex - 1 ]
-		currentBox:SetPos( qm.Parent:GetWide(), 0 )
+		currentBox:SetPos( qm.Parent:GetWide() + 2, 0 )
 		prevBox:SetPos( 0, 0 )
 		prevBox:SetVisible( true )
 		
@@ -122,13 +141,21 @@ function exsto.InitQuickMenu( pnl )
 	-- Create search box
 	pnl.Search = exsto.CreateTextEntry( 4, pnl:GetTall() - 30, pnl:GetWide() - 8, 24, pnl )
 		pnl.Search.OnTextChanged = function( entry )
+			-- If we're typing, we should lock the menu open.
+			exsto.Menu.OpenLock = true
+			
 			local loc = qm.Parent.BackButton._WorkingIndex
 			local disabled = qm.Parent.BackButton._Disabled
 			
 			if disabled then -- We're on the player list.  Search in it.
-				qm.Parent.PlayerList:CreateContent( entry:GetValue() )
+				qm.Parent.PlayerList:CreateContent( entry:GetValue():lower() )
 			elseif loc == -1 then -- We're working in the command list.
-				qm.Parent.ComWindow:Populate( "...", entry:GetValue() )
+				qm.Parent.ComWindow:Populate( "...", entry:GetValue():lower() )
+			end
+		end
+		pnl.Search.OnEnter = function( entry )
+			if entry:GetValue() == "" then -- Unlock
+				exsto.Menu.OpenLock = false
 			end
 		end
 
@@ -200,6 +227,7 @@ function exsto.InitQuickMenu( pnl )
 					cat.PlyList:SetDataHeight( 30 )
 					cat.PlyList:DisableScrollbar() -- Shouldn't need it.  We're going to resize based on content anyways.
 					cat.PlyList.OnRowSelected = playerObjectClick
+					cat.PlyList.OnRowRightClick = playerObjectRightClick -- Thank god for Garry making this override.  Half expected it not to exist.
 					cat.PlyList.Paint = function() end
 				
 				local count = 0
@@ -244,9 +272,9 @@ end
 
 function qm.Reset( bool, disableAnim )
 	if bool then
-		qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, qm.Parent:GetWide() + 2, 28 )
-		qm.Parent.PlayerListScroller.Anims[ 1 ].Current = qm.Parent:GetWide() + 2
-		qm.Parent.PlayerListScroller.Anims[ 1 ].Last = qm.Parent:GetWide() + 2
+		qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, -qm.Parent:GetWide() - 2, 28 )
+		qm.Parent.PlayerListScroller.Anims[ 1 ].Current = -qm.Parent:GetWide() - 2
+		qm.Parent.PlayerListScroller.Anims[ 1 ].Last = -qm.Parent:GetWide() - 2
 		qm.Parent.PlayerListScroller:SetPos( 4, 28 )
 	else
 		qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, 4, 28 )
@@ -257,11 +285,11 @@ function qm.Reset( bool, disableAnim )
 	qm.Parent.PlayerList:Update()
 
 	if disableAnim then
-		qm.Parent.ComWindow.OldFuncs.SetPos( qm.Parent.ComWindow, -qm.Parent:GetWide() - 2, 28 )
-		qm.Parent.ComWindow.Anims[ 1 ].Current = -qm.Parent:GetWide() - 2
-		qm.Parent.ComWindow.Anims[ 1 ].Last = -qm.Parent:GetWide() - 2
+		qm.Parent.ComWindow.OldFuncs.SetPos( qm.Parent.ComWindow, qm.Parent:GetWide() + 2, 28 )
+		qm.Parent.ComWindow.Anims[ 1 ].Current = qm.Parent:GetWide() + 2
+		qm.Parent.ComWindow.Anims[ 1 ].Last = qm.Parent:GetWide() + 2
 	else
-		qm.Parent.ComWindow:SetPos( -qm.Parent:GetWide() - 2, 28 )
+		qm.Parent.ComWindow:SetPos( qm.Parent:GetWide() + 2, 28 )
 	end
 	
 	qm.Parent.ComWindow:Cleanup()
@@ -271,6 +299,8 @@ function qm.Reset( bool, disableAnim )
 	
 	qm.Parent.BackButton._Disabled = true
 	qm.Parent.BackButton:SetImage( "exsto/back_norm.png" )
+	
+	qm.Parent.Search:SetText( "" )
 end
 exsto.QuickMenuReset = qm.Reset
 
@@ -289,7 +319,7 @@ end
 function qm.CreateCommandWindow( pnl )
 	-- Create the command window.
 
-	pnl.ComWindow = exsto.CreatePanel( -pnl:GetWide(), 28, pnl:GetWide() - 8, pnl:GetTall() - 65, Color( 255, 255, 255, 255 ), pnl )
+	pnl.ComWindow = exsto.CreatePanel( pnl:GetWide() + 2, 28, pnl:GetWide() - 8, pnl:GetTall() - 65, Color( 255, 255, 255, 255 ), pnl )
 	pnl.ComWindow:SetVisible( false )
 	
 	pnl.ComWindow.Objects = {}
@@ -325,7 +355,8 @@ function qm.CreateCommandWindow( pnl )
 				return
 			end
 			
-			combobox:SetPos( -combobox:GetWide(), 0 )
+			combobox:SetPos( -combobox:GetWide() - 2, 0 )
+			pnl.ComWindow:Clean()
 			pnl.ComWindow:Populate( line.Data )
 			pnl.ComWindow.Objects[ 1 ]:SetPos( 0, 0 )
 			
@@ -352,7 +383,7 @@ function qm.CreateCommandWindow( pnl )
 			-- TODO: Create button to execute and just throw the optionals in.
 		end
 		
-		combobox:SetPos( -combobox:GetWide(), 0 )
+		combobox:SetPos( -combobox:GetWide() - 2, 0 )
 		nextComboBox:SetPos( 0, 0 )
 		
 		combobox:ClearSelection()
@@ -361,6 +392,13 @@ function qm.CreateCommandWindow( pnl )
 		pnl.BackButton._Disabled = false
 		pnl.BackButton:SetImage( "exsto/back_highlight.png" )
 		pnl.BackButton._WorkingIndex = combobox.Index + 1
+	end
+	
+	pnl.ComWindow.Clean = function( pnl )
+		for _, obj in ipairs( pnl.Objects ) do
+			obj:Remove() 
+		end
+		pnl.Objects = {}
 	end
 	
 	pnl.ComWindow.Populate = function( pnl, data, search )
@@ -404,7 +442,8 @@ function qm.CreateCommandWindow( pnl )
 			t = data.Args[ argName ]
 			
 			comboPnl = exsto.CreateListView( 0, 0, pnl:GetWide(), pnl:GetTall(), pnl )
-				comboPnl:AddColumn( argName )
+				comboPnl:AddColumn( "" )
+				comboPnl:SetHideHeaders( true )
 				comboPnl:SetDataHeight( 30 )
 				comboPnl.PaintOver = pntShadow
 				comboPnl.Index = I

@@ -975,11 +975,11 @@ end
 
 function SKIN:PaintListViewLine( panel, w, h )
 
-	if ( panel:IsSelected() ) then
+	--if ( panel:IsSelected() ) then
 
-		return self.tex.Input.ListBox.EvenLineSelected( 0, 0, w, h );
+		--return self.tex.Input.ListBox.EvenLineSelected( 0, 0, w, h );
 	 
-	elseif ( panel.Hovered ) then
+	if ( panel.Hovered ) then
 
 		return self.tex.Input.ListBox.Hovered( 0, 0, w, h );
 	 
