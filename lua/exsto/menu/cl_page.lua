@@ -83,7 +83,7 @@ end
 
 function page:CreateContentHolder()
 	self.Content = exsto.CreateFrame( 0, 0, self._SizeW, self._SizeH )
-		self.Content:SetSkin( "Exsto" ) -- Ahoy!
+		self.Content:SetSkin( "ExstoQuick" ) -- Ahoy!
 		self.Content:SetDeleteOnClose( false )
 		self.Content:SetDraggable( true )
 		self.Content:Center()

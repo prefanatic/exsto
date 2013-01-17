@@ -164,13 +164,19 @@ function exsto.InitQuickMenu( pnl )
 		pnl.PlayerListScroller:SetPos( 4, 28 )
 		pnl.PlayerListScroller:SetSize( pnl:GetWide() - 8, pnl:GetTall() - 65 )
 		
+	local function scrollHandler( p, dlta )
+		print( 'ldkfjdsf', dlta )
+		return pnl.PlayerListScroller:OnMouseWheeled( dlta )
+	end
+		
 	pnl.PlayerList = vgui.Create( "DPanelList", pnl.PlayerListScroller )
 		pnl.PlayerList:SetSize( pnl:GetWide() - 8, pnl:GetTall() - 65 )
 		pnl.PlayerList:SetPos( 0, 0 )
 		pnl.PlayerList:SetSpacing( 5 )
 		pnl.PlayerList:SetPadding( 5 )
 		pnl.PlayerList:EnableHorizontal( false )
-		pnl.PlayerList:EnableVerticalScrollbar( true )
+		--pnl.PlayerList:EnableVerticalScrollbar( true )
+		pnl.PlayerList.OnMouseWheeled = scrollHandler
 		
 		pnl.PlayerList.Paint = function( pnl )
 			pnl:GetSkin().tex.Input.ListBox.Background( 0, 0, pnl:GetWide(), pnl:GetTall() );
@@ -218,6 +224,7 @@ function exsto.InitQuickMenu( pnl )
 					cat.Header.OnMousePressed = function( c )
 						--cat:Toggle() -- Fuck you garry.
 					end
+					cat.Header.OnMouseWheeled = scrollHandler
 					cat.Paint = categoryPaint
 				
 				-- Now, we need to go through and add our playes to it.
@@ -228,6 +235,7 @@ function exsto.InitQuickMenu( pnl )
 					cat.PlyList:DisableScrollbar() -- Shouldn't need it.  We're going to resize based on content anyways.
 					cat.PlyList.OnRowSelected = playerObjectClick
 					cat.PlyList.OnRowRightClick = playerObjectRightClick -- Thank god for Garry making this override.  Half expected it not to exist.
+					cat.PlyList.OnMouseWheeled = scrollHandler
 					cat.PlyList.Paint = function() end
 				
 				local count = 0

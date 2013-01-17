@@ -29,6 +29,25 @@ end
 
 exsto.Net = {
 	Running = {},
+	NetworkStrings = {
+		"ExOpenMenu";
+		"ExChatPrint";
+		"ExRecCommands";
+		"ExRecPlugSettings";
+		"ExClearFlags";
+		"ExRecFlags";
+		"ExRecRank";
+		"ExRecievedRanks";
+		"ExClientErrNoHalt";
+		"ExClearRanks";
+		"ExSaveBans";
+		"ExRecVars";
+		"ExRecVarsFinal";
+		"ExSendPlugsDone";
+		"ExRecMapData";
+		"ExSendPlugs";
+	},
+	NotifiedNetStrings = {}
 }
 
 --[[-----------------------------------
@@ -40,6 +59,8 @@ function exsto.Net.WatchProcesses()
 	
 	-- Make sure whatever Net process we are using is sending eventually.  For debugging purposes.
 	for _, obj in ipairs( exsto.Net.Running ) do
+		-- Check and make sure we were actually implemented into a util.AddNetworkString...
+		if !table.HasValue( exsto.Net.NetworkStrings, obj.id ) and !table.HasValue( exsto.Net.NotifiedNetStrings, obj.id ) then exsto.ErrorNoHalt( "[NET] --> " .. obj.id .. " --> Not in networked string table.  Will not send to client!" ) table.insert( exsto.Net.NotifiedNetStrings, obj.id ) end;
 		if obj.SendConfirmed then table.remove( exsto.Net.Running, _ ) return end
 		if ( ( CurTime() - obj.StartTime ) > 5 ) and !obj.Checked then -- We're over our 5 second threshold.  Notify that this net push didn't go through.
 			exsto.ErrorNoHalt( "[NET] --> " .. obj.id .. " --> Hasn't finalized a send in 5 seconds.  Check this out!" )
@@ -50,6 +71,11 @@ end
 hook.Add( "Think", "ExNetRunningWatch", exsto.Net.WatchProcesses )
 
 if SERVER then
+	-- We need to set ALL of our networked strings for the core HERE.
+	for _, id in ipairs( exsto.Net.NetworkStrings ) do
+		util.AddNetworkString( id )
+	end
+	
 --[[-----------------------------------
 	Function: exsto.SendRankErrors
 	Description: Sends the rank errors to the client.

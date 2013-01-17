@@ -12,10 +12,10 @@ local Color = Color
 
 SKIN = {}
 
-SKIN.PrintName 		= "Exsto Skin"
+SKIN.PrintName 		= "Exsto Main Skin"
 SKIN.Author 		= "Prefanatic"
 SKIN.DermaVersion	= 1
-SKIN.GwenTexture	= Material( "gwenskin/exsto.png" )
+SKIN.GwenTexture	= Material( "gwenskin/exsto_main.png" )
 
 SKIN.bg_color 					= Color( 101, 100, 105, 255 )
 SKIN.bg_color_sleep 			= Color( 70, 70, 70, 255 )
@@ -975,11 +975,11 @@ end
 
 function SKIN:PaintListViewLine( panel, w, h )
 
-	--if ( panel:IsSelected() ) then
+	if ( panel:IsSelected() ) then
 
-		--return self.tex.Input.ListBox.EvenLineSelected( 0, 0, w, h );
+		return self.tex.Input.ListBox.EvenLineSelected( 0, 0, w, h );
 	 
-	if ( panel.Hovered ) then
+	elseif ( panel.Hovered ) then
 
 		return self.tex.Input.ListBox.Hovered( 0, 0, w, h );
 	 
