@@ -60,7 +60,11 @@ function sender:SetFilter( filter )
 		return false
 	end
 
-	net.Start( self.id );
+	local succ, err = pcall( net.Start, self.id )
+	if !succ then -- Assume we aren't in the util.AddNetworkString
+		exsto.ErrorNoHalt( "NET --> " .. self.id .. " --> Network name not called in util.AddNetworkString().  Unable to send." )
+	end
+
 end
 
 function sender:AddChar( char ) net.WriteFloat( char ) end
@@ -116,6 +120,9 @@ function exsto.CreateReader( id, func )
 	
 	if type( func ) != "function" then return end
 	obj.callback = function( l, p )
+		obj._Sender = p
+		obj._Len = l
+
 		local success, err = pcall( func, obj, l, p )
 		if !success then
 			exsto.ErrorNoHalt( "NET --> Error with net parse: " .. err )
@@ -128,6 +135,8 @@ function exsto.CreateReader( id, func )
 	return obj
 end
 
+function reader:ReadSender() return self._Sender end
+function reader:ReadLength() return self._Len end
 function reader:ReadChar() return net.ReadFloat() end
 function reader:ReadBoolean() return tobool( net.ReadBit() ) end
 reader.ReadBool = reader.ReadBoolean

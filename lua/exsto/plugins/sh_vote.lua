@@ -34,7 +34,7 @@ if SERVER then
 	function PLUGIN:SendVoteInfo( ply )
 		local sender = exsto.CreateSender( "ExVoteInit", ply );
 			sender:AddString( self.VoteQuestion );
-			sender:AddShort( self.Delay );
+			sender:AddShort( self.VoteDelay );
 			sender:AddShort( #self.VoteQuestions );
 
 			for I = 1, #self.VoteQuestions do
@@ -78,7 +78,13 @@ if SERVER then
 		
 	end
 	
-	concommand.Add( "_TESTVOTE", function( p, _, args ) PLUGIN:Vote( "test_vote", "This is a test vote!", { "Don't be funny", "Don't be sad!", "You're gay.", "And there's more", "Should resize button on txt" } ) end )
+	concommand.Add( "_TESTVOTE", function( p, _, args ) 
+	    local tbl = {}
+	    for I = 1, 60 do
+	    	table.insert( tbl, "TEST VOTE " .. I )
+	    end
+		PLUGIN:Vote( "test_vote", "This is a test vote!", tbl ) 
+	end )
 	
 	function PLUGIN:EndVote()
 		local sender = exsto.CreateSender( "ExVoteClear", player.GetAll() )
@@ -222,10 +228,13 @@ elseif CLIENT then
 			self.VoteLarge:SetVisible( false )
 			self.VoteLarge:SetSkin( "Exsto" )
 		self.VoteLarge.Question = exsto.CreateLabel( 10, 10, "#VOTEMSG", "ExGenericText26", self.VoteLarge )
-		self.VoteLarge.List = vgui.Create( "DIconLayout", self.VoteLarge )
-			self.VoteLarge.List:SetPos( 10, 40 )
-			self.VoteLarge.List:SetSize( self.VoteLarge:GetWide() - 20, self.VoteLarge:GetTall() - 50 )
-			self.VoteLarge.List:SetSpaceX( 20 )
+		self.VoteLarge.Scroller = vgui.Create( "DScrollPanel", self.VoteLarge )
+			self.VoteLarge.Scroller:SetPos( 10, 40 )
+			self.VoteLarge.Scroller:SetSize( self.VoteLarge:GetWide() - 20, self.VoteLarge:GetTall() - 70 )
+		self.VoteLarge.List = vgui.Create( "DIconLayout", self.VoteLarge.Scroller )
+			self.VoteLarge.List:SetPos( 0, 0 )
+			self.VoteLarge.List:SetSize( self.VoteLarge.Scroller:GetWide(), self.VoteLarge.Scroller:GetTall() )
+			self.VoteLarge.List:SetSpaceX( 12 )
 			self.VoteLarge.List:SetSpaceY( 10 )
 			self.VoteLarge.List:SetLayoutDir( TOP )
 			
@@ -267,7 +276,7 @@ elseif CLIENT then
 			
 			for _, data in ipairs( tbl ) do
 				local btn = vgui.Create( "ExButton", lst )
-					btn:SetSize( 180, 36 )
+					btn:SetSize( 175, 36 )
 					btn:MaxFontSize( 20 )
 					btn:Text( data )
 					btn:SetAlignX( TEXT_ALIGN_CENTER )

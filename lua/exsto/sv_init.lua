@@ -19,7 +19,8 @@
 --[[ -----------------------------------
 	Category:  Script Loading/Resources
     ----------------------------------- ]]
-	resource.AddFile( "materials/gwenskin/exsto.png" )
+	resource.AddFile( "materials/gwenskin/exsto_quick.png" )
+	resource.AddFile( "materials/gwenskin/exsto_main.png")
 	resource.AddFile( "materials/exsto/exstoLogo.png" )
 	resource.AddFile( "materials/exsto/exstoGenericAnim.png" )
 	resource.AddFile( "materials/exsto/exstoErrorAnim.png" )

@@ -46,6 +46,7 @@ exsto.Net = {
 		"ExSendPlugsDone";
 		"ExRecMapData";
 		"ExSendPlugs";
+		"ExClientErr";
 	},
 	NotifiedNetStrings = {}
 }
@@ -56,6 +57,7 @@ Description: Error handling to let us know when net pushes send or not.  Also no
 ----------------------------------- ]]
 function exsto.Net.WatchProcesses()
 	if #exsto.Net.Running == 0 then return end
+	if exsto.Variables and exsto.GetVar( "exsto_debug" ).Value < 1 then return end
 	
 	-- Make sure whatever Net process we are using is sending eventually.  For debugging purposes.
 	for _, obj in ipairs( exsto.Net.Running ) do
@@ -68,7 +70,7 @@ function exsto.Net.WatchProcesses()
 		end
 	end
 end
-hook.Add( "Think", "ExNetRunningWatch", exsto.Net.WatchProcesses )
+--hook.Add( "Think", "ExNetRunningWatch", exsto.Net.WatchProcesses )
 
 if SERVER then
 	-- We need to set ALL of our networked strings for the core HERE.
