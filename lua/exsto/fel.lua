@@ -96,7 +96,7 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	obj.cacheResetRate = 0
 	
 	if forceLocal then
-		print( "FEL --> " .. obj.dbName .. " --> Forcing SQL localization: fixme for dynamicisity" )
+		print( "FEL --> " .. obj.dbName .. " --> Forcing SQL localization: fix-me." )
 	end
 	
 	table.insert( FEL.Databases, obj )
@@ -435,8 +435,8 @@ function db:DataInconsistancies( data )
 		local dt = self:GetColumnType( column )
 
 		if type( value ):lower() != dt:lower() then 
-			ErrorNoHalt( "FEL --> " .. self.dbName .. " --> Supplied value '" .. tostring( value ) .. "' is not consistant with table set '" .. dt .. "'" )
-			ErrorNoHalt( "FEL --> " .. self.dbName .. " --> Error occured accessing column " .. tostring( column ) )
+			ErrorNoHalt( "FEL --> " .. self.dbName .. " --> Supplied value '" .. tostring( value ) .. "' is not consistent with table set '" .. dt .. "'" )
+			ErrorNoHalt( "FEL --> " .. self.dbName .. " --> Error occurred accessing column " .. tostring( column ) )
 			return
 		end
 	end
@@ -464,7 +464,7 @@ end
 function db:AddRow( data, options )
 	options = options or {}
 	
-	-- I hate you inconsistancies; lets be redundant and check our data vs data types.
+	-- I hate you inconsistencies; lets be redundant and check our data vs data types.
 	if !self:DataInconsistancies( data ) then return end
 	
 	-- Check our _new and _changed first brother.
@@ -545,6 +545,17 @@ end
 
 function db:DropTable( threaded )
 	self:Query( "DROP TABLE " .. self.dbName, threaded )
+end
+
+--[[ -----------------------------------
+	Function: FEL.GetDatabase
+	Description: Returns the database object.
+     ----------------------------------- ]]
+function FEL.GetDatabase( name )
+	for _, obj in ipairs( FEL.Databases ) do
+		if obj.dbName == name then return obj end
+	end
+	return nil
 end
 
 --[[ -----------------------------------
@@ -666,7 +677,7 @@ function FEL.FindTableDifference( original, new )
 	for k,v in pairs( original ) do
 		if !table.HasValue( new, k ) then
 			tableChanged = true
-			-- Hes mising a flag!
+			-- Hes missing a flag!
 			addTo[k] = v
 		end
 	end

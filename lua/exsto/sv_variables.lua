@@ -64,7 +64,7 @@ function exsto.AddVariable( data )
 		EnvVar = data.EnvVar or false,
 	}
 	
-	exsto.Print( exsto_CONSOLE_DEBUG, "EVC --> " .. data.Dirty .. " --> Adding from function, was not in database!" )
+	exsto.Debug( "EVC --> " .. data.Dirty .. " --> Adding from function, was not in database!", 1 )
 	exsto.SaveVarInfo( data.Dirty )
 
 end
@@ -158,7 +158,7 @@ function exsto.Variable_Load()
 
 	for k,v in pairs( vars ) do
 		
-		exsto.Print( exsto_DEBUG, "EVC --> Loading variable " .. v.Pretty .. "!" )
+		exsto.Debug( "EVC --> Loading variable " .. v.Pretty .. "!", 1 )
 	
 		local oldchange = exsto.Variables[v.Dirty]
 		if oldchange and oldchange.OnChange then oldchange = oldchange.OnChange end

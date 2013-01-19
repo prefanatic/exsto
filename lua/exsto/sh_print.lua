@@ -188,17 +188,18 @@ exsto_CLIENT_ALL_LOGO = AddPrint(
 
 exsto_DEBUG = AddPrint(
 	function( msg, level )
-		--MsgC( COLOR.DEBUG, exsto.DebugStart .. msg .. "\n" )
+		if !level then ErrorNoHalt( "Print --> No debug level found for message: " .. msg .. "\n" ) level = 1 end
+		
+		local debugLevel = exsto._DebugLevel or 0
+		if exsto.Variables and exsto.GetVar( "exsto_debug" ) then
+			debugLevel = exsto.GetVar( "exsto_debug" ).Value
+		end
+		
+		if debugLevel >= level then
+			MsgC( COLOR.DEBUG, exsto.DebugStart .. msg .. "\n" )
+		end
 	end
 )
---[[
-exsto_FILE_APPEND = AddPrint(
-	function( msg )
-		local d = os.date( "%m-%d-%y" )
-		local f = file.Read( "exsto_fappend_" .. d .. ".txt" )
-		file.Write( "exsto_fappend_" .. d .. ".txt", f + .. "\n" .. msg )
-	end
-)]]
 	
 --[[ -----------------------------------
 	Function: exsto.Print
@@ -258,7 +259,7 @@ function exsto.ErrorNoHalt( msg )
 end
 
 function exsto.Debug( msg, level )
-	exsto.Print( exsto_DEBUG, msg, level )
+	exsto.Print( exsto_DEBUG, msg, level or 1 )
 end
 
 if CLIENT then

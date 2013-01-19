@@ -52,7 +52,7 @@ exsto.Net = {
 
 --[[-----------------------------------
 Function: exsto.Net.WatchProcesses()
-Description: Watches any net pushes we send to make sure they send.
+Description: Error handling to let us know when net pushes send or not.  Also notifies if there was no util.AddNetworkString()
 ----------------------------------- ]]
 function exsto.Net.WatchProcesses()
 	if #exsto.Net.Running == 0 then return end
@@ -208,6 +208,7 @@ if CLIENT then
 	 Category: Client --> Server Sending.
 	----------------------------------- ]]
 	function exsto.SendToServer( hook, ... )
+		exsto.ErrorNoHalt( "NET --> Using deprecated method: exsto.SendToServer." )
 		RunConsoleCommand( "_ExBeginSend", hook )
 		
 		local encode = von.serialize( {...} )

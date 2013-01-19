@@ -30,7 +30,6 @@ function exsto.CreateSender( id, filter )
 	
 	obj.id = id or ""
 	
-	if SERVER then util.AddNetworkString( obj.id ) end
 	obj:SetFilter( filter )
 	
 	obj.StartTime = CurTime()

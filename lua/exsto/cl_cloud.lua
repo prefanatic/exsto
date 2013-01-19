@@ -39,7 +39,7 @@ function build.ShowHelp()
 	if !exsto.CloudPanel then return end
 	
 	file.Write( "exsto_tmp/cloud_help_shown.txt", "yes" )
-	Menu:PushNotify( "To get started on this adventure,\n1. Click on the plugin you wish to retreive.\n2.Click on the \"Install\" button.\nSimple, right?" )
+	Menu:PushNotify( "To get started on this adventure,\n1. Click on the plugin you wish to retrieve.\n2.Click on the \"Install\" button.\nSimple, right?" )
 end
 
 function build.Build()
