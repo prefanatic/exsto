@@ -43,7 +43,7 @@ function PLUGIN:Votemap()
 	end
 	
 	-- Now, we need to put the highest played maps on top.  Sort this thing by the count in exsto.VotemapDB.
-	table.sort( lst )
+	table.sort( lst, function( a, b ) return dt[ a ] > dt[ b ] end )
 	
 	-- We should have a proper sorted table, with the most played maps closer to 0 on the index.  Push the vote!
 	local vote = exsto.GetPlugin( "votefuncs" )
