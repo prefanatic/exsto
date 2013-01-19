@@ -25,6 +25,25 @@ if SERVER then
 		Description = "This sets the default time for a vote, if no delay is passed.",
 	} )
 
+	-- We should send him the vote stuff so he can vote, because he just joined.
+	function PLUGIN:ExInitSpawn( ply )
+		if !self.VoteID then return end -- We aren't voting on anything
+
+	end
+	
+	function PLUGIN:SendVoteInfo( ply )
+		local sender = exsto.CreateSender( "ExVoteInit", ply );
+			sender:AddString( self.VoteQuestion );
+			sender:AddShort( self.Delay );
+			sender:AddShort( #self.VoteQuestions );
+
+			for I = 1, #self.VoteQuestions do
+				sender:AddString( self.VoteQuestions[ I ] )
+				self.VoteData[ I ] = 0
+			end
+		sender:Send()
+	end
+
 	function PLUGIN:Vote( id, question, optiontbl, delay )
 		-- Check and make sure we aren't voting on something already...
 		if self.VoteID then
@@ -35,20 +54,12 @@ if SERVER then
 		self.VoteData = {}
 		self.Voted = {}
 		self.VoteID = id
-		
-		local sender = exsto.CreateSender( "ExVoteInit", player.GetAll() )
-			sender:AddString( question )
-			sender:AddShort( delay or exsto.GetVar( "vote-timeout" ).Value )
-			sender:AddShort( #optiontbl )
-			
-			for I = 1, #optiontbl do
-				sender:AddString( optiontbl[ I ] )
-				self.VoteData[ I ] = 0
-			end
-		sender:Send()
-		
+		self.VoteQuestion = question
+		self.VoteDelay = delay or exsto.GetVar( "vote-timeout" ).Value
 		self.VoteQuestions = optiontbl
-			
+
+		self:SendVoteInfo( player.GetAll() )
+
 		self:Print( "Pushed question '" .. question .. "' to players." )
 		
 		-- Create the handler for us to end with

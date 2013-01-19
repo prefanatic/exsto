@@ -207,7 +207,7 @@ if SERVER then
 					 end
 			   end
 			  
-			   // Don't add useless maps
+			   -- Don't add useless maps
 			   if ( !Ignore ) then
 			  
 					 local Mat = nil
