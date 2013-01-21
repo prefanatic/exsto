@@ -59,8 +59,15 @@ function PLUGIN:ExVoteFinished( data )
 			local admin = exsto.GetPlugin( "administration" );
 			if !admin then self:Print( "OHFUCKOHNO!" ) return end
 			
-			if data.ID == "votekick" then admin:Kick( "Console", self.VotePlayer, "Kicked due to a majority vote." ) return end
-			if data.ID == "voteban" then admin:Ban( "Console", self.VotePlayer, 60, "Banned due to a majority vote." ) return end
+			if data.ID == "votekick" then 
+				exsto.Print( exsto_CHAT_ALL, COLOR.NORM, "Votekick ", COLOR.NAME, "successful.", COLOR.NORM, "Kicking player: ", COLOR.NAME, self.VotePlayer:Nick() )
+				admin:Kick( "Console", self.VotePlayer, "Kicked due to a majority vote." ) 
+				return
+			elseif data.ID == "voteban" then 
+				exsto.Print( exsto_CHAT_ALL, COLOR.NORM, "Voteban ", COLOR.NAME, "successful.", COLOR.NORM, "Banning player: ", COLOR.NAME, self.VotePlayer:Nick() )
+				admin:Ban( "Console", self.VotePlayer, 10, "Banned due to a majority vote." ) 
+				return 
+			end
 		end
 	end
 end
