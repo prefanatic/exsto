@@ -56,7 +56,7 @@ function exsto.Menu.Initialize()
 		exsto.Menu.Objects.Header.Paint = function() end
 		
 	-- Create Exsto's logo for the top right.
-	exsto.Menu.Objects.Logo = exsto.CreateImageButton( exsto.Menu.Objects.Header:GetWide() - 105, 20, 86, 37, "exstoLogo", exsto.Menu.Objects.Header )
+	--exsto.Menu.Objects.Logo = exsto.CreateImageButton( exsto.Menu.Objects.Header:GetWide() - 105, 20, 86, 37, "exstoLogo", exsto.Menu.Objects.Header )
 		
 	-- Create the default quick menu.
 	exsto.Menu.QM = exsto.Menu.CreatePage( "quickmenu", exsto.InitQuickMenu )
@@ -136,9 +136,25 @@ function exsto.Menu.Open()
 	exsto.Menu._Opened = true
 end
 
-local temp = false
+local temp, qx, qy, qw, qh = false
 local function shit()
 	if !exsto.Menu then return end
+	-- Handling clicking outside the search box.
+	if exsto.Menu.OpenLock == true and input.IsMouseDown( MOUSE_LEFT ) then
+		local x, y = gui.MousePos()
+		
+		print( x, y )
+		
+		qx, qy = exsto.Menu.QM:GetPos()
+		qw, qh = exsto.Menu.QM:GetSize()
+		
+		print( qx, qy, qw + qx, qh +qy )
+		
+		if ( x < qx or y < qy ) or ( x > ( qx + qw ) or y > ( qy + qh ) ) and !exsto.Menu._BindPressed then
+			exsto.Menu.OpenLock = false
+		end
+	end
+	
 	if exsto.Menu.OpenLock == false and temp == true then
 		exsto.Menu.Close()
 		temp = false
@@ -193,6 +209,6 @@ local function commandMenuHandler( reader )
 end
 --exsto.CreateReader( "ExOpenMenu", commandMenuHandler )
 
-concommand.Add( "+ExQuick", function() exsto.Menu.Open() end )
-concommand.Add( "-ExQuick", function() exsto.Menu.Close() end )
+concommand.Add( "+ExQuick", function() exsto.Menu.Open() exsto.Menu._BindPressed = true end )
+concommand.Add( "-ExQuick", function() exsto.Menu.Close() exsto.Menu._BindPressed = false end )
 concommand.Add( "ExQuickToggle", function() exsto.Menu.Toggle() end )

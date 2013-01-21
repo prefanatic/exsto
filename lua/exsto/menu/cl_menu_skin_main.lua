@@ -389,10 +389,6 @@ function SKIN:PaintButton( panel, w, h )
 		return self.tex.Button_Dead( 0, 0, w, h );	
 	end	
 	
-	if ( panel.Hovered ) then
-		return self.tex.Button_Hovered( 0, 0, w, h );	
-	end
-	
 	if ( panel._DLISTCOLUMN ) then
 		return self.tex.Panels.Bright( 0, 0, w, h );
 	end
@@ -411,6 +407,10 @@ function SKIN:PaintButton( panel, w, h )
 		
 		panel._Col.a = panel.FlashAlpha
 		self.tex.Button_Down( 0, 0, w, h, panel._Col )
+	end
+	
+	if ( panel.Hovered ) then
+		return self.tex.Button_Hovered( 0, 0, w, h );	
 	end
 
 end

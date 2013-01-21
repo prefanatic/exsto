@@ -49,7 +49,7 @@ function PLUGIN:Votemap()
 	local vote = exsto.GetPlugin( "votefuncs" )
 	if !vote then self:Print( "Couldn't find the vote API.  This shouldn't ever happen." ) return end
 	
-	vote:Vote( "votemap", "Next map!", lst, exsto.GetVar( "votemap-timeout" ).Value or 30 )
+	vote:Vote( "votemap", "Next map!", lst, exsto.GetVar( "votemap-timeout" ).Value or 30, "large" )
 	self.MapList = lst
 end
 

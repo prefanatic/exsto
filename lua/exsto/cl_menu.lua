@@ -204,7 +204,7 @@ function Menu:Create( rank, flagCount )
 		Black = Color( 0, 0, 0, 0 ),
 		HeaderExtendBar = Color( 226, 226, 226, 255 ),
 		HeaderTitleText = Color( 103, 103, 103, 255 ),
-		ArrowColor = Color( 0, 193, 32, 255 ),
+		ArrowColor = Color( 74, 208, 254, 255 ),
 		ColorPanelStandard = Color( 204, 204, 204, 51 ),
 	}
 	
@@ -226,13 +226,6 @@ function Menu:BuildMainFrame()
 	self.Frame:Center()
 	self.Frame:SetDeleteOnClose( false )
 	self.Frame:SetDraggable( false )
-	
-	--[[self.Frame.btnClose.Paint = function( self )
-		surface.SetFont( "ExGenericText24" )
-		surface.SetTextColor( Menu.Colors.HeaderTitleText )
-		surface.SetTextPos( self:GetWide() / 2, 0 )
-		surface.DrawText( "x" )
-	end]]
 	self.Frame.btnClose.DoClick = function( self )
 		self:GetParent():Close()
 		

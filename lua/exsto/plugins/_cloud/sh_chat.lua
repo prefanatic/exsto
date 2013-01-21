@@ -11,6 +11,9 @@ PLUGIN:SetInfo({
 
 if SERVER then
 
+	util.AddNetworkString( "ExChatPlug_RankColors" )
+	util.AddNetworkString( "ExChatPlug_AdminBlink" )
+
 	function PLUGIN:Init()
 		resource.AddFile( "sound/name_said.wav" )
 	end
@@ -93,15 +96,11 @@ elseif CLIENT then
 	surface.CreateFont( "ChatText", { font = "coolvetica", size = 20, weight = 400 } )
 	
 	function PLUGIN:Init()
-	
-		print( "INIT" )
-	
 		-- Create variables.
 		self.GlobalX = CreateClientConVar( "ExChat_PosX", 35, true )
 		self.GlobalYOffset = CreateClientConVar( "ExChat_OffsetY", 310, true )
 		self.GlobalEnabled = CreateClientConVar( "ExChat_Enable", 1, true )
-				
-		self.Font = "ChatText"
+		self.GlobalFont = CreateClientConVar( "ExChat_Font", "ChatText", true )
 		
 		self.ChatLabelDefault = "Chat"
 		self.ChatLabel = self.ChatLabelDefault
@@ -371,7 +370,7 @@ elseif CLIENT then
 				col = PLUGIN:BlinkColor( col )
 			end
 			
-			draw.SimpleTextOutlined( text, self.Font, x, y, self:ColorAlpha( col, 255 ), 0, 0, 1, self:ColorAlpha( self.OutlineColor, 255 ) )
+			draw.SimpleTextOutlined( text, self.GlobalFont:GetString(), x, y, self:ColorAlpha( col, 255 ), 0, 0, 1, self:ColorAlpha( self.OutlineColor, 255 ) )
 			
 			if w then x = x + w or x end
 			
@@ -389,7 +388,7 @@ elseif CLIENT then
 	function PLUGIN:HUDPaint()	
 		if self.GlobalEnabled:GetInt() == 0 then return end
 		
-		surface.SetFont( self.Font )
+		surface.SetFont( self.GlobalFont:GetString() )
 		_, lineHeight = surface.GetTextSize( "H" )
 		
 		x = self.X + 35
@@ -417,7 +416,7 @@ elseif CLIENT then
 		if self.Open then
 			if self.Fade != 255 then
 				if self.AnimateLines then
-					self.Fade = math.Approach( self.Fade, 255, 10 )
+					self.Fade = math.Approach( self.Fade, 255, 5 )
 				else
 					self.Fade = 255
 				end
@@ -425,7 +424,7 @@ elseif CLIENT then
 		else
 			if self.Fade != 0 then
 				if self.AnimateLines then
-					self.Fade = math.Approach( self.Fade, 0, 5 )
+					self.Fade = math.Approach( self.Fade, 0, 2.5 )
 				else
 					self.Fade = 0
 				end
@@ -437,7 +436,7 @@ elseif CLIENT then
 			line = self.Lines[ #self.Lines - I - self.ScrollSelection ]
 			
 			if line then
-				self:AnimateLine( line, self.Open and .5 or 1 )
+				self:AnimateLine( line, self.Open and 0.25 or 0.5 )
 			end
 		end
 		
@@ -498,7 +497,7 @@ elseif CLIENT then
 	exsto_PLUGINADDTEXT = exsto_PLUGINADDTEXT or chat.AddText
 	local data, colOpen, col, ply, arg
 	function chat.AddText( ... )
-		if !PLUGIN.Font then return exsto_PLUGINADDTEXT( ... ) end
+		if !PLUGIN.GlobalFont:GetString() then return exsto_PLUGINADDTEXT( ... ) end
 		if exsto.Plugins[ PLUGIN.Info.ID ] and exsto.Plugins[ PLUGIN.Info.ID ].Disabled then return exsto_PLUGINADDTEXT( ... ) end
 		if PLUGIN.GlobalEnabled and PLUGIN.GlobalEnabled:GetInt() == 0 then return exsto_PLUGINADDTEXT( ... ) end
 		
@@ -548,7 +547,7 @@ elseif CLIENT then
 	local lastSound, totalWidth = 0, 0
 	function PLUGIN:ParseLine( ply, line )
 	
-		surface.SetFont( self.Font )
+		surface.SetFont( self.GlobalFont:GetString() )
 
 		while line != "" do
 		
@@ -717,13 +716,13 @@ elseif CLIENT then
 		-- ******
 		self.Label = vgui.Create( "DLabel", self )
 		self.Label:SetPos( 5, 2 )
-		self.Label:SetFont( PLUGIN.Font )
+		self.Label:SetFont( PLUGIN.GlobalFont:GetString() )
 		self.Label:SetText( PLUGIN.ChatLabelDefault )
 		self.Label:SizeToContents()
 		self.Label:NoClipping( true )
 		
 		self.Label.Paint = function( self )
-			draw.SimpleTextOutlined( self:GetValue(), PLUGIN.Font, 0, 0, PLUGIN:ColorAlpha( PLUGIN.Colors.White, PLUGIN.Fade ), 0, 0, 1, PLUGIN:ColorAlpha( PLUGIN.Colors.Outline, PLUGIN.Fade ) )
+			draw.SimpleTextOutlined( self:GetValue(), PLUGIN.GlobalFont:GetString(), 0, 0, PLUGIN:ColorAlpha( PLUGIN.Colors.White, PLUGIN.Fade ), 0, 0, 1, PLUGIN:ColorAlpha( PLUGIN.Colors.Outline, PLUGIN.Fade ) )
 			return true
 		end
 
@@ -812,7 +811,7 @@ elseif CLIENT then
 	
 		if !LocalPlayer():IsAllowed( command.ID ) then return end
 	
-		surface.SetFont( PLUGIN.Font )
+		surface.SetFont( PLUGIN.GlobalFont:GetString() )
 		data = { }
 		data.Name = name
 		
@@ -840,7 +839,7 @@ elseif CLIENT then
 	
 	local w, h, slot, nw, nh
 	function PANEL:BuildAutoComplete()
-		surface.SetFont( PLUGIN.Font )
+		surface.SetFont( PLUGIN.GlobalFont:GetString() )
 		
 		for I = 1, 7 do
 			slot = self.AutoComplete.Slots[I]
@@ -916,8 +915,8 @@ elseif CLIENT then
 			
 			for _, slot in ipairs( self.AutoComplete.Slots ) do
 				if slot.Place then
-					draw.SimpleTextOutlined( slot.Name, PLUGIN.Font, PLUGIN.X + 5, slot.Place + 25, PLUGIN:ColorAlpha( colName, PLUGIN.Fade ), 0, 0, 1, PLUGIN:ColorAlpha( PLUGIN.Colors.Outline, PLUGIN.Fade ) )
-					draw.SimpleTextOutlined( slot.Arguments, PLUGIN.Font, PLUGIN.X + 10 + slot.NameWidth, slot.Place + 25, PLUGIN:ColorAlpha( colNorm, PLUGIN.Fade ), 0, 0, 1, PLUGIN:ColorAlpha( PLUGIN.Colors.Outline, PLUGIN.Fade ) )
+					draw.SimpleTextOutlined( slot.Name, PLUGIN.GlobalFont:GetString(), PLUGIN.X + 5, slot.Place + 25, PLUGIN:ColorAlpha( colName, PLUGIN.Fade ), 0, 0, 1, PLUGIN:ColorAlpha( PLUGIN.Colors.Outline, PLUGIN.Fade ) )
+					draw.SimpleTextOutlined( slot.Arguments, PLUGIN.GlobalFont:GetString(), PLUGIN.X + 10 + slot.NameWidth, slot.Place + 25, PLUGIN:ColorAlpha( colNorm, PLUGIN.Fade ), 0, 0, 1, PLUGIN:ColorAlpha( PLUGIN.Colors.Outline, PLUGIN.Fade ) )
 				end
 			end
 			

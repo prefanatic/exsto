@@ -25,16 +25,84 @@ if SERVER then
 		Description = "This sets the default time for a vote, if no delay is passed.",
 	} )
 
+	PLUGIN:AddVariable( {
+	    Pretty = "Vote Default Style";
+	    Dirty = "vote-defaultstyle";
+	    Default = "chat";
+	    Description = "This sets the default voting style.  Either 'small' for a small menu, 'large' for a large menu, or 'chat' for chat voting.";
+	    Possible = { "chat", "large" };
+	} )
+	
+	PLUGIN:AddVariable( {
+	    Pretty = "Revote on Votes";
+	    Dirty = "vote-revote";
+	    Default = true;
+	    Description = "Setting this to true allows players to revote after they already casted a vote.";
+	    Possible = { true, false };
+	} )
+
 	-- We should send him the vote stuff so he can vote, because he just joined.
 	function PLUGIN:ExInitSpawn( ply )
 		if !self.VoteID then return end -- We aren't voting on anything
 
 	end
 	
+	function PLUGIN:VoteHandler( index, ply, revote )
+		if self.Voted[ ply:Nick() ] and revote then
+			self.VoteData[ self.Voted[ ply:Nick() ] ] = self.VoteData[ self.Voted[ ply:Nick() ] ] - 1
+			
+			self:Debug( "Updating " .. self.Voted[ ply:Nick() ] .. " for " .. self.VoteData[ self.Voted[ ply:Nick() ] ] .. " votes", 1 )
+		elseif !revote then
+			return false
+		end
+
+		self:Debug( ply:Nick() .. " voting on " .. index, 1 )
+
+		self.Voted[ ply:Nick() ] = index;
+		self.VoteData[ index ] = self.VoteData[ index ] + 1;
+
+		self:Debug( "Updating " .. index .. " for " .. self.VoteData[ index ] .. " votes", 1 )
+		
+		return true
+	end
+	
+	function PLUGIN:VoteYes( caller )
+		local status = self:VoteHandler( 1, caller, exsto.GetVar( "vote-revote" ).Value )
+		if status then
+			return { caller, COLOR.NORM, "Voted ", COLOR.NAME, "yes." }
+		else
+			return { caller, COLOR.NORM, "You cannot ", COLOR.NAME, "revote!" }
+		end
+	end
+	PLUGIN:AddCommand( "voteyes", {
+		Call = PLUGIN.VoteYes,
+		Desc = "Allows users to vote yes.",
+		Console = { "voteyes" },
+		Chat = { "!yes" },
+		Category = "Voting",
+	})
+	
+	function PLUGIN:VoteNo( caller )
+		local status = self:VoteHandler( 2, caller, exsto.GetVar( "vote-revote" ).Value )
+		if status then
+			return { caller, COLOR.NORM, "Voted ", COLOR.NAME, "no." }
+		else
+			return { caller, COLOR.NORM, "You cannot ", COLOR.NAME, "revote!" }
+		end
+	end
+	PLUGIN:AddCommand( "voteno", {
+		Call = PLUGIN.VoteNo,
+		Desc = "Allows users to vote no.",
+		Console = { "voteno" },
+		Chat = { "!no" },
+		Category = "Voting",
+	} )
+	
 	function PLUGIN:SendVoteInfo( ply )
 		local sender = exsto.CreateSender( "ExVoteInit", ply );
 			sender:AddString( self.VoteQuestion );
 			sender:AddShort( self.VoteDelay );
+			sender:AddString( self.VoteStyle );
 			sender:AddShort( #self.VoteQuestions );
 
 			for I = 1, #self.VoteQuestions do
@@ -44,7 +112,7 @@ if SERVER then
 		sender:Send()
 	end
 
-	function PLUGIN:Vote( id, question, optiontbl, delay )
+	function PLUGIN:Vote( id, question, optiontbl, delay, style )
 		-- Check and make sure we aren't voting on something already...
 		if self.VoteID then
 			self:Print( "Already in a vote!  Additional voting unimplemented." )
@@ -57,24 +125,21 @@ if SERVER then
 		self.VoteQuestion = question
 		self.VoteDelay = delay or exsto.GetVar( "vote-timeout" ).Value
 		self.VoteQuestions = optiontbl
+		self.VoteStyle = style or exsto.GetVar( "vote-defaultstyle" ).Value
 
 		self:SendVoteInfo( player.GetAll() )
 
 		self:Print( "Pushed question '" .. question .. "' to players." )
 		
+		-- For chat.
+		if style == "chat" then
+			exsto.Print( exsto_CHAT_ALL, COLOR.NAME, "Vote: ", COLOR.NORM, self.VoteQuestion, COLOR.NAME, "  Type !yes or !no." );
+		end
+		
 		-- Create the handler for us to end with
 		timer.Create( "ExVote_" .. id, delay or exsto.GetVar( "vote-timeout" ).Value, 1, function()
 			PLUGIN:EndVote()
 		end )
-		
-		-- Every second, send down a time update for players.
-		--[[local count = 0
-		timer.Create( "ExVoteTime_" .. id, 1, delay or exsto.GetVar( "vote-timeout" ).Value, function()
-			count = count + 1
-			local sender = exsto.CreateSender( "ExVoteTLeft", player.GetAll() )
-				sender:AddShort( ( delay or exsto.GetVar( "vote-timeout" ).Value ) - count )
-			sender:Send()
-		end )]]
 		
 	end
 	
@@ -122,28 +187,11 @@ if SERVER then
 		
 		-- Cleanup.
 		self.VoteID = nil
-	end			
+	end		
 	
 	local function recClient( reader, len, ply )
-		local indx = reader:ReadShort()
-		if PLUGIN.Voted[ ply:Nick() ] then
-			PLUGIN.VoteData[ PLUGIN.Voted[ ply:Nick() ] ] = PLUGIN.VoteData[ PLUGIN.Voted[ ply:Nick() ] ] - 1
-			
-			-- Resend this new info.
-			PLUGIN:Print( exsto_DEBUG, "Updating " .. PLUGIN.Voted[ ply:Nick() ] .. " for " .. PLUGIN.VoteData[ PLUGIN.Voted[ ply:Nick() ] ] .. " votes" )
-
-			local sender = exsto.CreateSender( "ExVoteUpdate", player.GetAll() )
-				sender:AddShort( PLUGIN.Voted[ ply:Nick() ] )
-				sender:AddShort( PLUGIN.VoteData[ PLUGIN.Voted[ ply:Nick() ] ] )
-			sender:Send()
-		end
-		
-		PLUGIN:Print( exsto_DEBUG, ply:Nick() .. " voting on " .. indx )
-		
-		PLUGIN.Voted[ ply:Nick() ] = indx;
-		PLUGIN.VoteData[ indx ] = PLUGIN.VoteData[ indx ] + 1;
-		
-		PLUGIN:Print( exsto_DEBUG, "Updating " .. indx .. " for " .. PLUGIN.VoteData[ indx ] .. " votes" )
+		local indx = reader:ReadShort()		
+		PLUGIN:VoteHandler( indx, reader:ReadPlayer(), true )
 		local sender = exsto.CreateSender( "ExVoteUpdate", player.GetAll() )
 			sender:AddShort( indx )
 			sender:AddShort( PLUGIN.VoteData[ indx ] )
@@ -164,6 +212,7 @@ elseif CLIENT then
 		
 		PLUGIN.Question = reader:ReadString()
 		PLUGIN.VoteTime = reader:ReadShort()
+		PLUGIN.VoteStyle = reader:ReadString();
 		
 		PLUGIN.VoteEnd = PLUGIN.VoteTime + CurTime()
 		
@@ -203,19 +252,27 @@ elseif CLIENT then
 	end
 	
 	function PLUGIN:StartVote()
-		self.VoteLarge.Question:SetText( self.Question )
-		self.VoteLarge.Question:SizeToContents()
+		if self.VoteStyle == "large" then
+			self.VoteLarge.Question:SetText( self.Question )
+			self.VoteLarge.Question:SizeToContents()
+			
+			self.VoteLarge.List:Populate( self.ActiveVote )
+			
+			self.TimeDelta = ( self.VoteLarge:GetWide() - 20 ) / self.VoteTime
+			
+			-- Move the panel
+			self.VoteLarge._TIMEW = 0
+			self.VoteLarge:SetVisible( true )
+			self.VoteLarge:SetPos( ( ScrW() / 2 ) - ( 200 ), ( ScrH() / 2 ) - 300 )
+			
+			gui.EnableScreenClicker( true )
+		end
+	end
+	
+	function PLUGIN:Think()
+		if !self.VoteLarge:IsVisible() then return end
 		
-		self.VoteLarge.List:Populate( self.ActiveVote )
-		
-		self.TimeDelta = ( self.VoteLarge:GetWide() - 20 ) / self.VoteTime
-		
-		-- Move the panel
-		self.VoteLarge._TIMEW = 0
-		self.VoteLarge:SetVisible( true )
-		self.VoteLarge:SetPos( ( ScrW() / 2 ) - ( 200 ), ( ScrH() / 2 ) - 300 )
-		
-		gui.EnableScreenClicker( true )
+		-- Manage sorting of buttons on vote click.
 	end
 	
 	function PLUGIN:Init()
@@ -240,7 +297,6 @@ elseif CLIENT then
 			
 		local function countdownPaint( pnl )	
 			pnl._TIMEW = math.Approach( pnl._TIMEW, pnl:GetWide() - 20, FrameTime() * PLUGIN.TimeDelta )
-			--pnl._TIMEW = pnl._TIMEW + ( FrameTime() * PLUGIN.TimeDelta )
 			
 			surface.SetDrawColor( 0, 153, 176, 255 )
 			surface.DrawRect( 10, pnl:GetTall() - 22, pnl._TIMEW, 20 )
@@ -256,7 +312,7 @@ elseif CLIENT then
 			if !PLUGIN.VoteData[ btn._VoteIndex ] or PLUGIN.VoteData[ btn._VoteIndex ] == 0 then return end
 			surface.SetMaterial( PLUGIN.VoteCheck )
 			for I = 1, PLUGIN.VoteData[ btn._VoteIndex ] do
-				if I > 10 then return end
+				if I > 9 then return end
 				surface.DrawTexturedRect( 2 + ( I * 16 ), btn:GetTall() - 17, 16, 16 )
 			end
 		end
@@ -265,15 +321,6 @@ elseif CLIENT then
 		end
 		self.VoteLarge.List.Populate = function( lst, tbl )
 			lst:Clear()
-			
-			-- We first need to set this up so it looks nice.  Get max length of the largest text
-			--[[surface.SetFont( "ExGenericText16" )
-			local w, h, lrgW = 0, 0, 0
-			for _, data in ipairs( tbl ) do
-				w, h = surface.GetTextSize( data )
-				if w > lrgW then lrgW = w end
-			end]]
-			
 			for _, data in ipairs( tbl ) do
 				local btn = vgui.Create( "ExButton", lst )
 					btn:SetSize( 175, 36 )

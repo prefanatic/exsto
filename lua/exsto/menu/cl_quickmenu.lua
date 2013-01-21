@@ -101,7 +101,7 @@ end
 
 local function newPanelClick( btn )
 
-	-- Lets create a derma menu of the pages that we have.
+	-- Lets create a derma menu of the pages that we have.+
 	local pgs = exsto.Menu.GetPages();
 	local menu = DermaMenu()
 	
@@ -116,7 +116,7 @@ end
 local function pntShadow( pnl )
 	surface.SetMaterial( qm.Shadow )
 	surface.SetDrawColor( 255, 255, 255, 255 )
-	surface.DrawTexturedRect( 0, 0, pnl:GetWide(), 12 )
+	surface.DrawTexturedRect( 0, 0, pnl:GetWide(), 9 )
 end
 
 function exsto.InitQuickMenu( pnl )
@@ -154,9 +154,12 @@ function exsto.InitQuickMenu( pnl )
 			end
 		end
 		pnl.Search.OnEnter = function( entry )
-			if entry:GetValue() == "" then -- Unlock
-				exsto.Menu.OpenLock = false
-			end
+			-- Reset the search
+			entry:SetText( "" )
+			entry:OnTextChanged()
+		end
+		pnl.Search.DoClick = function( entry )
+			exsto.Menu.OpenLock = true
 		end
 
 	-- Create the player list

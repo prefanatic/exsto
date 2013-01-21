@@ -119,6 +119,7 @@ end
 function page:SetPos( x, y ) return self.Content:SetPos( x, y ) end
 function page:GetPos() return self.Content:GetPos() end
 function page:SetSize( w, h ) return self.Content:SetSize( w, h ) end
+function page:GetSize() return self.Content:GetSize() end
 function page:IsValid() return self.Content:IsValid() end
 function page:SetVisible( bool ) return self.Content:SetVisible( bool ) end
 function page:MoveToFront() return self.Content:MoveToFront() end

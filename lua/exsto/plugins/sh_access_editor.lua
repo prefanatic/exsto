@@ -50,13 +50,12 @@ if SERVER then
 		exsto.SendRanks( player.GetAll() )
 		
 		-- Reload the rank editor.
-		//timer.Create( "reload_" .. ply:EntIndex(), 1, 1, PLUGIN.SendData, PLUGIN, "ExRankEditor_Reload", ply )
+		--timer.Create( "reload_" .. ply:EntIndex(), 1, 1, PLUGIN.SendData, PLUGIN, "ExRankEditor_Reload", ply )
 		hook.Call( "ExOnRankCreate", nil, id )
 	end
 	exsto.CreateReader( "ExPushRankToSrv", PLUGIN.CommitChanges )
 	
 	function PLUGIN.RecieveImmunityData( reader, id, immunity )
-		print( "rec" )
 		if !reader then
 			exsto.RankDB:AddRow( {
 			ID = id;
@@ -67,7 +66,6 @@ if SERVER then
 			print( numChange )
 			for I = 1, numChange do
 				local id, immunity = reader:ReadString(), reader:ReadShort()
-				print( id, immunity )
 				exsto.RankDB:AddRow( {
 					ID = id,
 					Immunity = immunity,
@@ -466,7 +464,8 @@ elseif CLIENT then
 			
 		self.flagList = exsto.CreateComboBox( 0, 0, flagColorPanel:GetWide(), flagColorPanel:GetTall(), flagColorPanel )
 			self.flagList.dontDrawBackground = true
-			self.flagList:AddColumn( "Flags" )
+			self.flagList:AddColumn( "" )
+			self.flagList:SetHideHeaders( true )
 			self.flagList.OnRowSelected = function( lst, lineID, line )
 				PLUGIN:HandleFlagModification( line, self.Ranks[ self.uidEntry:GetValue() ] )
 			end

@@ -614,6 +614,9 @@ local function ExstoParseCommand( ply, command, args, style )
 					-- Print the return values.
 					exsto.PrintReturns( sentback, I, multiplePeopleToggle, hide )
 					
+					-- Save this for our ! command
+					exsto._LastCommand = { call = data.Call, args = newArgs }
+					
 				end
 
 			end
@@ -855,5 +858,3 @@ exsto.AddChatCommand( "menu", {
 	Args = {},
 	Category = "Administration",
 })
-
-concommand.Add( "_ExPingMenuData", exsto.OpenMenu )
