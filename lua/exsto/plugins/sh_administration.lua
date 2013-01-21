@@ -12,6 +12,8 @@ PLUGIN:SetInfo({
 } ) 
 
 if SERVER then 
+
+	util.AddNetworkString( "ExRecBans" )
 	
 	PLUGIN:AddVariable( {
 		Pretty = "FEL --> Ban Refresh Rate";

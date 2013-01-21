@@ -97,7 +97,7 @@ exsto_CONSOLE_LOGO = AddPrint(
 	end
 )
 	
-exsto_CONSOLE_DEBUG = exsto_CONSOLE
+exsto_CONSOLE_DEBUG = exsto_DEBUG
 	
 exsto_ERROR = AddPrint( 
 	function( msg )
@@ -188,7 +188,7 @@ exsto_CLIENT_ALL_LOGO = AddPrint(
 
 exsto_DEBUG = AddPrint(
 	function( msg, level )
-		if !level then ErrorNoHalt( "Print --> No debug level found for message: " .. msg .. "\n" ) level = 1 end
+		if !level then level = 1 end
 		
 		local debugLevel = exsto._DebugLevel or 0
 		if exsto.Variables and exsto.GetVar( "exsto_debug" ) then

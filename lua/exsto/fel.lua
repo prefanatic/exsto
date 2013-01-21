@@ -499,6 +499,11 @@ function db:GetAll()
 	return table.Copy( self.Cache._cache )
 end
 
+-- Different from db:GetAll().  Just returns a reference table instead of a copied table.  Not as intensive, for use in think hooks.
+function db:ReadAll()
+	return self.Cache._cache
+end
+
 function db:GetRow( key )
 	for _, rowData in ipairs( self.Cache._cache ) do
 		if key == rowData[ self.Columns._PrimaryKey ] then return rowData end

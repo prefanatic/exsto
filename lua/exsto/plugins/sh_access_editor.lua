@@ -56,6 +56,7 @@ if SERVER then
 	exsto.CreateReader( "ExPushRankToSrv", PLUGIN.CommitChanges )
 	
 	function PLUGIN.RecieveImmunityData( reader, id, immunity )
+		print( "rec" )
 		if !reader then
 			exsto.RankDB:AddRow( {
 			ID = id;
@@ -63,10 +64,13 @@ if SERVER then
 		} )
 		else
 			local numChange = reader:ReadShort()
+			print( numChange )
 			for I = 1, numChange do
+				local id, immunity = reader:ReadString(), reader:ReadShort()
+				print( id, immunity )
 				exsto.RankDB:AddRow( {
-					ID = reader:ReadString(),
-					Immunity = reader:ReadShort(),
+					ID = id,
+					Immunity = immunity,
 				} )
 			end
 		end
@@ -169,7 +173,8 @@ elseif CLIENT then
 		-- Send changes to immunity
 		if table.Count( self.ImmunityBox.Changed ) >= 1 then
 			local sender = exsto.CreateSender( "ExRecImmuneChange" )
-				sender:AddShort( #self.ImmunityBox.Changed )
+			print( #self.ImmunityBox.Changed )
+				sender:AddShort( table.Count( self.ImmunityBox.Changed ) )
 			for short, immunity in pairs( self.ImmunityBox.Changed ) do
 				sender:AddString( short )
 				sender:AddShort( immunity )
@@ -264,7 +269,7 @@ elseif CLIENT then
 		local immunityRaise = exsto.CreateButton( 10, self.Secondary:GetTall() - 33, 60, 27, "Raise", self.Secondary )
 			immunityRaise:SetStyle( "positive" )
 			immunityRaise.OnClick = function( self )
-				local selected = PLUGIN.ImmunityBox.m_pSelected
+				local selected = PLUGIN.ImmunityBox:GetLines()[ PLUGIN.ImmunityBox:GetSelectedLine() ]
 				if selected then
 					if selected.Immunity == 0 then return end
 					
@@ -278,7 +283,7 @@ elseif CLIENT then
 		local immunityLower = exsto.CreateButton( self.Secondary:GetWide() - 70, self.Secondary:GetTall() - 33, 60, 27, "Lower", self.Secondary )
 			immunityLower:SetStyle( "negative" )
 			immunityLower.OnClick = function( self )
-				local selected = PLUGIN.ImmunityBox.m_pSelected
+				local selected = PLUGIN.ImmunityBox:GetLines()[ PLUGIN.ImmunityBox:GetSelectedLine() ]
 				if selected then				
 					PLUGIN.ImmunityBox.Changed[ selected.ID ] = selected.Immunity + 1
 					immunityData[ selected.Key ].Immunity = tonumber( selected.Immunity + 1 )
@@ -300,8 +305,8 @@ elseif CLIENT then
 			immunitySlider:SetDecimals( 0 )
 			
 		local oldSelect = self.ImmunityBox.SelectItem
-			self.ImmunityBox.SelectItem = function( self, item, onlyme )
-				oldSelect( self, item, onlyme )
+			self.ImmunityBox.SelectItem = function( self, item, onlyme, ... )
+				oldSelect( self, item, onlyme, ... )
 				immunitySlider.MotherObject = item
 				immunitySlider.DontUpdateValue = true
 				immunitySlider:SetValue( item.Immunity )
