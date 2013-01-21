@@ -52,8 +52,11 @@ if SERVER then
 			self.VoteData[ self.Voted[ ply:Nick() ] ] = self.VoteData[ self.Voted[ ply:Nick() ] ] - 1
 			
 			self:Debug( "Updating " .. self.Voted[ ply:Nick() ] .. " for " .. self.VoteData[ self.Voted[ ply:Nick() ] ] .. " votes", 1 )
-		elseif !revote then
-			return false
+			
+			local sender = exsto.CreateSender( "ExVoteUpdate", player.GetAll() )
+				sender:AddShort( self.Voted[ ply:Nick() ] )
+				sender:AddShort( self.VoteData[ self.Voted[ ply:Nick() ] ] )
+			sender:Send()
 		end
 
 		self:Debug( ply:Nick() .. " voting on " .. index, 1 )
@@ -62,6 +65,11 @@ if SERVER then
 		self.VoteData[ index ] = self.VoteData[ index ] + 1;
 
 		self:Debug( "Updating " .. index .. " for " .. self.VoteData[ index ] .. " votes", 1 )
+		
+		local sender = exsto.CreateSender( "ExVoteUpdate", player.GetAll() )
+			sender:AddShort( index )
+			sender:AddShort( self.VoteData[ index ] )
+		sender:Send()
 		
 		return true
 	end
@@ -189,13 +197,9 @@ if SERVER then
 		self.VoteID = nil
 	end		
 	
-	local function recClient( reader, len, ply )
+	local function recClient( reader )
 		local indx = reader:ReadShort()		
-		PLUGIN:VoteHandler( indx, reader:ReadPlayer(), true )
-		local sender = exsto.CreateSender( "ExVoteUpdate", player.GetAll() )
-			sender:AddShort( indx )
-			sender:AddShort( PLUGIN.VoteData[ indx ] )
-		sender:Send()
+		PLUGIN:VoteHandler( indx, reader:ReadSender(), true )
 	end
 	exsto.CreateReader( "ExClientVoted", recClient )
 
