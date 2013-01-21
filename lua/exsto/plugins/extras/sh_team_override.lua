@@ -12,6 +12,8 @@ PLUGIN:SetInfo({
 } )
 
 if SERVER then
+
+	util.AddNetworkString( "teamToRankSend" )
 	
 	//print( GAMEMODE.Name )
 	//if GAMEMODE.Name != "Sandbox" then exsto.Print( exsto_CONSOLE, "Team to Rank Plugin --> Gamemode is not Sandbox!  Not running!" ) return end
