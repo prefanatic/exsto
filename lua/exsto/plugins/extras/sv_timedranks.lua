@@ -42,10 +42,10 @@ function PLUGIN:Think()
 		--print( time )
 
 		for _, rank in ipairs( exsto.TimedRanksDB:ReadAll() ) do
-			print( rank.SetTime )
 			if exsto.Ranks[ rank.Rank ].Immunity < imm and time > rank.SetTime then
 				self:Print( "Setting " .. ply:Nick() .. " to rank '" .. rank.Rank .. "'" );
-				exsto.SetAccess( ply, rank.Rank );
+				ply:SetRank( rank.Rank )
+				return
 			end
 		end
 	end
