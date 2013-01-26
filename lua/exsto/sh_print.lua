@@ -210,7 +210,14 @@ function exsto.Print( style, ... )
 	if style == nil then return end
 	for k,v in pairs( exsto.PrintStyles ) do
 		if style == v.enum then	
-			//hook.Call( "ExPrintCalled", nil, style, {...} )
+			-- We need to carefully do this, otherwise we get sucked into a vortex.
+			local succ, err = pcall( hook.Call, "ExPrintCalled", nil, style, {...} )
+			if !succ then
+				-- do NOT use our printing hooks.  Something is DEEPLY wrong.
+				ErrorNoHalt( "Unable to call print hook under: " .. style )
+				ErrorNoHalt( "Error: " .. err )
+			end
+			
 			return v.func( ... )		
 		end	
 	end

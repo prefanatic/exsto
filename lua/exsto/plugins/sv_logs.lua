@@ -47,14 +47,14 @@ end
 
 function PLUGIN:ExPrintCalled( enum, data )
 	if enum == exsto_ERROR or enum == exsto_ERRORNOHALT then
-		//local trace = debug.getinfo( 5, "Sln" )
-		//local construct = ""
-		//PrintTable( data )
-			//for _, obj in ipairs( data ) do
-				//construct = construct .. obj
-			//end
-			//construct .. "[" .. trace.source .. ", N:" .. trace.name .. ", " .. trace.linedefined .. "-" .. trace.currentline .. "-" .. trace.lastlinedefined .. "]"
-		//self:SaveEvent( construct, "errors" )
+		local trace = debug.getinfo( 5, "Sln" )
+		local construct = ""
+		--PrintTable( data )
+			for _, obj in ipairs( data ) do
+				construct = construct .. obj
+			end
+			--construct .. "[" .. trace.source .. ", N:" .. trace.name .. ", " .. trace.linedefined .. "-" .. trace.currentline .. "-" .. trace.lastlinedefined .. "]"
+		self:SaveEvent( construct, "errors" )
 	end
 end
 
