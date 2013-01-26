@@ -312,7 +312,7 @@ function exsto.AddUsersOnJoin( ply, steamid, uniqueid )
 	if !game.IsDedicated() then
 		if ply:IsListenServerHost() and not rank then
 			ply:SetNWString( "rank", "srv_owner" )
-		elseif ply:IsListenServerHost() and ply:GetRank() != "srv_owner" and exsto.GetVar( "srv_owner_nag" ).Value == true then
+		elseif ply:IsListenServerHost() and ply:GetRank() != "srv_owner" then
 			-- If hes the host, but has a different rank, we need to give him the option to re-set as superadmin.
 			ply:Print( exsto_CHAT, COLOR.NORM, "Exsto seems to have noticed you are the host of this listen server, yet your rank isnt owner!" )
 			ply:Print( exsto_CHAT, COLOR.NORM, "If you want to reset your rank to owner, run this chat command. ", COLOR.NAME, "!updateowner" )
@@ -328,6 +328,41 @@ function exsto.AddUsersOnJoin( ply, steamid, uniqueid )
 
 end
 hook.Add( "ExInitSpawn", "exsto_AddUsersOnJoin", exsto.AddUsersOnJoin )
+
+--[[ -----------------------------------
+	Function: exsto.UpdateOwnerRank
+	Description: Updates a player to owner if enough info is given.
+	----------------------------------- ]]
+function exsto.UpdateOwnerRank( self )
+	if !isDedicatedServer() then
+		if self:IsListenServerHost() then
+			self:SetNWString( "rank", "srv_owner" )
+			exsto.UserDB:AddRow( {
+				SteamID = self:SteamID();
+				Rank = self:GetNWString( "rank" );
+				Name = self:Nick();
+			} )
+			
+			return { self, COLOR.NORM, "You have reset your rank to ", COLOR.NAME, "owner", COLOR.NORM, "!" }
+		else
+			return { self, COLOR.NORM, "You are not the host of this listen server!" }
+		end
+	else
+			
+		self:Print( exsto_CHAT, COLOR.NAME, "Hey!", COLOR.NORM, "  This command has been removed due to confusion.  If you want to make yourself owner:" )
+		self:Print( exsto_CHAT, COLOR.NORM, "Just run the command as rcon: ", COLOR.NAME, "exsto rank " .. self:Name() .. " srv_owner" )
+			
+		return 
+	end
+end
+exsto.AddChatCommand( "updateownerrank", {
+	Call = exsto.UpdateOwnerRank,
+	Desc = "Updates listen server host's rank.",
+	Console = { "updateowner" },
+	Chat = { "!updateowner" },
+	Args = {  },
+	Category = "Administration",
+})
 
 --[[ -----------------------------------
 	Function: player:SetRank
