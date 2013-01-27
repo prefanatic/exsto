@@ -80,10 +80,10 @@ if SERVER then
 		for _, info in pairs( data ) do
 			self.Restrictions[ info.Rank ] = {
 				Rank = info.Rank,
-				Props = FEL.NiceDecode( info.Props ),
-				Stools = FEL.NiceDecode( info.Stools ),
-				Entities = FEL.NiceDecode( info.Entities ),
-				Sweps = FEL.NiceDecode( info.Sweps ),
+				Props = von.deserialize( info.Props ),
+				Stools = von.deserialize( info.Stools ),
+				Entities = von.deserialize( info.Entities ),
+				Sweps = von.deserialize( info.Sweps ),
 			}
 		end
 		
@@ -95,7 +95,6 @@ if SERVER then
 	timer.Simple( 1, function()
 		local oldCount = exsto.Registry.Player.GetCount
 		function exsto.Registry.Player.GetCount( self, ... )
-			print( self.ExNoLimits, PLUGIN:IsEnabled() )
 			if self.ExNoLimits and PLUGIN:IsEnabled() then return -1 end
 			return oldCount( self, ... )
 		end
@@ -201,6 +200,10 @@ if SERVER then
 	end
 	
 	function PLUGIN:CanTool( ply, trace, tool )
+		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
+			self:ErrorNoHalt( "Unable to access rank restriction table: " .. ply:GetRank() )
+			return
+		end
 		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Stools, tool ) then
 			ply:Print( exsto_CHAT, COLOR.NORM, "The tool ", COLOR.NAME, tool, COLOR.NORM, " is disabled for your rank!" )
 			return false
@@ -208,12 +211,20 @@ if SERVER then
 	end
 	
 	function PLUGIN:PlayerGiveSWEP( ply, class, wep )
+		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
+			self:ErrorNoHalt( "Unable to access rank restriction table: " .. ply:GetRank() )
+			return
+		end
 		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Sweps, class ) then
 			ply:Print( exsto_CHAT, COLOR.NORM, "The weapon ", COLOR.NAME, class, COLOR.NORM, " is disabled for your rank!" )
 			return false
 		end
 	end
 	function PLUGIN:PlayerSpawnSWEP( ply, class, wep )
+		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
+			self:ErrorNoHalt( "Unable to access rank restriction table: " .. ply:GetRank() )
+			return
+		end
 		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Sweps, class ) then
 			ply:Print( exsto_CHAT, COLOR.NORM, "The weapon ", COLOR.NAME, class, COLOR.NORM, " is disabled for your rank!" )
 			return false
@@ -221,6 +232,10 @@ if SERVER then
 	end
 	
 	function PLUGIN:PlayerSpawnProp( ply, prop )
+		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
+			self:ErrorNoHalt( "Unable to access rank restriction table: " .. ply:GetRank() )
+			return
+		end
 		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Props, prop ) then
 			ply:Print( exsto_CHAT, COLOR.NORM, "The prop ", COLOR.NAME, prop, COLOR.NORM, " is disabled for your rank!" )
 			return false
@@ -228,6 +243,10 @@ if SERVER then
 	end
 	
 	function PLUGIN:PlayerSpawnSENT( ply, class )
+		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
+			self:ErrorNoHalt( "Unable to access rank restriction table: " .. ply:GetRank() )
+			return
+		end
 		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Entities, class ) then
 			ply:Print( exsto_CHAT, COLOR.NORM, "The entity ", COLOR.NAME, class, COLOR.NORM, " is disabled for your rank!" )
 			return false
