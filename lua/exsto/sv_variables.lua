@@ -99,6 +99,7 @@ function exsto.SetVar( dirty, value )
 		if accepted then
 			exsto.Variables[dirty].Value = value
 			exsto.SaveVarInfo( dirty )
+			return accepted, returnData
 		else
 			return accepted, returnData
 		end
