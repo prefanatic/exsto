@@ -58,18 +58,18 @@ if SERVER then
 
 		local data = exsto.RestrictDB:GetAll()
 		
-		if !data then 
+		if #data == 0 then 
 			
 			for k,v in pairs( exsto.Ranks ) do
-				self.Restrictions[ v.Short ] = {
-					Rank = v.Short,
+				self.Restrictions[ v.ID ] = {
+					Rank = v.ID,
 					Props = {},
 					Stools = {},
 					Entities = {},
 					Sweps = {},
 				}
 				
-				self:SaveData( "all", v.Short )
+				self:SaveData( "all", v.ID )
 			end
 
 			self:LoadFileRestrictions()
@@ -127,34 +127,34 @@ if SERVER then
 	})
 	PLUGIN:RequestQuickmenuSlot( "nolimits" )
 	
-	function PLUGIN:ExOnRankCreate( short )
-		if self.Restrictions[ short ] then return end
+	function PLUGIN:ExOnRankCreate( ID )
+		if self.Restrictions[ ID ] then return end
 		
-		self.Restrictions[ short ] = {
-			Rank = short,
+		self.Restrictions[ ID ] = {
+			Rank = ID,
 			Props = {},
 			Stools = {},
 			Entities = {},
 			Sweps = {},
 		}
 					
-		self:SaveData( "all", short )
+		self:SaveData( "all", ID )
 	end
 	
 	function PLUGIN:LoadFileRestrictions()
 		local load = ""
 		for style, format in pairs( self.FileTypes ) do
-			for short, data in pairs( exsto.Ranks ) do
-				if file.Exists( "exsto_restrictions/exsto_" .. style .. "_restrict_" .. short .. ".txt", "DATA" ) then
-					load = file.Read( "exsto_restrictions/exsto_" .. style .. "_restrict_" .. short .. ".txt", "DATA" )
+			for ID, data in pairs( exsto.Ranks ) do
+				if file.Exists( "exsto_restrictions/exsto_" .. style .. "_restrict_" .. ID .. ".txt", "DATA" ) then
+					load = file.Read( "exsto_restrictions/exsto_" .. style .. "_restrict_" .. ID .. ".txt", "DATA" )
 					load = string.Explode( "\n", load )
 					
 					for k,v in ipairs( load ) do
-						table.insert( self.Restrictions[ short ][format], v )
+						table.insert( self.Restrictions[ ID ][format], v )
 					end				
 					
-					self:SaveData( style, short )
-					file.Delete( "exsto_restrictions/exsto_" .. style .. "_restrict_" .. short .. ".txt", "DATA" )
+					self:SaveData( style, ID )
+					file.Delete( "exsto_restrictions/exsto_" .. style .. "_restrict_" .. ID .. ".txt", "DATA" )
 				end
 			end
 		end
@@ -237,7 +237,7 @@ if SERVER then
 	function PLUGIN:AllowObject( owner, rank, object, data )
 		
 		if !self.Restrictions[ rank ] then
-			local closeRank = exsto.GetClosestString( rank, exsto.Ranks, "Short", owner, "Unknown rank" )
+			local closeRank = exsto.GetClosestString( rank, exsto.Ranks, "ID", owner, "Unknown rank" )
 			return
 		end
 
@@ -282,7 +282,7 @@ if SERVER then
 	function PLUGIN:DenyObject( owner, rank, object, data )
 	
 		if !self.Restrictions[ rank ] then
-			local closeRank = exsto.GetClosestString( rank, exsto.Ranks, "Short", owner, "Unknown rank" )
+			local closeRank = exsto.GetClosestString( rank, exsto.Ranks, "ID", owner, "Unknown rank" )
 			return
 		end
 		
