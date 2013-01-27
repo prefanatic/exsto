@@ -1068,13 +1068,13 @@ function Menu:GetPageIndex( short )
 end
 
 function Menu:TuckExtras()
-	if self.ActiveSecondary then
+	if self.ActiveSecondary and self.ActiveSecondary:IsValid() then
 		-- Tuck him away.
 		self.ActiveSecondary:SetVisible( false )
 		self.ActiveSecondary = nil
 	end
 	
-	if self.ActiveTab then
+	if self.ActiveTab and self.ActiveTab:IsValid() then
 		self.ActiveTab:SetVisible( false )
 		self.ActiveTab = nil
 	end
