@@ -36,6 +36,11 @@ function PLUGIN:CanTool( ply, tr, tool )
 	if ply:Jailed() then return false end
 end
 
+function PLUGIN:CanProperty( ply, property, ent )
+	if ent.IsJailWall then return false end
+	if ply:Jailed() then return false end
+end
+
 function PLUGIN:PlayerGiveSWEP( ply )
 	if ply:Jailed() then return false end
 end
