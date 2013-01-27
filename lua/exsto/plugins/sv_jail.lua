@@ -71,7 +71,7 @@ end
 function PLUGIN:PlayerSpawn( ply )
 	if ply:Jailed() then
 		ply:MoveToJail()
-		timer.Create( "stripSweps"..ply:EntIndex(), 0.1, 1, _R.Player.StripWeapons, ply )
+		timer.Create( "stripSweps"..ply:EntIndex(), 0.1, 1, exsto.Registry.Player.Player.StripWeapons, ply )
 	end
 end
 
@@ -117,17 +117,17 @@ local removeoncommand = function( ply, callargs )
 	end
 end
 
-function _R.Player:Jailed()
+function exsto.Registry.Player:Jailed()
 	return self.IsJailed
 end
 
-function _R.Player:MoveToJail()
+function exsto.Registry.Player:MoveToJail()
 	if self.JailedPos then
 		self:SetPos( self.JailedPos )
 	end
 end
 
-function _R.Player:JailStrip()
+function exsto.Registry.Player:JailStrip()
 	self.Weapons = {}
 	for k,v in pairs( self:GetWeapons() ) do
 		table.insert( self.Weapons, v:GetClass() )
@@ -135,7 +135,7 @@ function _R.Player:JailStrip()
 	self:StripWeapons()
 end
 
-function _R.Player:JailReturn()
+function exsto.Registry.Player:JailReturn()
 	if type( self.Weapons ) == "table" then
 		for k,v in pairs( self.Weapons ) do
 			self:Give( tostring( v ) )
@@ -143,7 +143,7 @@ function _R.Player:JailReturn()
 	end
 end
 
-function _R.Player:CreateJail(time)
+function exsto.Registry.Player:CreateJail(time)
 	self:JailStrip()
 
 	if self:InVehicle() then
@@ -186,7 +186,7 @@ function _R.Player:CreateJail(time)
 	
 end
 
-function _R.Player:RemoveJail()
+function exsto.Registry.Player:RemoveJail()
 	if self:EntIndex() == 0 then return end
 	if type( self.JailWalls ) == "table" then
 		for _, ent in ipairs( self.JailWalls ) do
@@ -229,7 +229,7 @@ PLUGIN:AddCommand( "jail", {
 	Optional = { Time = 0 },
 	Category = "Fun",
 })
-PLUGIN:RequestQuickmenuSlot( "jail", {
+PLUGIN:RequestQuickmenuSlot( "jail", "Jail", {
 	Time = {
 		{ Display = "Instant", Data = 0 },
 		{ Display = "5 seconds", Data = 5 },
@@ -237,6 +237,7 @@ PLUGIN:RequestQuickmenuSlot( "jail", {
 		{ Display = "20 seconds", Data = 20 },
 		{ Display = "30 seconds", Data = 30 },
 		{ Display = "1 minute", Data = 60 },
+		{ Display = "5 minutes", Data = 5*60 },
 	}
 })
 
