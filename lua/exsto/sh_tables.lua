@@ -299,7 +299,8 @@ exsto.DefaultRanks = {
 		Parent = "admin",
 		Immunity = 0,
 		FlagsAllow = von.serialize( {
-			"issuperadmin", "variable", "resendplug", "deletevar", "createvar", "reloadplug", "playertitle", "addgimp",  "luarun", "cexec"
+			"issuperadmin", "variable", "resendplug", "deletevar", "createvar", "reloadplug", "playertitle", "addgimp",  "luarun", "cexec",
+			"vareditor", "rankeditor",
 		} );
 		FlagsDeny = von.serialize( {
 		} );
@@ -313,7 +314,7 @@ exsto.DefaultRanks = {
 		Parent = "guest",
 		Immunity = 1,
 		FlagsAllow = von.serialize( {
-			"isadmin"
+			"isadmin", "banlist", "mapslist",
 		} );
 		FlagsDeny = von.serialize( {
 		} );
@@ -327,7 +328,8 @@ exsto.DefaultRanks = {
 		Parent = "NONE";
 		Immunity = 9,
 		FlagsAllow = von.serialize( {
-			"getrank",  "search", "menu", "gettotaltime", "title", "displayheadtags", "mytitle", "togglechatanim", "updateownerrank"
+			"getrank", "search", "menu", "gettotaltime", "title", "displayheadtags", "mytitle", "togglechatanim", "updateownerrank",
+			"helppage", 
 		} );
 		FlagsDeny = von.serialize( {
 		} );

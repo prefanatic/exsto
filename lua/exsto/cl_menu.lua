@@ -184,7 +184,7 @@ function Menu:Initialize( key, rank, flagCount, bindOpen )
 		-- Oh lordy, move him to the help page!
 		file.CreateDir( "exsto_tmp" )
 		file.Write( "exsto_tmp/exsto_menu_opened.txt", "1" )
-		--Menu:MoveToPage( "helppage" )
+		Menu:MoveToPage( "helppage" )
 		Menu.CurrentPage.Panel:PushGeneric( "Hey!  This seems to be your first time with us.  Moving you to the Help Page." )
 	end
 end

@@ -12,6 +12,10 @@ if SERVER then
 	util.AddNetworkString( "ExPushRankToSrv" )
 	util.AddNetworkString( "ExRecImmuneChange" )
 	util.AddNetworkString( "ExDelRankFromClient" )
+	
+	function PLUGIN:Init()
+		exsto.CreateFlag( "rankeditor", "Allows users to edit ranks in the menu." )
+	end
 
 	function PLUGIN.DeleteRank( reader )
 		-- Add Flag.

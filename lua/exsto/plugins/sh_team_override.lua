@@ -77,11 +77,11 @@ if SERVER then
 	function PLUGIN:ExSetRank( ply )
 		local rank = ply:GetRank()
 		local info = self.Teams[rank]
-		
+
 		if ply:GetNWString( "ExRankHidden" ) != "" then
 			rank = ply:GetNWString( "ExRankHidden" )
 		end
-		
+
 		if !info then ply:SetTeam( 1 ) return end
 		
 		for k,v in pairs( self.Teams ) do
@@ -121,7 +121,7 @@ if SERVER then
 		local ranks = exsto.Ranks
 		local index = 1
 		
-		for k,v in pairs( ranks ) do
+		for k,v in SortedPairsByMemberValue( ranks, "Immunity", true ) do
 			self.Teams[k] = {
 				Name = v.Name,
 				Short = v.ID,

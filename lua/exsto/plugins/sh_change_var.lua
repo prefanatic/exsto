@@ -12,6 +12,10 @@ PLUGIN:SetInfo({
 
 if SERVER then
 
+	function PLUGIN:Init()
+		exsto.CreateFlag( "vareditor", "Allows users to open the variable menu." )
+	end
+
 	function PLUGIN:CreateEnvVar( owner, dirty, value )
 		
 		-- If we are creating an existing one.

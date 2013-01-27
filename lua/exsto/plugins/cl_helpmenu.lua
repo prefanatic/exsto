@@ -20,7 +20,7 @@ function PLUGIN:Init()
 	self.DatabaseLoading = true
 	self.DatabaseRecieved = false
 	self.DatabaseVersion = 1.0
-	
+
 	-- Grab the database list.
 	http.Fetch( self.DatabaseLink, function( contents, size )
 		if size == 0 or contents:Trim() == "" then

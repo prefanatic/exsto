@@ -30,6 +30,8 @@ if SERVER then
 	end
 
 	function PLUGIN:Init() 
+		exsto.CreateFlag( "banlist", "Allows users to access the ban list." )
+		
 		self.OldPlayers = {}
 		exsto.BanDB = FEL.CreateDatabase( "exsto_data_bans" )
 			exsto.BanDB:ConstructColumns( {

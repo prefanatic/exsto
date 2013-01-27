@@ -122,6 +122,8 @@ if SERVER then
 	
 	function PLUGIN:Init()
 	
+		exsto.CreateFlag( "mapslist", "Allows users to access the maps list." )
+	
 		-- Build the map list. (Code copy and pasted from GMOD)
 		local MapPatterns = {}
 		 
