@@ -67,6 +67,10 @@ function FEL.Init()
 		local s, err = pcall( require, "mysqloo" )
 		if !s then
 			ErrorNoHalt( "FEL --> Unable to load 'mysqloo'.  Make the bin is located in lua/bin and libmysql with srcds.\n" )
+			ErrorNoHalt( "FEL --> Defaulting to SQLite.\n" )
+			
+			-- Override.
+			FEL.Config.mysql_enabled = "false"
 		end
 	end
 end
@@ -103,11 +107,7 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	hook.Add( "Think", "FELDBTHINK_" .. dbName, function() obj:Think() end )
 	
 	if FEL.Config.mysql_enabled == "true" and forceLocal != true then -- Connect to a mysql server.
-		obj._mysqlDB = mysqloo.connect( FEL.Config.host, FEL.Config.username, FEL.Config.password, FEL.Config.database )
-		obj._mysqlDB:connect()
-		obj._mysqlDB.onConnected = function() obj:OnMySQLConnect() end
-		obj._mysqlDB.onConnectionFailed = function( err ) obj:OnMySQLConnectFail( err ) end
-		obj._mysqlDB:wait()
+		obj:InitMySQL()
 	end
 	
 	return obj
@@ -116,11 +116,45 @@ end
 function db:OnMySQLConnect()
 	print( "FEL --> " .. self.dbName .. " --> MySQL connect success!  Server Version: " .. self._mysqlDB:serverVersion() )
 	self._mysqlSuccess = true
+	
+	if self._AttemptingMySQLReconnect then -- Grab us back into motion.
+		self:Query( self._PreMySQLQueryErr, false )
+		self._AttemptingMySQLReconnect = nil
+		self._PreMySQLQueryErr = nil
+	end
 end
 
 function db:OnMySQLConnectFail( err )
-	ErrorNoHalt( "FEL --> " .. self.dbName .. " --> Connect Failure: " .. tostring( err ) )
+	ErrorNoHalt( "FEL --> " .. self.dbName .. " --> Connect Failure: " .. tostring( err ) .. "\n" )
 	self._mysqlSuccess = false
+	
+	if self._AttemptingMySQLReconnect and self._AttemptingMySQLReconnect > 3 then -- Three times.
+		ErrorNoHalt( "FEL --> " .. self.dbName .. " --> Unable to connect to MySQL!  Forcing SQLite.\n" )
+		self._forcedLocal = true
+		self._AttemptingMySQLReconnect = nil
+		return
+	end
+	
+	self:ReconnectMySQL( self._PreMySQLQueryErr )
+end
+
+function db:ReconnectMySQL( lastquery )
+	print( "FEL --> " .. self.dbName .. " --> Attempting to regain lost connection over MySQL server." )
+	
+	self._mysqlSuccess = false
+	self._PreMySQLQueryErr = self._PreMySQLQueryErr or lastquery 
+	self._AttemptingMySQLReconnect = ( self._AttemptingMySQLReconnect and self._AttemptingMySQLReconnect + 1 ) or 1
+	self:InitMySQL()
+end
+
+function db:InitMySQL()
+	if self._mysqlDB then self._mysqlDB = nil end
+	
+	self._mysqlDB = mysqloo.connect( FEL.Config.host, FEL.Config.username, FEL.Config.password, FEL.Config.database )
+	self._mysqlDB:connect()
+	self._mysqlDB.onConnected = function( mysqldb ) self:OnMySQLConnect() end
+	self._mysqlDB.onConnectionFailed = function( mysqldb, err ) self:OnMySQLConnectFail( err ) end
+	self._mysqlDB:wait()
 end
 
 function db:ConstructColumns( columnData )
@@ -144,7 +178,7 @@ function db:ConstructColumns( columnData )
 	end
 	
 	if !formatted._PrimaryKey then
-		error( "FEL --> Issue with constructing columns for '" .. self.dbName .. "' - No primary key was created!" )
+		error( "FEL --> Issue with constructing columns for '" .. self.dbName .. "' - No primary key was created!\n" )
 	end
 
 	self.Columns = formatted	
@@ -348,8 +382,13 @@ function db:ConstructQuery( style, data )
 	end
 end
 
-function db:OnQueryError( err )
+function db:OnQueryError( err, query )
 	ErrorNoHalt( "FEL --> " .. self.dbName .. " --> Error: " .. err .. "\n" )
+	
+	-- Check and make sure the MySQL server hasn't gone away.  :(
+	if string.find( err:lower(), "has gone away" ) and !self._AttemptingMySQLReconnect then
+		self:ReconnectMySQL( query )
+	end		
 end
 
 function db:Query( str, threaded )
@@ -357,7 +396,7 @@ function db:Query( str, threaded )
 	
 	if self._mysqlSuccess == true and self._forcedLocal != true then -- We are MySQL baby
 		self._mysqlQuery = self._mysqlDB:query( str )
-		self._mysqlQuery.onError = function( query, err ) self:OnQueryError( err ) end
+		self._mysqlQuery.onError = function( query, err ) self:OnQueryError( err, query ) end
 		self._mysqlQuery:start()
 		
 		if threaded == false then -- If we request not to be threaded.
@@ -559,6 +598,17 @@ end
 function FEL.GetDatabase( name )
 	for _, obj in ipairs( FEL.Databases ) do
 		if obj.dbName == name then return obj end
+	end
+	return nil
+end
+
+--[[ -----------------------------------
+	Function: FEL.GetObjectFromMySQL
+	Description: Returns db object from a mysql database object.
+     ----------------------------------- ]]
+function FEL.GetObjectFromMySQL( db )
+	for _, obj in ipairs( FEL.Databases ) do
+		if obj._mysqlDB and obj._mysqlDB == db then return obj end
 	end
 	return nil
 end
