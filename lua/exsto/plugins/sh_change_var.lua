@@ -85,7 +85,15 @@ if SERVER then
 		local done, returnData = exsto.SetVar( var, value )
 		
 		if done then
-			return { COLOR.NAME, var, COLOR.NORM, " has been set to ", COLOR.NAME, value, COLOR.NORM, "!" }
+			if returnData then
+				if type( returnData ) == "table" then
+					return table.insert( { owner }, returnData )
+				elseif type( returnData ) == "string" then
+					return { owner, COLOR.NORM, returnData }
+				end
+			else
+				return { COLOR.NAME, var, COLOR.NORM, " has been set to ", COLOR.NAME, value, COLOR.NORM, "!" }
+			end
 		else
 			if !returnData then
 				return { owner, COLOR.NORM, "The variables callback refuses the data set request!" }
@@ -206,6 +214,7 @@ elseif CLIENT then
 			
 			self.List.OnRowSelected = function( lst, line )
 				self.CurrentLine = lst:GetLine( line )
+				self.CurrentLineID = line
 				self.ShortBox:SetText( self.CurrentLine:GetValue( 2 ) )
 				self.ShortBox:SetEditable( false )
 				
