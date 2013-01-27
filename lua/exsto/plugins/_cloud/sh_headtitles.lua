@@ -12,6 +12,7 @@ PLUGIN:SetInfo({
 } )
 
 if SERVER then
+	resource.AddFile( "materials/exsto/glow2.png" )
 	exsto.CreateFlag( "displayheadtags", "Allows users to see tags above players heads." )
 	
 	-- Create the table.
@@ -145,6 +146,7 @@ elseif CLIENT then
 	local outlineCol = Color( 0, 0, 0, 255 )
 	local id = surface.GetTextureID( "gui/center_gradient" ) 
 	local id2 = surface.GetTextureID( "exsto/glow2" )
+	local mat = Material( "exsto/glow2.png" )
 	function PLUGIN:HUDPaint()
 		if !LocalPlayer():IsAllowed( "displayheadtags" ) then return end
 		
@@ -177,7 +179,7 @@ elseif CLIENT then
 					
 					if ply:GetNWBool( "ExChatState" ) then col = self:BlinkColor( col ) end
 					
-					surface.SetTexture( id2 )
+					surface.SetMaterial( mat )
 					surface.SetDrawColor( col.r, col.g, col.b, alpha )
 					surface.DrawTexturedRect( drawPos.x - 25, drawPos.y - 25, w + 50, h + 50 )
 					
