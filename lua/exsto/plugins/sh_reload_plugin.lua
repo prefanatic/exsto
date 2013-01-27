@@ -100,7 +100,7 @@ if SERVER then
 	
 elseif CLIENT then
 
-	local function receive( reader )
+	--[[local function receive( reader )
 		RunString( reader:ReadString() )
 	end
 	exsto.CreateReader( "ExPlug_Reload", receive )
@@ -226,7 +226,7 @@ elseif CLIENT then
 			end
 			PLUGIN.Panel = panel
 		end
-	)
+	)]]
 	
 end
 

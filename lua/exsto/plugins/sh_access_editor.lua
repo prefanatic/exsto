@@ -188,15 +188,17 @@ elseif CLIENT then
 	
 	function PLUGIN:BuildMenu( panel )
 	
+		print( "going on" )
+	
 		-- Clear pre-existing content.
 		local reloading = false
-		if self.Tabs then
+		if self.Tabs and self.Tabs:IsValid() then
 			self.Tabs:Clear()
 			self.Tabs:Remove()
 			reloading = true
 		end
 		
-		if self.Secondary then
+		if self.Secondary and self.Secondary:IsValid() then
 			self.Secondary:Remove()
 			reloading = true
 		end

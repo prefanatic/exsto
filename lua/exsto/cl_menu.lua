@@ -124,11 +124,17 @@ function Menu:Refresh()
 	end
 	
 	for short, obj in pairs( Menu.SecondaryRequests ) do
-		if obj:IsValid() then obj:Remove() end
+		if obj:IsValid() then 
+			obj:Remove()
+			self.SecondaryRequests[ short ] = nil
+		end
 	end
 	
 	for short, obj in pairs( Menu.TabRequests ) do
-		if obj:IsValid() then obj:Remove() end
+		if obj:IsValid() then 
+			obj:Remove() 
+			self.TabRequests[ short ] = nil
+		end
 	end
 	
 	Menu.ListIndex = {}
@@ -137,6 +143,7 @@ function Menu:Refresh()
 	Menu.CurrentPage = {}
 	Menu.NextPage = {}
 	Menu.DefaultPage = {}
+	self.DefaultPage = nil
 	
 	Menu:BuildPages( Menu.LastRank, Menu.LastFlagCount )
 end
@@ -146,13 +153,17 @@ function Menu:Initialize( key, rank, flagCount, bindOpen )
 	Menu.AuthKey = key
 	
 	--print( bindOpen, "initialize" )
+	print( key, rank, flagCount )
 
 	-- If we are valid, just open up.
 	if Menu:IsValid() then	
+		print( "valid" )
 		
 		-- Wait, did we change ranks?
 		if Menu.LastRank != rank then
 			-- Oh god, update us.
+			print( "wtf" )
+			exsto.Print( exsto_DEBUG, "Menu --> Updating due to a rank change." )
 			Menu.LastRank = rank
 			Menu.LastFlagCount = flagCount
 			self:Refresh()
@@ -231,11 +242,15 @@ function Menu:BuildMainFrame()
 		
 		-- Loop through secondaries and tabs.
 		for short, obj in pairs( Menu.SecondaryRequests ) do
-			obj:SetVisible( false )
+			if obj and obj:IsValid() then
+				obj:SetVisible( false )
+			end
 		end
 		
 		for short, obj in pairs( Menu.TabRequests ) do
-			obj:SetVisible( false )
+			if obj and obj:IsValid() then
+				obj:SetVisible( false )
+			end
 		end
 		
 		Menu:HideNotify()
@@ -780,7 +795,10 @@ function Menu:BuildPages( rank, flagCount )
 	-- Loop through what we need to build.
 	for _, data in ipairs( self.CreatePages ) do
 		
+		print( "on " .. data.Short )
+		
 		if table.HasValue( clientFlags.FlagsAllow, data.Short ) or rank == "srv_owner" then
+			print( "going" )
 	
 			exsto.Print( exsto_CONSOLE_DEBUG, "MENU --> Creating page for " .. data.Title .. "!" )
 			
@@ -807,6 +825,7 @@ function Menu:BuildPages( rank, flagCount )
 	
 	-- Set our current page and the ones near us.
 	for index, short in ipairs( self.ListIndex ) do
+		print( "looping " .. short )
 		if self.List[ short ] then
 			-- Hes a default, set him up as our first selection.
 			if self.List[ short ].Default then
@@ -821,6 +840,7 @@ function Menu:BuildPages( rank, flagCount )
 	
 	-- If there still isn't any default, set the default as the first index.
 	if !self.DefaultPage then
+		print( "No defualt found" )
 		self:MoveToPage( self.ListIndex[ 1 ] )
 		self.DefaultPage = self.CurrentPage
 		self.DefaultPage.Panel:SetVisible( true )
