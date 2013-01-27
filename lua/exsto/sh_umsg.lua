@@ -47,6 +47,7 @@ exsto.Net = {
 		"ExRecMapData";
 		"ExSendPlugs";
 		"ExClientErr";
+		"ExClientPrint";
 	},
 	NotifiedNetStrings = {}
 }
