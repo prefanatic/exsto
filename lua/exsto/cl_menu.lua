@@ -1201,8 +1201,11 @@ function Menu:InvalidateNotify()
 	
 	for I = 1, #Menu.NotifyPanels do
 		barData = Menu.NotifyPanels[ ( #Menu.NotifyPanels - I ) + 1 ]
-		barData.bar:SetPos( x, self.Frame:GetTall() + y + lastPos )
-		lastPos = lastPos + barData.bar:GetTall() + 6
+		
+		if barData.bar and barData.bar:IsValid() then
+			barData.bar:SetPos( x, self.Frame:GetTall() + y + lastPos )
+			lastPos = lastPos + barData.bar:GetTall() + 6
+		end
 	end
 end
 
