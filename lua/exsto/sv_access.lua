@@ -336,13 +336,7 @@ hook.Add( "ExInitSpawn", "exsto_AddUsersOnJoin", exsto.AddUsersOnJoin )
 function exsto.UpdateOwnerRank( self )
 	if !game.IsDedicated() then
 		if self:IsListenServerHost() then
-			self:SetNWString( "rank", "srv_owner" )
-			exsto.UserDB:AddRow( {
-				SteamID = self:SteamID();
-				Rank = self:GetNWString( "rank" );
-				Name = self:Nick();
-			} )
-			
+			self:SetRank( "srv_owner" )
 			return { self, COLOR.NORM, "You have reset your rank to ", COLOR.NAME, "owner", COLOR.NORM, "!" }
 		else
 			return { self, COLOR.NORM, "You are not the host of this listen server!" }
