@@ -201,7 +201,8 @@ if SERVER then
 	
 	function PLUGIN:CanTool( ply, trace, tool )
 		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
-			self:Error( "Unable to access rank restriction table: " .. ply:GetRank() )
+			self:Debug( "Unable to access rank restriction table.  Making one for: " .. ply:GetRank(), 1 )
+			self:OnExRankCreate( ply:GetRank() )
 			return
 		end
 		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Stools, tool ) then
@@ -212,7 +213,8 @@ if SERVER then
 	
 	function PLUGIN:PlayerGiveSWEP( ply, class, wep )
 		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
-			self:Error( "Unable to access rank restriction table: " .. ply:GetRank() )
+			self:Debug( "Unable to access rank restriction table.  Making one for: " .. ply:GetRank(), 1 )
+			self:OnExRankCreate( ply:GetRank() )
 			return
 		end
 		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Sweps, class ) then
@@ -222,7 +224,8 @@ if SERVER then
 	end
 	function PLUGIN:PlayerSpawnSWEP( ply, class, wep )
 		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
-			self:Error( "Unable to access rank restriction table: " .. ply:GetRank() )
+			self:Debug( "Unable to access rank restriction table.  Making one for: " .. ply:GetRank(), 1 )
+			self:OnExRankCreate( ply:GetRank() )
 			return
 		end
 		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Sweps, class ) then
@@ -233,7 +236,8 @@ if SERVER then
 	
 	function PLUGIN:PlayerSpawnProp( ply, prop )
 		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
-			self:Error( "Unable to access rank restriction table: " .. ply:GetRank() )
+			self:Debug( "Unable to access rank restriction table.  Making one for: " .. ply:GetRank(), 1 )
+			self:OnExRankCreate( ply:GetRank() )
 			return
 		end
 		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Props, prop ) then
@@ -244,7 +248,8 @@ if SERVER then
 	
 	function PLUGIN:PlayerSpawnSENT( ply, class )
 		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
-			self:Error( "Unable to access rank restriction table: " .. ply:GetRank() )
+			self:Debug( "Unable to access rank restriction table.  Making one for: " .. ply:GetRank(), 1 )
+			self:OnExRankCreate( ply:GetRank() )
 			return
 		end
 		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Entities, class ) then
