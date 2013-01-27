@@ -334,7 +334,7 @@ hook.Add( "ExInitSpawn", "exsto_AddUsersOnJoin", exsto.AddUsersOnJoin )
 	Description: Updates a player to owner if enough info is given.
 	----------------------------------- ]]
 function exsto.UpdateOwnerRank( self )
-	if !isDedicatedServer() then
+	if !game.IsDedicated() then
 		if self:IsListenServerHost() then
 			self:SetNWString( "rank", "srv_owner" )
 			exsto.UserDB:AddRow( {
