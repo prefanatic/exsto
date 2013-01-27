@@ -89,11 +89,16 @@ if SERVER then
 				sender:AddShort( v.Team )
 				sender:AddString( v.Name )
 				sender:AddColor( v.Color )
-				sender:Send()
+			sender:Send()
 		end
 		table.insert( self.OldTeams, { Player = ply, Team = ply:Team() } )
 		
 		ply:SetTeam( info.Team )
+	end
+	
+	function PLUGIN:ExInitSpawn( ply )
+		self:ExSetRank( ply )
+		self:Debug( "Updating new player joined rank team.", 1 )
 	end
 
 	function PLUGIN:ExRanksLoaded()
@@ -103,9 +108,9 @@ if SERVER then
 		for k, ply in pairs( player.GetAll() ) do
 			for k,v in pairs( self.Teams ) do
 				local sender = exsto.CreateSender( "teamToRankSend", ply )
-				sender:AddShort( v.Team )
-				sender:AddString( v.Name )
-				sender:AddColor( v.Color )
+					sender:AddShort( v.Team )
+					sender:AddString( v.Name )
+					sender:AddColor( v.Color )
 				sender:Send()
 			end
 			self:ExSetRank( ply )
