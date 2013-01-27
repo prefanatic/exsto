@@ -57,7 +57,7 @@ if SERVER then
 			
 			exsto.Variables[ dirty ] = nil
 			
-			FEL.RemoveData( "exsto_data_variables", "Dirty", dirty )
+			exsto.VarDB:DropRow( dirty )
 			return { COLOR.NAME, owner:Nick(), COLOR.NORM, " has deleted environmental variable: ", COLOR.NAME, dirty, COLOR.NORM, "!" }
 		end
 		
@@ -291,11 +291,11 @@ elseif CLIENT then
 				self.CurrentLine:SetValue( 3, data )
 			end
 		
-		self.ChangeButton = exsto.CreateButton( panel:GetWide() - 80, panel:GetTall() - 40, 74, 27, "Change", panel )
+		self.ChangeButton = exsto.CreateButton( panel:GetWide() - 80, panel:GetTall() - 40, 74, 27, "Save", panel )
 			self.ChangeButton:SetStyle( "positive" )
 			self.ChangeButton.OnClick = function( button )
 				if !self.CurrentLine or !self.CurrentLine:IsValid() then panel:PushError( "Please select a variable to change!" ) return end
-				if string.find( self.ValueBox:GetValue(), " " ) then panel:PushError( "You cannot have a space in the variable ID!" ) return end
+				if string.find( self.ShortBox:GetValue(), " " ) then panel:PushError( "You cannot have a space in the variable ID!" ) return end
 				local short = self.CurrentLine:GetValue( 2 )
 				local done = false
 				for _, data in ipairs( self.Vars ) do
@@ -345,7 +345,7 @@ elseif CLIENT then
 			self.DeleteVar:SetVisible( false )
 			self.DeleteVar.OnClick = function()
 				RunConsoleCommand( "exsto", "deleteenv", self.CurrentLine:GetValue( 2 ) )
-				self:RefreshVars( panel )
+				self.Refresh:OnClick()
 			end
 	end
 	
