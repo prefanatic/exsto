@@ -43,8 +43,8 @@ if SERVER then
 	})
 else
 	function PLUGIN:Init()
-		local oldGetRank = _R.Player.GetRank
-		function _R.Player.GetRank( self )
+		local oldGetRank = exsto.Registry.Player.GetRank
+		function exsto.Registry.Player.GetRank( self )
 			if self:GetNWString( "ExRankHidden" ) != "" then
 				return self:GetNWString( "ExRankHidden" )
 			else
