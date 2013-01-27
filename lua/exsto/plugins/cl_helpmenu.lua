@@ -55,12 +55,12 @@ function PLUGIN:Init()
 end
 
 function PLUGIN:CreateHTML( url )
+	--background-image:url( "]] .. self.DropLink .. "background.png" .. [[" );
 	return [[
 		<html>
 			<head>
 				<style type="text/css">
 					body{
-						background-image:url( "]] .. self.DropLink .. "background.png" .. [[" );
 						padding:0px 0px 0px 0px;
 						margin:0px 0px 0px 0px;
 					}
@@ -82,8 +82,8 @@ function PLUGIN:Reset( panel, pages )
 	
 	panel.CurrentIndex = 1
 	self.browser:SetHTML( self:CreateHTML( self.DropLink .. pages[ panel.CurrentIndex ] ) )
-	self.browser:SetVisible( false )
-	panel:PushLoad()
+	--self.browser:SetVisible( false )
+	--panel:PushLoad()
 
 	panel.Prev:SetVisible( false )
 	panel.Next:SetVisible( false )
@@ -111,7 +111,7 @@ function PLUGIN:CreatePage( panel )
 	panel.CurrentIndex = 1
 	
 	-- Create the HTML thing.  Thank you WebKit.
-	self.browser = vgui.Create( "HTML", panel )
+	self.browser = vgui.Create( "DHTML", panel )
 		//self.browser:SetHTML( self:CreateHTML( self.DropLink .. self.Pics[1] ) )
 		self.browser:SetSize( 595, 305 )
 		self.browser:SetPos( ( panel:GetWide() / 2 ) - ( self.browser:GetWide() / 2 ), 5 )
@@ -129,8 +129,8 @@ function PLUGIN:CreatePage( panel )
 			
 			panel.CurrentIndex = panel.CurrentIndex - 1
 			self.browser:SetHTML( self:CreateHTML( self.DropLink .. self.Pics[ panel.CurrentIndex ] ) )
-			self.browser:SetVisible( false )
-			panel:PushLoad()
+			--self.browser:SetVisible( false )
+			--panel:PushLoad()
 			
 			panel.Next:SetVisible( true )
 			if panel.CurrentIndex == 1 then panel.Prev:SetVisible( false ) end
@@ -144,8 +144,8 @@ function PLUGIN:CreatePage( panel )
 			
 			panel.CurrentIndex = panel.CurrentIndex + 1
 			self.browser:SetHTML( self:CreateHTML( self.DropLink .. self.Pics[ panel.CurrentIndex ] ) )
-			self.browser:SetVisible( false )
-			panel:PushLoad()
+			--self.browser:SetVisible( false )
+			--panel:PushLoad()
 			
 			panel.Prev:SetVisible( true )
 			if panel.CurrentIndex == #self.Pics then panel.Next:SetVisible( false ) end
