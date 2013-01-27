@@ -496,11 +496,11 @@ function Menu:UpdateSecondariesPos()
 	local mainX, mainY = Menu.Frame:GetPos()
 	local mainW, mainH = Menu.Frame:GetSize()
 
-	if self.ActiveSecondary then
+	if self.ActiveSecondary and self.ActiveSecondary:IsValid() then
 		self.ActiveSecondary:SetPos( mainX + mainW + Menu.Placement.Gap, mainY + mainH - self.ActiveSecondary:GetTall() )
 	end
 	
-	if self.ActiveTab then		
+	if self.ActiveTab and self.ActiveTab:IsValid() then		
 		self.ActiveTab:SetPos( mainX - Menu.Placement.Gap - self.ActiveTab:GetWide(), mainY + mainH - self.ActiveTab:GetTall() )
 	end
 	
@@ -523,13 +523,13 @@ end
 
 function Menu:BringBackSecondaries()
 	if self.ActiveSecondary then
-		if !self.ActiveSecondary.Hidden then
+		if !self.ActiveSecondary.Hidden and self.ActiveSecondary:IsValid() then
 			self.ActiveSecondary:SetVisible( true )
 		end
 	end
 	
 	if self.ActiveTab then
-		if !self.ActiveTab.Hidden then
+		if !self.ActiveTab.Hidden and self.ActiveTab:IsValid() then
 			self.ActiveTab:SetVisible( true )
 		end
 	end
