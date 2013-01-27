@@ -56,7 +56,6 @@ if SERVER then
 		if !data.networkid then return end
 	
 		local bannedAt, banLen, banReason = exsto.BanDB:GetData( data.networkid, "BannedAt, Length, Reason" )
-		print( bannedAt, banLen, banReason )
 		if !bannedAt or !banLen or !banReason then return end
 
 		-- If hes perma banned, designated by length == 0
