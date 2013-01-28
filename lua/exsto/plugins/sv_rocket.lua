@@ -172,7 +172,7 @@ PLUGIN:AddCommand( "rocketman", {
 	Chat = { "!rocket" },
 	ReturnOrder = "Victim-Delay",
 	Args = {Victim = "PLAYER", Delay = "NUMBER"},
-	Optional = { Delay = 5 },
+	Optional = { Delay = 0 },
 	Category = "Fun",
 })
 PLUGIN:RequestQuickmenuSlot( "rocketman", "Rocket", {
