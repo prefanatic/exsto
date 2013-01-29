@@ -56,7 +56,7 @@ if SERVER then
 	
 	function PLUGIN:player_connect( data )
 		if !data.networkid then return end
-	
+		
 		local bannedAt, banLen, banReason = exsto.BanDB:GetData( data.networkid, "BannedAt, Length, Reason" )
 		if !bannedAt or !banLen or !banReason then return end
 
