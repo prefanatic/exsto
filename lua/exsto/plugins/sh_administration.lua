@@ -68,7 +68,7 @@ if SERVER then
 		local timeleft = string.ToMinutesSeconds( ( banLen + bannedAt ) - os.time() ) 
 		
 		-- Make sure we remove his ban if it has expired.
-		if banLen + bannedAt <= os.time() then exsto.BanDB:DropRow( steam ) self:ResendToAll() return end
+		if banLen + bannedAt <= os.time() then exsto.BanDB:DropRow( data.networkid ) self:ResendToAll() return end
 		if timeleft and banReason then self:Drop( data.userid, "BANNED! Time left: " .. timeleft .. " - Reason: " .. banReason ) return end
 		
 		-- Call our after-ban hook
@@ -224,7 +224,7 @@ if SERVER then
 	function PLUGIN:UnBan( owner, steamid ) 
 	
 		local dataUsed = false
-		if !string.match( steamid, "STEAM_[0-5]:[0-9]:[0-9]+" ) then
+		if !string.match( steamid, "STEAM_[0-5]:[0-9]:[0-9]+" ) and !string.match( steamid, "BOT" ) then
 			-- We don't have a match.  Try checking our ban list for his name like this.
 			for _, ban in ipairs( exsto.BanDB:GetAll() ) do
 				if ban.Name == steamid then
@@ -236,8 +236,8 @@ if SERVER then
 			end
 			
 			-- Check our match again
-			if !string.match( steamid, "STEAM_[0-5]:[0-9]:[0-9]+" ) then
-				return { owner, COLOR.NORM, "That is an invalid ", COLOR.NAME, "SteamID!", COLOR.NORM, "A normal SteamID looks like this, ", COLOR.NAME, "STEAM_0:1:123456" }
+			if !string.match( steamid, "STEAM_[0-5]:[0-9]:[0-9]+" ) and !string.match( steamid, "BOT" ) then
+				return { owner, COLOR.NORM, "That is an invalid ", COLOR.NAME, "SteamID!", COLOR.NORM, "  A normal SteamID looks like this, ", COLOR.NAME, "STEAM_0:1:123456" }
 			end
 		end
 		
