@@ -55,7 +55,11 @@ exsto_CHAT = AddPrint(
 		local sender = exsto.CreateSender( "ExChatPrint", ply )
 			sender:AddShort( #arg )
 			for I = 1, #arg do
-				sender:AddVariable( arg[ I ] )
+				if type( arg[ I ] ) == "Entity" or type( arg[ I ]  ) == "Player" then 
+					sender:AddVariable( arg[ I ]:Nick() )
+				else
+					sender:AddVariable( arg[ I ] )
+				end
 			end
 			sender:Send()
 	end, true
