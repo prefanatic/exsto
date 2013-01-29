@@ -156,7 +156,7 @@ if SERVER then
 	    for I = 1, 60 do
 	    	table.insert( tbl, "TEST VOTE " .. I )
 	    end
-		PLUGIN:Vote( "test_vote", "This is a test vote!", tbl ) 
+		PLUGIN:Vote( "test_vote", "This is a test vote!", tbl, 10, "large" ) 
 	end )
 	
 	function PLUGIN:EndVote()
@@ -239,6 +239,7 @@ elseif CLIENT then
 	
 	local function updateVote( reader )
 		PLUGIN.VoteData[ reader:ReadShort() ] = reader:ReadShort()
+		--PLUGIN.VoteLarge.List:Update()
 	end
 	exsto.CreateReader( "ExVoteUpdate", updateVote )
 	
@@ -325,6 +326,8 @@ elseif CLIENT then
 		end
 		self.VoteLarge.List.Populate = function( lst, tbl )
 			lst:Clear()
+			lst.Buttons = {}
+			
 			for _, data in ipairs( tbl ) do
 				local btn = vgui.Create( "ExButton", lst )
 					btn:SetSize( 175, 36 )
@@ -335,8 +338,33 @@ elseif CLIENT then
 					btn._VoteIndex = _
 					btn.OnPaint = btnPaint
 					btn.OnClick = btnClick
+				table.insert( lst.Buttons, btn )
 				lst:Add( btn )
 			end
+		end
+		self.VoteLarge.List.Update = function( lst )
+			local copy = table.Copy( lst.Buttons )
+			table.sort( copy, function( a, b )
+				local data_a = PLUGIN.VoteData[ a._VoteIndex ] or a._VoteIndex
+				local data_b = PLUGIN.VoteData[ b._VoteIndex ] or b._VoteIndex
+				
+				return data_a > data_b
+			end )
+				
+				
+			--table.sort( lst.Buttons, function( a, b ) print( a._VoteIndex ) return ( ( PLUGIN.VoteData[ a._VoteIndex ] != 0 and PLUGIN.VoteData[ a._VoteIndex ] ) or a._VoteIndex ) > ( ( PLUGIN.VoteData[ b._VoteIndex ] != 0 and PLUGIN.VoteData[ b._VoteIndex ] ) or b._VoteIndex ) end )
+			
+			print( "SORTING" )
+			
+			for key, button in ipairs( copy ) do
+				print( button._VoteIndex, key, button:GetText() )
+				if copy[ key + 1 ] then
+					button:MoveToBefore(copy[ key + 1 ] )
+				else
+					button:MoveToBefore( copy[ #copy ] )
+				end
+			end
+			lst:Layout()
 		end
 		
 		exsto.Animations.CreateAnimation( self.VoteLarge )
