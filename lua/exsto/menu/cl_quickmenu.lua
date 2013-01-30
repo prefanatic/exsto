@@ -32,14 +32,13 @@ local function playerObjectClick( lst, lineID, line )
 		qm.Parent.ComWindow:Populate( "..." )
 		
 		qm.Parent.ComWindow:SetVisible( true )
-		qm.Parent.ComWindow:SetPos( 4, 28 )
+		qm.Parent.ComWindow:SetPos( 4, 0 )
 		
-		qm.Parent.PlayerListScroller:SetPos( -qm.Parent:GetWide() - 2, 28 )
+		qm.Parent.PlayerListScroller:SetPos( -qm.Parent:GetWide() - 2, 0 )
 		
 		-- Button stuff
-		qm.Parent.BackButton._Disabled = false
-		qm.Parent.BackButton:SetImage( "exsto/back_highlight.png" )
-		qm.Parent.BackButton._WorkingIndex = -1
+		qm.Object:EnableBack()
+		qm.Parent._WorkingIndex = -1
 	end )
 end
 
@@ -66,52 +65,37 @@ local function categoryPaint( cat )
 end
 
 local function buttonBackClick( btn )
-	if !btn._WorkingIndex then return end
-	if btn._Disabled then return end
+	if !qm.Parent._WorkingIndex then return end
 	
-	if ( btn._WorkingIndex - 1 ) == 0 then -- We need to go back to the command list.
-		local currentBox = qm.Parent.ComWindow.Objects[ btn._WorkingIndex ]
+	if ( qm.Parent._WorkingIndex - 1 ) == 0 then -- We need to go back to the command list.
+		local currentBox = qm.Parent.ComWindow.Objects[ qm.Parent._WorkingIndex ]
 			currentBox:SetPos( qm.Parent:GetWide() + 2, 0 )
 			
 		-- Bring back the command list.
 		qm.Parent.ComWindow.CommandList:SetPos( 0, 0 )
 		qm.Parent.ComWindow:Clean()
-		btn._WorkingIndex = -1
+		qm.Parent._WorkingIndex = -1
 		return
 	end
 	
-	if ( btn._WorkingIndex == -1 ) then -- We're on the command list, and we need to go to players.
+	if ( qm.Parent._WorkingIndex == -1 ) then -- We're on the command list, and we need to go to players.
 		qm.Reset( true )
 		return
 	end
 	
 	-- If we made it through all those special instances, just move back a page.
-	local currentBox = qm.Parent.ComWindow.Objects[ btn._WorkingIndex ]
-	local prevBox = qm.Parent.ComWindow.Objects[ btn._WorkingIndex - 1 ]
+	local currentBox = qm.Parent.ComWindow.Objects[ qm.Parent._WorkingIndex ]
+	local prevBox = qm.Parent.ComWindow.Objects[ qm.Parent._WorkingIndex - 1 ]
 		currentBox:SetPos( qm.Parent:GetWide() + 2, 0 )
 		prevBox:SetPos( 0, 0 )
 		prevBox:SetVisible( true )
 		
-		table.remove( qm.ExecTbl, btn._WorkingIndex - 1 )
+		table.remove( qm.ExecTbl, qm.Parent._WorkingIndex - 1 )
 		
-		btn._WorkingIndex = btn._WorkingIndex - 1
+		qm.Parent._WorkingIndex = qm.Parent._WorkingIndex - 1
 		
 	return
 end
-
-local function newPanelClick( btn )
-
-	-- Lets create a derma menu of the pages that we have.+
-	local pgs = exsto.Menu.GetPages();
-	local menu = DermaMenu()
-	
-	for _, obj in ipairs( pgs ) do
-		if obj:GetID() != "quickmenu" then -- We don't want to open ourself :P
-			menu:AddOption( obj:GetTitle(), function() exsto.Menu.OpenPage( obj ) end )
-		end
-	end
-	menu:Open()
-end		
 
 local function pntShadow( pnl )
 	surface.SetMaterial( qm.Shadow )
@@ -119,35 +103,26 @@ local function pntShadow( pnl )
 	surface.DrawTexturedRect( 0, 0, pnl:GetWide(), 9 )
 end
 
+local function onShowtime()
+	exsto.QuickMenuReset( nil, true )
+end
+
 function exsto.InitQuickMenu( pnl )
 	qm.Parent = pnl
+	qm.Object = exsto.Menu.GetPageByID( "quickmenu" )
 	
-	-- Create the buttons up top yo.
-	pnl.BackButton = exsto.CreateImageButton( 6, 4, 32, 32, "back_norm.png", pnl )
-		pnl.BackButton._Disabled = true
-		pnl.BackButton.DoClick = buttonBackClick
-		
-	-- Create the new panel button
-	--pnl.NewPanel = exsto.CreateButton( 0, 0, 26, 20, "+", pnl )
-		--pnl.NewPanel:MoveRightOf( pnl.BackButton, 6 )
-		--pnl.NewPanel.DoClick = newPanelClick
-		
-	-- Logo
-	pnl.Logo = vgui.Create( "DImage", pnl )
-		pnl.Logo:SetPos( pnl:GetWide() - 129, 1 )
-		pnl.Logo:SetSize( 128, 32 )
-		pnl.Logo:SetImage( "exsto/exlogo_qmenu.png" )
-		
+	qm.Object:SetBackFunction( buttonBackClick )
+	qm.Object:OnShowtime( onShowtime )
+	
 	-- Create search box
 	pnl.Search = exsto.CreateTextEntry( 4, pnl:GetTall() - 30, pnl:GetWide() - 8, 24, pnl )
 		pnl.Search.OnTextChanged = function( entry )
 			-- If we're typing, we should lock the menu open.
 			exsto.Menu.OpenLock = true
 			
-			local loc = qm.Parent.BackButton._WorkingIndex
-			local disabled = qm.Parent.BackButton._Disabled
+			local loc = qm.Parent._WorkingIndex
 			
-			if disabled then -- We're on the player list.  Search in it.
+			if exsto.Menu.BackButton._Disabled then -- We're on the player list.  Search in it.
 				qm.Parent.PlayerList:CreateContent( entry:GetValue():lower() )
 			elseif loc == -1 then -- We're working in the command list.
 				qm.Parent.ComWindow:Populate( "...", entry:GetValue():lower() )
@@ -164,7 +139,7 @@ function exsto.InitQuickMenu( pnl )
 
 	-- Create the player list
 	pnl.PlayerListScroller = vgui.Create( "DScrollPanel", pnl )
-		pnl.PlayerListScroller:SetPos( 4, 28 )
+		pnl.PlayerListScroller:SetPos( 4, 0 )
 		pnl.PlayerListScroller:SetSize( pnl:GetWide() - 8, pnl:GetTall() - 65 )
 		
 	local function scrollHandler( p, dlta )
@@ -283,12 +258,12 @@ end
 
 function qm.Reset( bool, disableAnim )
 	if bool then
-		qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, -qm.Parent:GetWide() - 2, 28 )
+		qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, -qm.Parent:GetWide() - 2, 0 )
 		qm.Parent.PlayerListScroller.Anims[ 1 ].Current = -qm.Parent:GetWide() - 2
 		qm.Parent.PlayerListScroller.Anims[ 1 ].Last = -qm.Parent:GetWide() - 2
-		qm.Parent.PlayerListScroller:SetPos( 4, 28 )
+		qm.Parent.PlayerListScroller:SetPos( 4, 0 )
 	else
-		qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, 4, 28 )
+		qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, 4, 0 )
 		qm.Parent.PlayerListScroller.Anims[ 1 ].Current = 4
 		qm.Parent.PlayerListScroller.Anims[ 1 ].Last = 4
 	end
@@ -296,11 +271,11 @@ function qm.Reset( bool, disableAnim )
 	qm.Parent.PlayerList:Update()
 
 	if disableAnim then
-		qm.Parent.ComWindow.OldFuncs.SetPos( qm.Parent.ComWindow, qm.Parent:GetWide() + 2, 28 )
+		qm.Parent.ComWindow.OldFuncs.SetPos( qm.Parent.ComWindow, qm.Parent:GetWide() + 2, 0 )
 		qm.Parent.ComWindow.Anims[ 1 ].Current = qm.Parent:GetWide() + 2
 		qm.Parent.ComWindow.Anims[ 1 ].Last = qm.Parent:GetWide() + 2
 	else
-		qm.Parent.ComWindow:SetPos( qm.Parent:GetWide() + 2, 28 )
+		qm.Parent.ComWindow:SetPos( qm.Parent:GetWide() + 2, 0 )
 	end
 	
 	qm.Parent.ComWindow:Cleanup()
@@ -308,8 +283,7 @@ function qm.Reset( bool, disableAnim )
 	qm.ExecTbl = {}
 	qm.Parent.SelectedItem = nil
 	
-	qm.Parent.BackButton._Disabled = true
-	qm.Parent.BackButton:SetImage( "exsto/back_norm.png" )
+	qm.Object:DisableBack()
 	
 	qm.Parent.Search:SetText( "" )
 end
@@ -330,7 +304,7 @@ end
 function qm.CreateCommandWindow( pnl )
 	-- Create the command window.
 
-	pnl.ComWindow = exsto.CreatePanel( pnl:GetWide() + 2, 28, pnl:GetWide() - 8, pnl:GetTall() - 65, Color( 255, 255, 255, 255 ), pnl )
+	pnl.ComWindow = exsto.CreatePanel( pnl:GetWide() + 2, 0, pnl:GetWide() - 8, pnl:GetTall() - 65, Color( 255, 255, 255, 255 ), pnl )
 	pnl.ComWindow:SetVisible( false )
 	
 	pnl.ComWindow.Objects = {}
@@ -372,9 +346,8 @@ function qm.CreateCommandWindow( pnl )
 			pnl.ComWindow.Objects[ 1 ]:SetPos( 0, 0 )
 			
 			-- Set our button as active.
-			pnl.BackButton._Disabled = false
-			pnl.BackButton:SetImage( "exsto/back_highlight.png" )
-			pnl.BackButton._WorkingIndex = 1
+			qm.Object:EnableBack()
+			qm.Parent._WorkingIndex = 1
 			
 			combobox:ClearSelection()
 			
@@ -400,9 +373,8 @@ function qm.CreateCommandWindow( pnl )
 		combobox:ClearSelection()
 		
 		-- Set our button as active.
-		pnl.BackButton._Disabled = false
-		pnl.BackButton:SetImage( "exsto/back_highlight.png" )
-		pnl.BackButton._WorkingIndex = combobox.Index + 1
+		qm.Object:EnableBack()
+		qm.Parent._WorkingIndex = combobox.Index + 1
 	end
 	
 	pnl.ComWindow.Clean = function( pnl )

@@ -37,14 +37,49 @@ function exsto.Menu.CreatePage( id, func )
 	
 	obj.ID = id
 	obj:SetBuildCallback( func )
-	obj:SetFrameSize( 267, 450 )
+	obj:SetFrameSize( 267, 430 )
 	table.insert( exsto.Menu.Pages, obj )
 	
 	return obj
 end
 
+-- Returns page index in pages table.
+function page:GetPageIndex()
+	for _, obj in ipairs( exsto.Menu.Pages ) do
+		if obj == self then return _ end
+	end
+	return nil
+end
+
+-- Returns page to the left of himself.
+function page:GetLeftOf()
+	local index = self:GetPageIndex()
+	return ( index - 1 != 0 and exsto.Menu.Pages[ index - 1 ] ) or exsto.Menu.Pages[ #exsto.Menu.Pages ]
+end
+
+-- Returns page to the right of himself.
+function page:GetRightOf()
+	local index = self:GetPageIndex()
+	return ( index + 1 <= #exsto.Menu.Pages and exsto.Menu.Pages[ index + 1 ] ) or exsto.Menu.Pages[ 1 ]
+end
+
+function page:SetBackFunction( func )
+	if type( func ) != "function" then self:Error( "Back function supplied non-function!" ) return end
+	
+	self._BackFunction = func
+end
+
+function page:OnShowtime( func )
+	if type( func ) != "function" then self:Error( "OnShowtime supplied non-function!" ) return end
+	self._OnShowtime = func
+end
+
 function page:SetTitle( title )
 	self._Title = title
+end
+
+function page:SetIcon( icon )
+	self._Icon = icon
 end
 
 function page:SetFrameSize( w, h )
@@ -52,17 +87,34 @@ function page:SetFrameSize( w, h )
 	self._SizeH = h
 end
 
+--[[
+qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, -qm.Parent:GetWide() - 2, 28 )
+		qm.Parent.PlayerListScroller.Anims[ 1 ].Current = -qm.Parent:GetWide() - 2
+		qm.Parent.PlayerListScroller.Anims[ 1 ].Last = -qm.Parent:GetWide() - 2
+		qm.Parent.PlayerListScroller:SetPos( 4, 28 )
+]]
+		
 function page:Backstage() -- Time to sleep him
-	self.Content:Close()
+	-- Leave to the right.  We should already be at 0, 0?
+	self:SetPos( self:GetParent():GetWide() + 2, 0 )
 end
 
-function page:Showtime() -- Wake him up!
-	self.Content:MakePopup()
-	self.Content:SetVisible( true )
+function page:Showtime( noAnim ) -- Wake him up!
+	-- Come in from the left!
 	
-	if !exsto.Menu.OpenPages[ self:GetID() ] then
-		exsto.Menu.OpenPages[ self:GetID() ] = self
+	-- Set up our position for animations.
+	self.Content.OldFuncs.SetPos( self.Content, -self:GetParent():GetWide() - 2, 0 )
+	self.Content.Anims[ 1 ].Current = -self:GetParent():GetWide() - 2
+	self.Content.Anims[ 1 ].Last = -self:GetParent():GetWide() - 2
+	
+	if not noAnim then
+		self:SetPos( 0, 0 )
 	end
+	
+	exsto.Menu.ActivePage = self;
+	
+	-- Call OnShowtime
+	if self._OnShowtime then self._OnShowtime() end
 end
 
 function page:Build()
@@ -82,23 +134,8 @@ function page:ShowClose( bool )
 end
 
 function page:CreateContentHolder()
-	self.Content = exsto.CreateFrame( 0, 0, self._SizeW, self._SizeH )
+	self.Content = exsto.CreatePanel( -self._SizeW - 2, 0, self._SizeW, self._SizeH, nil, exsto.Menu.FrameScroller )
 		self.Content:SetSkin( "ExstoQuick" ) -- Ahoy!
-		self.Content:SetDeleteOnClose( false )
-		self.Content:SetDraggable( true )
-		self.Content:Center()
-		self.Content:ShowCloseButton( true )
-		
-		self.Content.btnMinim:SetVisible( false )
-		self.Content.btnMaxim:SetVisible( false )
-		self.Content.btnClose.DoClick = function( btn )
-			-- Remove ourself from the open pages.
-			exsto.Menu.OpenPages[ self:GetID() ] = nil;
-			btn:GetParent():Close()
-		end
-		
-		-- But we don't want it open.
-		self.Content:Close()
 		
 	exsto.Animations.CreateAnimation( self.Content )
 end
@@ -120,8 +157,12 @@ function page:SetPos( x, y ) return self.Content:SetPos( x, y ) end
 function page:GetPos() return self.Content:GetPos() end
 function page:SetSize( w, h ) return self.Content:SetSize( w, h ) end
 function page:GetSize() return self.Content:GetSize() end
+function page:GetParent() return self.Content:GetParent() end
 function page:IsValid() return self.Content:IsValid() end
 function page:SetVisible( bool ) return self.Content:SetVisible( bool ) end
 function page:MoveToFront() return self.Content:MoveToFront() end
 function page:GetID() return self.ID end
 function page:GetTitle() return self._Title or self:GetID() end
+
+function page:EnableBack() exsto.Menu.EnableBackButton() end
+function page:DisableBack() exsto.Menu.DisableBackButton() end

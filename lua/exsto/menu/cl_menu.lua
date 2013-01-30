@@ -27,12 +27,18 @@
 
 exsto.Menu = {
 	Pages = {};
-	OpenPages = {};
+	ActivePage = nil;
 	Objects = {};
 	PageWidth = ScrW();
 	PageTall = ScrH() - 280;
 	StartTime = 0;
 	BottomPadding = 200;
+	Sizes = {
+		FrameW = 267;
+		FrameH = 450;
+		PageW = 267;
+		PageH = 430;
+	};
 }
 
 local fontTbl = {
@@ -51,33 +57,118 @@ end
 	----------------------------------- ]]
 function exsto.Menu.Initialize()
 		
-	-- Create the header to hold the Exsto logo and to provide paddding from everyting below.
-	exsto.Menu.Objects.Header = exsto.CreatePanel( 0, 0, ScrW(), 80, nil, exsto.Menu.Objects.Content )
-		exsto.Menu.Objects.Header.Paint = function() end
+	-- Create the holding frame.  I'm excited!
+	exsto.Menu.Frame = exsto.CreateFrame( 0, 0, exsto.Menu.Sizes.FrameW, exsto.Menu.Sizes.FrameH )
+		exsto.Menu.Frame:SetSkin( "ExstoQuick" )
+		exsto.Menu.Frame:SetDeleteOnClose( false )
+		exsto.Menu.Frame:SetDraggable( true )
+		exsto.Menu.Frame:Center()
+		exsto.Menu.Frame:ShowCloseButton( true )
+		exsto.Menu.Frame.btnMinim:SetVisible( false )
+		exsto.Menu.Frame.btnMaxim:SetVisible( false )
+		exsto.Menu.Frame.btnClose.DoClick = function( btn )
+			-- Remove ourself from the open pages.
+			--exsto.Menu.OpenPages[ self:GetID() ] = nil;
+			btn:GetParent():Close()
+		end
 		
-	-- Create Exsto's logo for the top right.
-	--exsto.Menu.Objects.Logo = exsto.CreateImageButton( exsto.Menu.Objects.Header:GetWide() - 105, 20, 86, 37, "exstoLogo", exsto.Menu.Objects.Header )
+	-- Our amazing logo.
+	-- TODO: Lets have this be our close button :0
+	exsto.Menu.Logo = vgui.Create( "DImage", exsto.Menu.Frame )
+		exsto.Menu.Logo:SetPos( exsto.Menu.Frame:GetWide() - 129, 1 )
+		exsto.Menu.Logo:SetSize( 128, 32 )
+		exsto.Menu.Logo:SetImage( "exsto/exlogo_qmenu.png" )
+		
+	-- Create our scroller.
+	exsto.Menu.FrameScroller = exsto.CreatePanel( 1, 28, exsto.Menu.Sizes.PageW - 2, exsto.Menu.Sizes.PageH, nil, exsto.Menu.Frame )
+		
+	-- Create our buttons up top
+	exsto.Menu.BackButton = exsto.CreateImageButton( 6, 4, 32, 32, "exsto/back_norm.png", exsto.Menu.Frame )
+		exsto.Menu.BackButton._Disabled = true
+		exsto.Menu.BackButton.DoClick = exsto.Menu.BackButtonClick
+		
+	-- Create the new panel button
+	exsto.Menu.NewPage = exsto.CreateButton( 0, 0, 26, 20, "+", exsto.Menu.Frame )
+		exsto.Menu.NewPage:MoveRightOf( exsto.Menu.BackButton, 6 )
+		exsto.Menu.NewPage.DoClick = exsto.Menu.NewPageClick
+		exsto.Menu.NewPage.DoRightClick = exsto.Menu.NewPageRightClick
 		
 	-- Create the default quick menu.
 	exsto.Menu.QM = exsto.Menu.CreatePage( "quickmenu", exsto.InitQuickMenu )
 		exsto.Menu.QM:SetTitle( "Quick Menu" )
 		exsto.Menu.QM:Build()
 		
+	-- Now create our page icon list.
+	exsto.Menu.PageList = exsto.Menu.CreatePage( "pagelist", exsto.InitPageList )
+		exsto.Menu.PageList:SetTitle( "Pages" )
+		exsto.Menu.PageList:Build()
+		
 	for I = 1, 3 do
-		local pg = exsto.Menu.CreatePage( "Test_" .. I, function() end )
-			pg:SetTitle( "Testing Page " .. I )
-			pg:SetFrameSize( math.random( 100, 350 ), math.random( 100, 600 ) )
+		local pg = exsto.Menu.CreatePage( "Test_" .. I, function( pnl ) exsto.CreateLabel( 10, 40, ":)", "ExGenericText30", pnl ) end )
+			pg:SetTitle( "Testing Page " .. I )	
 		pg:Build()
 	end
 
 end
+
+--[[
+	** Back Button Controls **
+]]
+
+function exsto.Menu.BackButtonClick( btn )
+	-- TODO: Per-page implementation of back button.
+	if btn._Disabled then return end -- Don't do anything if we're disabled.
+	if !exsto.Menu.ActivePage then return end -- What.
+	
+	local obj = exsto.Menu.ActivePage
+	
+	local succ, err = pcall( obj._BackFunction, btn )
+	if !succ then
+		obj:Error( "Back button errored: " .. err )
+		return
+	end
+end
+
+function exsto.Menu.DisableBackButton()
+	exsto.Menu.BackButton._Disabled = true
+	exsto.Menu.BackButton:SetImage( "exsto/back_norm.png" )
+end
+
+function exsto.Menu.EnableBackButton()
+	exsto.Menu.BackButton._Disabled = false
+	exsto.Menu.BackButton:SetImage( "exsto/back_highlight.png" )
+end
+
+--[[
+	** New Page Controls **
+]]
+
+function exsto.Menu.NewPageClick( btn )
+	-- Always go to the new page list.  No matter what?
+end
+
+function exsto.Menu.NewPageRightClick( btn )
+	local lst = DermaMenu()
+	for _, obj in ipairs( exsto.Menu.Pages ) do
+		lst:AddOption( obj:GetTitle(), function() exsto.Menu.OpenPage( obj ) end )
+	end
+	lst:Open()
+end
+
+--[[
+	** Utilities **
+]]
 
 function exsto.Menu.GetPages()
 	return exsto.Menu.Pages
 end
 
 function exsto.Menu.OpenPage( obj ) -- I don't know if there is anything that we need to do.
-	exsto.Menu.OpenPages[ obj:GetID() ] = obj
+	-- Slide our old page to the right, new comes in the left.
+	if exsto.Menu.ActivePage and exsto.Menu.ActivePage:IsValid() then
+		exsto.Menu.ActivePage:Backstage()
+	end
+	
 	obj:Showtime()
 end
 
@@ -92,6 +183,10 @@ function exsto.Menu.GetPageByKey( key )
 	return exsto.Menu.Pages[ key ]
 end
 
+--[[
+	** Menu open/close **
+]]
+
 function exsto.Menu.Open()
 	-- Read our window pos info
 	local f = file.Read( "exsto_windows.txt", "DATA" )
@@ -104,27 +199,16 @@ function exsto.Menu.Open()
 		exsto.Menu.Initialize() 
 	end
 	
+	exsto.Menu.Frame:MakePopup()
+	exsto.Menu.Frame:SetVisible( true )
+	
 	exsto.Menu.StartTime = CurTime();
-	exsto.Menu.QM:Showtime()
-	exsto.QuickMenuReset( nil, true )
-	
-	-- Set the quick menu pos
-	local qmpos = posInfo[ "quickmenu" ]
+	exsto.Menu.OpenPage( exsto.Menu.GetPageByID( "quickmenu" ) )
+
+	-- Set our window pos.
+	local qmpos = posInfo[ "menu" ]
 	if qmpos then
-		exsto.Menu.QM:SetPos( qmpos.x, qmpos.y )
-	end
-	
-	exsto.Menu.Objects.Header:SetVisible( true )
-	
-	-- Loop through all our active windows
-	local pos
-	for id, obj in pairs( exsto.Menu.OpenPages ) do
-		obj:Showtime()
-		
-		pos = posInfo[ id ]
-		if pos then
-			obj:SetPos( pos.x, pos.y )
-		end
+		exsto.Menu.Frame:SetPos( qmpos.x, qmpos.y )
 	end
 	
 	-- Set mouse pos
@@ -142,14 +226,10 @@ local function shit()
 	-- Handling clicking outside the search box.
 	if exsto.Menu.OpenLock == true and input.IsMouseDown( MOUSE_LEFT ) then
 		local x, y = gui.MousePos()
-		
-		print( x, y )
-		
+
 		qx, qy = exsto.Menu.QM:GetPos()
 		qw, qh = exsto.Menu.QM:GetSize()
-		
-		print( qx, qy, qw + qx, qh +qy )
-		
+
 		if ( x < qx or y < qy ) or ( x > ( qx + qw ) or y > ( qy + qh ) ) and !exsto.Menu._BindPressed then
 			exsto.Menu.OpenLock = false
 		end
@@ -172,25 +252,13 @@ function exsto.Menu.Close()
 	local mx, my = gui.MousePos()
 	posInfo[ "__MOUSE" ] = {x=mx, y=my}
 	
-	local qmx, qmy = exsto.Menu.QM:GetPos()
-		posInfo[ "quickmenu" ] = {x = qmx, y = qmy}
+	local qmx, qmy = exsto.Menu.Frame:GetPos()
+		posInfo[ "menu" ] = {x = qmx, y = qmy}
 		
-	exsto.Menu.QM:Backstage()
-	
-	exsto.Menu.Objects.Header:SetVisible( false )
-	
-	-- Loop through all our open pages.
-	local _x, _y
-	for id, obj in pairs( exsto.Menu.OpenPages ) do
-		_x, _y = obj:GetPos()
-		posInfo[ id ] = {x = _x, y = _y}
-		
-		obj:Backstage()
-	end
-	
 	-- Save the position info
 	file.Write( "exsto_windows.txt", von.serialize( posInfo ) )
 	
+	exsto.Menu.Frame:Close()
 	exsto.Menu._Opened = false
 end
 
