@@ -81,7 +81,7 @@ function exsto.Menu.Initialize()
 		
 	-- Create our scroller.
 	exsto.Menu.FrameScroller = exsto.CreatePanel( 1, 28, exsto.Menu.Sizes.PageW - 2, exsto.Menu.Sizes.PageH, nil, exsto.Menu.Frame )
-		--exsto.Menu.FrameScroller.Paint = function() end
+		exsto.Menu.FrameScroller.Paint = function() end
 		
 	-- Create our buttons up top
 	exsto.Menu.BackButton = exsto.CreateImageButton( 6, 4, 32, 32, "exsto/back_norm.png", exsto.Menu.Frame )

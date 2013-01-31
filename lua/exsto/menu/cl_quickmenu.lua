@@ -98,9 +98,9 @@ local function buttonBackClick( btn )
 end
 
 local function pntShadow( pnl )
-	--surface.SetMaterial( qm.Shadow )
-	--surface.SetDrawColor( 255, 255, 255, 255 )
-	--surface.DrawTexturedRect( 0, 0, pnl:GetWide(), 9 )
+	surface.SetMaterial( qm.Shadow )
+	surface.SetDrawColor( 255, 255, 255, 255 )
+	surface.DrawTexturedRect( 0, 0, pnl:GetWide(), 9 )
 end
 
 local function onShowtime()

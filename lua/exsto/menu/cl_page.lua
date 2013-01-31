@@ -161,6 +161,7 @@ end
 function page:CreateContentHolder()
 	self.Content = exsto.CreatePanel( -self._SizeW - 2, 0, self._SizeW, self._SizeH, nil, exsto.Menu.FrameScroller )
 		self.Content:SetSkin( "ExstoQuick" ) -- Ahoy!
+		self.Content.Paint = function() end
 		
 	exsto.Animations.CreateAnimation( self.Content )
 end
