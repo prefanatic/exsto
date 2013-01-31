@@ -9,6 +9,8 @@ PLUGIN:SetInfo({
 
 if SERVER then
 
+	util.AddNetworkString( "ExMOTD" )
+
 	function PLUGIN:Send( mode, target )
 		if mode == "off" then return true end
 		
@@ -94,7 +96,7 @@ if SERVER then
 		ply:ExShowMOTD()
 	end
 	
-	function _R.Player:ExShowMOTD()
+	function exsto.Registry.Player:ExShowMOTD()
 		if exsto.GetVar( "motd_mode" ).Value == "off" then return end
 		
 		local sender = exsto.CreateSender( "ExMOTD", self )
@@ -129,7 +131,7 @@ elseif CLIENT then
 	motd:SetTitle( "MOTD" )
 	motd:SetSize( ScrW() * 0.95, ScrH() * 0.95 )
 	motd:Center()
-	//motd:SetSkin( "ExstoTheme" )
+	motd:SetSkin( "Exsto" )
 	
 	local html = vgui.Create( "HTML", motd )
 	html:SetPos( 5, 25 )
