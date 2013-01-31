@@ -98,13 +98,29 @@ local function buttonBackClick( btn )
 end
 
 local function pntShadow( pnl )
-	surface.SetMaterial( qm.Shadow )
-	surface.SetDrawColor( 255, 255, 255, 255 )
-	surface.DrawTexturedRect( 0, 0, pnl:GetWide(), 9 )
+	--surface.SetMaterial( qm.Shadow )
+	--surface.SetDrawColor( 255, 255, 255, 255 )
+	--surface.DrawTexturedRect( 0, 0, pnl:GetWide(), 9 )
 end
 
 local function onShowtime()
-	exsto.QuickMenuReset( nil, true )
+	exsto.QuickMenuReset( false, true )
+end
+
+local function searchTyped( entry )
+	local loc = qm.Parent._WorkingIndex
+	
+	if exsto.Menu.BackButton._Disabled then -- We're on the player list.  Search in it.
+		qm.Parent.PlayerList:CreateContent( entry:GetValue():lower() )
+	elseif loc == -1 then -- We're working in the command list.
+		qm.Parent.ComWindow:Populate( "...", entry:GetValue():lower() )
+	end
+end
+
+local function searchEntered( entry )
+	-- Reset the search
+	entry:SetText( "" )
+	entry:OnTextChanged()
 end
 
 function exsto.InitQuickMenu( pnl )
@@ -114,33 +130,14 @@ function exsto.InitQuickMenu( pnl )
 	qm.Object:SetBackFunction( buttonBackClick )
 	qm.Object:OnShowtime( onShowtime )
 	
-	-- Create search box
-	pnl.Search = exsto.CreateTextEntry( 4, pnl:GetTall() - 30, pnl:GetWide() - 8, 24, pnl )
-		pnl.Search.OnTextChanged = function( entry )
-			-- If we're typing, we should lock the menu open.
-			exsto.Menu.OpenLock = true
-			
-			local loc = qm.Parent._WorkingIndex
-			
-			if exsto.Menu.BackButton._Disabled then -- We're on the player list.  Search in it.
-				qm.Parent.PlayerList:CreateContent( entry:GetValue():lower() )
-			elseif loc == -1 then -- We're working in the command list.
-				qm.Parent.ComWindow:Populate( "...", entry:GetValue():lower() )
-			end
-		end
-		pnl.Search.OnEnter = function( entry )
-			-- Reset the search
-			entry:SetText( "" )
-			entry:OnTextChanged()
-		end
-		pnl.Search.DoClick = function( entry )
-			exsto.Menu.OpenLock = true
-		end
-
+	qm.Object:SetSearchable( true )
+	qm.Object:OnSearchTyped( searchTyped )
+	qm.Object:OnSearchEntered( searchEntered )
+	
 	-- Create the player list
 	pnl.PlayerListScroller = vgui.Create( "DScrollPanel", pnl )
 		pnl.PlayerListScroller:SetPos( 4, 0 )
-		pnl.PlayerListScroller:SetSize( pnl:GetWide() - 8, pnl:GetTall() - 65 )
+		pnl.PlayerListScroller:SetSize( pnl:GetWide() - 8, pnl:GetTall() - 45 )
 		
 	local function scrollHandler( p, dlta )
 		print( 'ldkfjdsf', dlta )
@@ -148,7 +145,7 @@ function exsto.InitQuickMenu( pnl )
 	end
 		
 	pnl.PlayerList = vgui.Create( "DPanelList", pnl.PlayerListScroller )
-		pnl.PlayerList:SetSize( pnl:GetWide() - 8, pnl:GetTall() - 65 )
+		pnl.PlayerList:SetSize( pnl:GetWide() - 8, pnl:GetTall() - 45 )
 		pnl.PlayerList:SetPos( 0, 0 )
 		pnl.PlayerList:SetSpacing( 5 )
 		pnl.PlayerList:SetPadding( 5 )
@@ -284,8 +281,6 @@ function qm.Reset( bool, disableAnim )
 	qm.Parent.SelectedItem = nil
 	
 	qm.Object:DisableBack()
-	
-	qm.Parent.Search:SetText( "" )
 end
 exsto.QuickMenuReset = qm.Reset
 

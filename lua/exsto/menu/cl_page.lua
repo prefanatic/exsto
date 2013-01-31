@@ -74,6 +74,23 @@ function page:OnShowtime( func )
 	self._OnShowtime = func
 end
 
+function page:OnSearchTyped( func )
+	if type( func ) != "function" then self:Error( "OnSearchTyped supplied non-function!" ) return end
+	self._SearchOnTextChanged = func
+end
+
+function page:OnSearchEntered( func )
+	if type( func ) != "function" then self:Error( "OnSearchEntered supplied non-function!" ) return end
+	self._SearchOnEnter = func
+end
+
+function page:OnSearchClicked( func )
+	if type( func ) != "function" then self:Error( "OnSearchClicked supplied non-function!" ) return end
+	self._SearchDoClick = func
+end
+
+function page:SetSearchable( bool ) self._Searchable = bool end
+
 function page:SetTitle( title )
 	self._Title = title
 end
@@ -97,6 +114,9 @@ qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, -qm.
 function page:Backstage() -- Time to sleep him
 	-- Leave to the right.  We should already be at 0, 0?
 	self:SetPos( self:GetParent():GetWide() + 2, 0 )
+	
+	-- Hide the search.
+	exsto.Menu.DisableSearch()
 end
 
 function page:Showtime( noAnim ) -- Wake him up!
@@ -115,6 +135,9 @@ function page:Showtime( noAnim ) -- Wake him up!
 	
 	-- Call OnShowtime
 	if self._OnShowtime then self._OnShowtime() end
+	
+	-- Call search if required
+	if self._Searchable then exsto.Menu.EnableSearch() end
 end
 
 function page:Build()
@@ -123,6 +146,8 @@ function page:Build()
 end
 
 function page:CallBuild()
+	if !self._buildCallback then self:Error( "No build callback found!" ) return end
+	
 	local success, err = pcall( self._buildCallback, self.Content )
 	if !success then
 		self:Error( "Unable to build page: " .. err )

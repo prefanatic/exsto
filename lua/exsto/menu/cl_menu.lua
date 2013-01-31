@@ -81,6 +81,7 @@ function exsto.Menu.Initialize()
 		
 	-- Create our scroller.
 	exsto.Menu.FrameScroller = exsto.CreatePanel( 1, 28, exsto.Menu.Sizes.PageW - 2, exsto.Menu.Sizes.PageH, nil, exsto.Menu.Frame )
+		--exsto.Menu.FrameScroller.Paint = function() end
 		
 	-- Create our buttons up top
 	exsto.Menu.BackButton = exsto.CreateImageButton( 6, 4, 32, 32, "exsto/back_norm.png", exsto.Menu.Frame )
@@ -88,10 +89,18 @@ function exsto.Menu.Initialize()
 		exsto.Menu.BackButton.DoClick = exsto.Menu.BackButtonClick
 		
 	-- Create the new panel button
-	exsto.Menu.NewPage = exsto.CreateButton( 0, 0, 26, 20, "+", exsto.Menu.Frame )
+	exsto.Menu.NewPage = exsto.CreateButton( 0, 4, 32, 32, "+", exsto.Menu.Frame )
 		exsto.Menu.NewPage:MoveRightOf( exsto.Menu.BackButton, 6 )
 		exsto.Menu.NewPage.DoClick = exsto.Menu.NewPageClick
 		exsto.Menu.NewPage.DoRightClick = exsto.Menu.NewPageRightClick
+		
+	-- Search!
+	-- Create search box
+	exsto.Menu.Search = exsto.CreateTextEntry( 4, exsto.Menu.Frame:GetTall() + 2, exsto.Menu.Frame:GetWide() - 8, 24, exsto.Menu.Frame )
+		exsto.Menu.Search.OnTextChanged = exsto.Menu.SearchOnTextChanged
+		exsto.Menu.Search.OnEnter = exsto.Menu.SearchOnEnter
+		exsto.Menu.Search.DoClick = exsto.Menu.SearchDoClick
+	exsto.Animations.CreateAnimation( exsto.Menu.Search )
 		
 	-- Create the default quick menu.
 	exsto.Menu.QM = exsto.Menu.CreatePage( "quickmenu", exsto.InitQuickMenu )
@@ -112,11 +121,81 @@ function exsto.Menu.Initialize()
 end
 
 --[[
+	** Searching Support **
+]]
+
+function exsto.Menu.EnableSearch()
+	-- Move him out of hiding!
+	exsto.Menu.Search:SetPos( 4, exsto.Menu.Frame:GetTall() - 28 )
+	exsto.Menu.Search:SetEditable( true )
+	exsto.Menu.Search._Disabled = false
+end
+
+function exsto.Menu.DisableSearch()
+	exsto.Menu.Search:SetPos( 4, exsto.Menu.Frame:GetTall() + 2 )
+	exsto.Menu.Search:SetEditable( false )
+	exsto.Menu.Search._Disabled = true
+	
+	-- Clean it.
+	exsto.Menu.Search:SetText( "" )
+end
+
+function exsto.Menu.SearchOnTextChanged( entry )
+	-- Check stuff first.
+	if entry._Disabled then return end
+	if !exsto.Menu.ActivePage then return end
+	
+	-- Hold an open lock
+	exsto.Menu.OpenLock = true
+	
+	local obj = exsto.Menu.ActivePage
+	if !obj_SearchOnTextChanged then return end
+	
+	local succ, err = pcall( obj._SearchOnTextChanged, entry )
+	if !succ then
+		obj:Error( "Searching errored: " .. err )
+		return
+	end
+end
+
+function exsto.Menu.SearchOnEnter( entry )
+	-- Check stuff first.
+	if entry._Disabled then return end
+	if !exsto.Menu.ActivePage then return end
+	
+	local obj = exsto.Menu.ActivePage
+	if !obj._SearchOnEnter then return end
+	
+	local succ, err = pcall( obj._SearchOnEnter, entry )
+	if !succ then
+		obj:Error( "Searching errored: " .. err )
+		return
+	end
+end
+
+function exsto.Menu.SearchDoClick( entry )
+	-- Check stuff first.
+	if entry._Disabled then return end
+	if !exsto.Menu.ActivePage then return end
+	
+	-- Hold an open lock.
+	exsto.Menu.OpenLock = true
+	
+	local obj = exsto.Menu.ActivePage
+	if !obj._SearchDoClick then return end
+	
+	local succ, err = pcall( obj._SearchDoClick, entry )
+	if !succ then
+		obj:Error( "Searching errored: " .. err )
+		return
+	end
+end
+
+--[[
 	** Back Button Controls **
 ]]
 
 function exsto.Menu.BackButtonClick( btn )
-	-- TODO: Per-page implementation of back button.
 	if btn._Disabled then return end -- Don't do anything if we're disabled.
 	if !exsto.Menu.ActivePage then return end -- What.
 	
