@@ -138,6 +138,7 @@ function page:Showtime( noAnim ) -- Wake him up!
 	
 	-- Call search if required
 	if self._Searchable then exsto.Menu.EnableSearch() end
+
 end
 
 function page:Build()
@@ -159,7 +160,7 @@ function page:ShowClose( bool )
 end
 
 function page:CreateContentHolder()
-	self.Content = exsto.CreatePanel( -self._SizeW - 2, 0, self._SizeW, self._SizeH, nil, exsto.Menu.FrameScroller )
+	self.Content = exsto.CreatePanel( -exsto.Menu.FrameScroller:GetWide() - 2, 0, exsto.Menu.FrameScroller:GetWide(), exsto.Menu.FrameScroller:GetTall(), nil, exsto.Menu.FrameScroller )
 		self.Content:SetSkin( "ExstoQuick" ) -- Ahoy!
 		self.Content.Paint = function() end
 		

@@ -34,7 +34,7 @@ exsto.Menu = {
 	StartTime = 0;
 	BottomPadding = 200;
 	Sizes = {
-		FrameW = 267;
+		FrameW = 268;
 		FrameH = 450;
 		PageW = 267;
 		PageH = 430;
@@ -80,7 +80,7 @@ function exsto.Menu.Initialize()
 		exsto.Menu.Logo:SetImage( "exsto/exlogo_qmenu.png" )
 		
 	-- Create our scroller.
-	exsto.Menu.FrameScroller = exsto.CreatePanel( 1, 28, exsto.Menu.Sizes.PageW - 2, exsto.Menu.Sizes.PageH, nil, exsto.Menu.Frame )
+	exsto.Menu.FrameScroller = exsto.CreatePanel( 1, 28, exsto.Menu.Frame:GetWide() - 2, exsto.Menu.Frame:GetTall() - 29, nil, exsto.Menu.Frame )
 		exsto.Menu.FrameScroller.Paint = function() end
 		
 	-- Create our buttons up top
@@ -108,14 +108,19 @@ function exsto.Menu.Initialize()
 		exsto.Menu.QM:Build()
 		
 	-- Now create our page icon list.
-	exsto.Menu.PageList = exsto.Menu.CreatePage( "pagelist", exsto.InitPageList )
-		exsto.Menu.PageList:SetTitle( "Pages" )
-		exsto.Menu.PageList:Build()
+	--exsto.Menu.PageList = exsto.Menu.CreatePage( "pagelist", exsto.InitPageList )
+		--exsto.Menu.PageList:SetTitle( "Pages" )
+		--exsto.Menu.PageList:Build()
 		
 	for I = 1, 3 do
 		local pg = exsto.Menu.CreatePage( "Test_" .. I, function( pnl ) exsto.CreateLabel( 10, 40, ":)", "ExGenericText30", pnl ) end )
 			pg:SetTitle( "Testing Page " .. I )	
 		pg:Build()
+	end
+	
+	-- Finally, lets create these pages that we have, if they're not already created.
+	for _, obj in ipairs( exsto.Menu.Pages ) do
+		if !obj.Content then obj:Build() end
 	end
 
 end
