@@ -89,7 +89,7 @@ function exsto.Menu.Initialize()
 		exsto.Menu.BackButton.DoClick = exsto.Menu.BackButtonClick
 		
 	-- Create the new panel button
-	exsto.Menu.NewPage = exsto.CreateButton( 0, 4, 32, 32, "+", exsto.Menu.Frame )
+	exsto.Menu.NewPage = exsto.CreateImageButton( 0, 4, 32, 32, "exsto/menu_highlight.png", exsto.Menu.Frame )
 		exsto.Menu.NewPage:MoveRightOf( exsto.Menu.BackButton, 6 )
 		exsto.Menu.NewPage.DoClick = exsto.Menu.NewPageClick
 		exsto.Menu.NewPage.DoRightClick = exsto.Menu.NewPageRightClick
