@@ -52,7 +52,8 @@ end
 
 PLUGIN:AddCommand( "clear", {
 	Call = PLUGIN.Clear,
-	Desc = "Clear's things. Egs: !clear Hobo, !clear Hobo e2 or !clear all props. \n"..table.ToString(Shortcuts,"  Shortcuts:",true),
+	--Desc = "Clear's things. Egs: !clear Hobo, !clear Hobo e2 or !clear all props. \n"..table.ToString(Shortcuts,"  Shortcuts:",true),
+	Desc = "Clears objects and other things. Exmpl: !clear Hobo, !clear map, !clear all, !clear that.", 
 	FlagDesc = "Allows a user to clear someone's stuff.",
 	Console = { "cleanup","clear" },
 	Chat = { "!cleanup","!clear" },
