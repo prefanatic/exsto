@@ -22,6 +22,8 @@
 	
 	-- Load our derma controls
 	include( "exsto/menu/controls/exbutton.lua" )
+	include( "exsto/menu/controls/exlistview.lua" )
+	include( "exsto/menu/controls/exmultichoice.lua" )
 	 
 	include( "exsto/menu/cl_derma.lua" )
 	include( "exsto/menu/cl_anim.lua" )

@@ -99,10 +99,15 @@ if SERVER then
 
 elseif CLIENT then
 
+	local function editorRankSelected( box, value, data )
+		
+	end
+
 	local function editorInit( pnl )
 		-- Build our layout.
 		-- TODO: Skip the page title.  I'm not sure how universal this design goes.
 		pnl.RankSelect = exsto.CreateMultiChoice( 4, 26, pnl:GetWide() - 74, 32, pnl )
+			pnl.RankSelect.OnSelect = editorRankSelected
 
 		-- TODO: Turn these into ImageButtons
 		pnl.CreateRank = exsto.CreateButton( 0, 26, 32, 32, "+", pnl )
@@ -124,6 +129,11 @@ elseif CLIENT then
 			pnl.Flags:MoveBelow( pnl.RankColor, 4 )
 			pnl.Flags:AddColumn( "" )
 			pnl.Flags:SetHideHeaders( true )
+			
+		-- Populate the RankSelect with our ranks.
+		for ID, data in pairs( exsto.Ranks ) do
+			if id != "srv_owner" then pnl.RankSelect:AddChoice( data.Name ) end
+		end
 	end
 	
 	local function updateContent( rank )
