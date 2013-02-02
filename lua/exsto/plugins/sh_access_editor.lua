@@ -108,6 +108,8 @@ elseif CLIENT then
 		pnl.Derive:SetValue( rank.Parent )
 		pnl.RankColor:SetColor( rank.Color )
 		pnl.Flags:Populate( rank )
+		
+		pnl.OverlayPanel:SetVisible( false )
 	end
 	
 	local function editorRankSelected( box, index, value, data )
@@ -128,17 +130,14 @@ elseif CLIENT then
 
 	local function editorInit( pnl )
 		-- Build our layout.
-		-- TODO: Skip the page title.  I'm not sure how universal this design goes.
-		pnl.Content = vgui.Create( "ExPanelScroller", pnl )
-			pnl.Content:SetPos( 4, 0 )
-			pnl.Content:SetSize( pnl:GetWide() - 8, pnl:GetTall() - 40 )
-			pnl.Content:CreateCategory( "Rank Editor" )
-			
-		pnl.Holder = exsto.CreatePanel( 0, 0, pnl.Content:GetWide() - 14, pnl.Content:GetTall(), nil, pnl.Content )
+		pnl:CreateCategory( "Rank Editor" )
+		pnl:DisableScroller()
+		pnl.Holder = exsto.CreatePanel( 0, 0, pnl:GetWide(), pnl:GetTall() - 10, nil, pnl )
 			pnl.Holder.Paint = function() end
-			pnl.Content:Add( pnl.Holder, "Rank Editor" )
+			pnl:Add( pnl.Holder, "Rank Editor" )
 			
-		pnl.RankSelect = exsto.CreateMultiChoice( 0, 0, pnl.Content:GetWide() - 76, 32, pnl.Holder )
+		pnl.RankSelect = exsto.CreateMultiChoice( 4, 0, pnl.Holder:GetWide() - 86, 32, pnl.Holder )
+			pnl.RankSelect:SetValue( "Select a rank" )
 			pnl.RankSelect.OnSelect = editorRankSelected
 
 		-- TODO: Turn these into ImageButtons
@@ -148,26 +147,33 @@ elseif CLIENT then
 		pnl.DeleteRank = exsto.CreateButton( 0, 0, 32, 32, "-", pnl.Holder )
 			pnl.DeleteRank:MoveRightOf( pnl.CreateRank, 1 )
 			
-		pnl.RankName = exsto.CreateTextEntry( 0, 0, pnl.Content:GetWide(), 32, pnl.Holder )
+		pnl.RankName = exsto.CreateTextEntry( 4, 0, pnl.Holder:GetWide() - 20, 32, pnl.Holder )
 			pnl.RankName:MoveBelow( pnl.RankSelect, 4 )
 		
-		pnl.Derive = exsto.CreateMultiChoice( 0, 0, pnl.Content:GetWide(), 32, pnl.Holder )
+		pnl.Derive = exsto.CreateMultiChoice( 4, 0, pnl.Holder:GetWide() - 20, 32, pnl.Holder )
 			pnl.Derive:MoveBelow( pnl.RankName, 4 )
 			pnl.Derive:AddChoice( "NONE" )
 			
-		pnl.RankColor = exsto.CreateColorMixer( 10, 0, pnl.Content:GetWide() - 84, 76, Color( 100, 100, 100, 255 ), pnl.Holder )
+		pnl.RankColor = exsto.CreateColorMixer( 14, 0, pnl.Holder:GetWide() - 84, 76, Color( 100, 100, 100, 255 ), pnl.Holder )
 			pnl.RankColor:MoveBelow( pnl.Derive, 4 )
 			pnl.RankColor:SetAlphaBar( false )
 			
 		--pnl.Flags = exsto.CreateListView( 4, 0, pnl:GetWide() - 8, 150, pnl )
 		pnl.Flags = vgui.Create( "ExListView", pnl.Holder )
-			pnl.Flags:SetPos( 0, 0 )
+			pnl.Flags:SetPos( 4, 0 )
 			pnl.Flags:MoveBelow( pnl.RankColor, 4 )
 			pnl.Flags:NoHeaders()
 			pnl.Flags.Populate = flagPopulate
 			
 			local x, y = pnl.Flags:GetPos()
-			pnl.Flags:SetSize( pnl.Content:GetWide(), pnl.Content:GetTall() - y - 35 )
+			pnl.Flags:SetSize( pnl.Holder:GetWide() - 20, pnl.Holder:GetTall() - y - 45 )
+			
+		local x, y = pnl.RankName:GetPos()
+		pnl.OverlayPanel = exsto.CreatePanel( 0, y - 1, pnl.Holder:GetWide(), pnl.Holder:GetTall(), nil, pnl.Holder )
+			pnl.OverlayPanel.Paint = function( slf )
+				surface.SetDrawColor( 255, 255, 255, 100 )
+				surface.DrawRect( 0, 0, slf:GetWide(), slf:GetTall() )
+			end
 			
 		-- Populate the RankSelect with our ranks.
 		for ID, data in pairs( exsto.Ranks ) do

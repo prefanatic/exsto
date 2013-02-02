@@ -38,6 +38,7 @@ function exsto.Menu.CreatePage( id, func )
 	obj.ID = id
 	obj:SetBuildCallback( func )
 	obj:SetFrameSize( 267, 430 )
+	obj:SetPanelStyle( "ExPanelScroller" )
 	table.insert( exsto.Menu.Pages, obj )
 	
 	return obj
@@ -104,13 +105,6 @@ function page:SetFrameSize( w, h )
 	self._SizeH = h
 end
 
---[[
-qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, -qm.Parent:GetWide() - 2, 28 )
-		qm.Parent.PlayerListScroller.Anims[ 1 ].Current = -qm.Parent:GetWide() - 2
-		qm.Parent.PlayerListScroller.Anims[ 1 ].Last = -qm.Parent:GetWide() - 2
-		qm.Parent.PlayerListScroller:SetPos( 4, 28 )
-]]
-		
 function page:Backstage() -- Time to sleep him
 	-- Leave to the right.  We should already be at 0, 0?
 	self:SetPos( self:GetParent():GetWide() + 2, 0 )
@@ -159,11 +153,16 @@ function page:ShowClose( bool )
 	self.Content:ShowCloseButton( bool )
 end
 
+function page:SetPanelStyle( stl )
+	self._PanelStyle = stl
+end
+
 function page:CreateContentHolder()
-	self.Content = exsto.CreatePanel( -exsto.Menu.FrameScroller:GetWide() - 2, 0, exsto.Menu.FrameScroller:GetWide(), exsto.Menu.FrameScroller:GetTall(), nil, exsto.Menu.FrameScroller )
-		self.Content:SetSkin( "ExstoQuick" ) -- Ahoy!
-		self.Content.Paint = function() end
-		
+	self.Content = vgui.Create( self._PanelStyle, exsto.Menu.FrameScroller )
+		self.Content:SetPos( -exsto.Menu.FrameScroller:GetWide() - 2, 0 )
+		self.Content:SetSize( exsto.Menu.FrameScroller:GetWide(), exsto.Menu.FrameScroller:GetTall() )
+		self.Content:SetSkin( "ExstoQuick" )
+
 	exsto.Animations.CreateAnimation( self.Content )
 end
 

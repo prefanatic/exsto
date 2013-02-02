@@ -23,22 +23,41 @@ PANEL = {}
 function PANEL:Init()
 
 	self.Objects = {}
-
-	-- Icon Layout
-	self.Layout = vgui.Create( "DPanelList", self )
-		self.Layout:SetPos( 0, 0 )
-		self.Layout:SetSpacing( 5 )
-		self.Layout:SetPadding( 5 )
-		self.Layout:EnableHorizontal( false )
-		self.Layout.Material = Material( "exsto/gradient.png" )
-		self.Layout.PaintOver = function( pnl )
-			surface.SetMaterial( pnl.Material )
+	
+	self.Material = Material( "exsto/gradient.png" )
+	
+	self.List = vgui.Create( "DCategoryList", self )
+		self.List:Dock( FILL )
+		self.List:DockMargin( 4, 0, 4, 0 )
+		self.List.pnlCanvas:DockPadding( 2, 5, 2, 5 )
+		self.List.VBar:SetWide( 2 )
+		self.List.PaintOver = function( pnl )
+			surface.SetMaterial( self.Material )
 			surface.SetDrawColor( 255, 255, 255, 255 )
 			surface.DrawTexturedRect( 0, 0, pnl:GetWide(), 9 )
 		end
-		self.Layout.Paint = function( pnl )
+		self.List.Paint = function( pnl )
 			pnl:GetSkin().tex.Input.ListBox.Background( 0, 0, pnl:GetWide(), pnl:GetTall() );
 		end
+
+	self._VBarDisabled = false
+	
+end
+
+function PANEL:Paint()
+	
+end
+
+function PANEL:Think()
+	if self.List.VBar:IsVisible() and self._VBarDisabled then print( "Fixing vbar" ) self:DisableScroller() end
+	--if !self.List.VBar:IsVisible() and !self._VBarDisabled then print( "drgu" ) self.List.VBar:SetEnabled( true ) end
+end
+
+function PANEL:DisableScroller()
+	--self.List.VBar:SetEnabled( false )
+	self.List.VBar:SetVisible( false )
+	self.List.VBar.Enabled = false
+	self._VBarDisabled = true
 end
 
 function PANEL:Add( obj, catName )
@@ -63,11 +82,8 @@ end
 
 function PANEL:CreateCategory( catName )
 	self.Categories = self.Categories or {}
-	
-	local cat = vgui.Create( "DCollapsibleCategory", self.Layout )
-		cat:SetSize( self:GetWide(), 50 )
-		cat:SetLabel( catName )
-		cat:SetExpanded( false )
+
+	local cat = self.List:Add( catName )
 		cat.Header:SetTextColor( Color( 0, 180, 255, 255 ) )
 		cat.Header:SetFont( "ExGenericText19" )
 		cat.Header.UpdateColours = function( self, skin ) end
@@ -76,23 +92,11 @@ function PANEL:CreateCategory( catName )
 		end
 		cat.Paint = categoryPaint
 		
-	--[[local cat = vgui.Create( "DLabel", self.Layout )
-		cat:SetText( catName )
-		cat:SetTextColor( Color( 0, 180, 255, 255 ) )
-		cat:SetFont( "ExGenericText19" )
-		cat:SizeToContents()]]
-		
-	self.Layout:AddItem( cat )
-		
 	self.Categories[ catName ] = cat
 end
 
 function PANEL:PerformLayout()
-	print( self:GetSize() )
-	self.Layout:SetSize( self:GetWide(), self:GetTall() )
-	for catName, cat in pairs( self.Categories ) do
-		cat:InvalidateLayout()
-	end
+
 end
 	
 

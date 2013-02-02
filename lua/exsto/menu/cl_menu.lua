@@ -105,6 +105,7 @@ function exsto.Menu.Initialize()
 	-- Create the default quick menu.
 	exsto.Menu.QM = exsto.Menu.CreatePage( "quickmenu", exsto.InitQuickMenu )
 		exsto.Menu.QM:SetTitle( "Quick Menu" )
+		exsto.Menu.QM:SetPanelStyle( "DPanel" )
 		exsto.Menu.QM:Build()
 		
 	-- Now create our page icon list.
@@ -113,7 +114,7 @@ function exsto.Menu.Initialize()
 		--exsto.Menu.PageList:Build()
 		
 	for I = 1, 3 do
-		local pg = exsto.Menu.CreatePage( "Test_" .. I, function( pnl ) exsto.CreateLabel( 10, 40, ":)", "ExGenericText30", pnl ) end )
+		local pg = exsto.Menu.CreatePage( "Test_" .. I, function( pnl ) local lbl = exsto.CreateLabel( 10, 40, ":)", "ExGenericText30", pnl ) pnl:CreateCategory( "Test" ) pnl:Add( lbl, "Test" ) end )
 			pg:SetTitle( "Testing Page " .. I )	
 		pg:Build()
 	end
