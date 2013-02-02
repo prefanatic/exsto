@@ -57,6 +57,7 @@
 	AddCSLuaFile( "exsto/menu/controls/exbutton.lua" )
 	AddCSLuaFile( "exsto/menu/controls/exmultichoice.lua" )
 	AddCSLuaFile( "exsto/menu/controls/exlistview.lua" )
+	AddCSLuaFile( "exsto/menu/controls/expanelscroller.lua" )
 	AddCSLuaFile( "includes/modules/von.lua" )
 	AddCSLuaFile( "exsto/sh_tables.lua" )
 	AddCSLuaFile( "exsto/menu/cl_derma.lua" )

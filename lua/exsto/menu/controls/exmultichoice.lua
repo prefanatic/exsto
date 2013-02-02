@@ -21,11 +21,62 @@
 PANEL = {}
 
 function PANEL:Init()
+	
+	-- Create the list view for the choices we have.
+	self.List = vgui.Create( "ExListView" )
+		self.List:NoHeaders()
+		self.List:SetTall( 0 )
+		self.List:SetDrawOnTop( true )
+		self.List.LineSelected = function( lst, disp, data, lineObj ) self:LineSelected( disp, data, lineObj ) end
+		
+	exsto.Animations.CreateAnimation( self.List )
 
-	-- No clip so we can create our list box.
-	self:NoClipping( true )
+end
+
+function PANEL:SelectChoice( disp )
+	self:LineSelected( { disp }, self.List:GetLineData( { disp } ), self.List:GetLineObj( { disp } ) )
+end
+
+function PANEL:OnClick() -- Extending off ExButton
+	if self._Opened then -- Close I guess.
+		self.List:SetTall( 0 )
+		self._Opened = false
+		return
+	end
+	
+	-- Open our list!
+	self.List:SizeToContents()
+	self.List:MoveToFront()
+	self._Opened = true
+end
+
+function PANEL:LineSelected( disp, data, lineObj )
+	-- Set our button's text.
+	self:Text( disp[ 1 ] )
+	
+	-- Close the list
+	self.List:SetTall( 0 )
+	
+	-- Call the callback
+	self:OnSelect( data )
+end
+
+function PANEL:AddChoice( disp, data )
+	self.List:AddRow( { disp }, data )
+end
+
+function PANEL:PerformLayout()
+	
+	-- Reset our list to match where we moved.
+
+	local x, y = self:LocalToScreen( 0, self:GetTall() )
+	local w, h = self:GetSize()
+
+	self.List:SetPos( x + 4, y + 4 )
+	self.List:SetWide( w - 8 )
+	self.List:MoveToFront()
 
 end
 
 
-derma.DefineControl( "ExMultiChoice", "Exsto Multichoice", PANEL, "DButton" )
+derma.DefineControl( "ExMultiChoice", "Exsto Multichoice", PANEL, "ExButton" )

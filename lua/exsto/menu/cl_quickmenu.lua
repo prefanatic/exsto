@@ -161,7 +161,7 @@ function exsto.InitQuickMenu( pnl )
 		
 		-- We need to format a table with ranks and all the players in that rank for the collapseable cats.
 		pnl.PlayerList.Format = function( lst )
-			lst.Objects = {} 
+			lst.Objects = {}
 			
 			-- Loop through players
 			local rnk

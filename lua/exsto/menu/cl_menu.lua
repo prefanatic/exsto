@@ -285,6 +285,7 @@ function exsto.Menu.Open()
 	
 	exsto.Menu.Frame:MakePopup()
 	exsto.Menu.Frame:SetVisible( true )
+	exsto.Menu.Frame:SetKeyboardInputEnabled( true )
 	
 	exsto.Menu.StartTime = CurTime();
 	exsto.Menu.OpenPage( exsto.Menu.GetPageByID( "quickmenu" ) )

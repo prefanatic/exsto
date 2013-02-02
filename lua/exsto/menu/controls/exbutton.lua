@@ -24,7 +24,6 @@ function PANEL:Init()
 	self:Font( "ExGenericText" )
 	self:MaxFontSize( 128 )
 	self:TextPadding( 6 )
-	self:SetText( "" )
 	self:Text( "" )
 	self:SetTextColor( Color( 0, 153, 176, 255 ) )
 end
@@ -66,6 +65,7 @@ function PANEL:GetFont()
 end
 
 function PANEL:Text( txt )
+	self:SetText( "" )
 	self._Text = txt
 	self:SetFontStyle( "resize", self:GetFont() )
 end

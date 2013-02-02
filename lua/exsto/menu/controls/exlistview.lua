@@ -22,6 +22,48 @@ PANEL = {}
 
 function PANEL:Init()
 
+	-- Data for OnRowSelected
+	self.Data = {}
+
+end
+
+function PANEL:NoHeaders()
+	self:SetHideHeaders( true )
+	self:AddColumn( "" )
+end
+
+function PANEL:AddRow( cols, data )
+	
+	local line = self:AddLine( unpack( cols ) )
+	table.insert( self.Data, { Data = data, Display = { unpack( cols ) } } ) -- It will match up with the lineID.  I think.  :I
+	
+	return line
+
+end
+
+function PANEL:GetLineData( disp )
+	for id, linedata in ipairs( self.Data ) do
+		if linedata.Display == disp then return linedata.Data end
+	end
+	return nil
+end
+
+function PANEL:GetLineObj( disp )
+	for id, linedata in ipairs( self.Data ) do
+		if linedata.Display == disp then return self:GetLine( id ) end
+	end
+	return nil
+end	
+
+function PANEL:LineSelected( disp, data, lineobj )
+	
+end
+
+function PANEL:OnRowSelected( lineID, line )
+	local disp = self.Data[ lineID ].Display
+	local data = self.Data[ lineID ].Data
+	
+	self:LineSelected( disp, data, line )
 end
 
 derma.DefineControl( "ExListView", "Exsto ListView", PANEL, "DListView" )
