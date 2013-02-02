@@ -11,7 +11,7 @@ PLUGIN:SetInfo({
 
 function PLUGIN:PM( from, to, msg )
     if from == to then
-        return { exsto_CHAT, COLOR.NORM, "You cannot pm ", COLOR.NAME, "yourself!" }
+        return { exsto_CHAT, COLOR.NORM, "You cannot pm ", COLOR.NAME, "yourself", COLOR.NORM, "!" }
     else
         from:Print(exsto_CHAT,COLOR.EXSTO,"[PM] To ",COLOR.NAME,to,COLOR.NORM,": "..msg)
         to:Print(exsto_CHAT,COLOR.EXSTO,"[PM] From ",COLOR.NAME,from,COLOR.NORM,": "..msg)

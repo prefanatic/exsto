@@ -90,7 +90,7 @@ if SERVER then
 		Chat = { "!addadvert" }, 
 		ReturnOrder = "ID-MSG-INTERVAL-STYLE", 
 		Args = {ID = "STRING", MSG = "STRING", INTERVAL = "TIME", STYLE = "STRING"}, 
-		Optional = {INTERVAL = 5*60, STYLE = "chat"}, 
+		Optional = {INTERVAL = 5, STYLE = "chat"}, 
 		Category = "Adverts", 
 	}) 
 	
