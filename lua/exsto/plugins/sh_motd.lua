@@ -53,7 +53,7 @@ if SERVER then
 		Default = "off",
 		Description = "MOTD Mode. 'off' - disable MOTD. 'file' - load MOTD from 'data\\exsto_motd.txt'. 'url' - load MOTD from URL.",
 		Possible = { "off", "file", "url" },
-		//OnChange = PLUGIN.OnModeChange
+		--OnChange = PLUGIN.OnModeChange
 	})
 	
 	function PLUGIN.OnURLChange( url )
@@ -78,7 +78,7 @@ if SERVER then
 		Dirty = "motd_url",
 		Default = "",
 		Description = "MOTD URL.",
-		//OnChange = PLUGIN.OnURLChange
+		--OnChange = PLUGIN.OnURLChange
 	})
 	
 	function PLUGIN:Init()
@@ -126,35 +126,43 @@ if SERVER then
 
 elseif CLIENT then
 
-	local motd = vgui.Create( "DFrame" )
-	motd:SetVisible( false )
-	motd:SetTitle( "MOTD" )
-	motd:SetSize( ScrW() * 0.95, ScrH() * 0.95 )
-	motd:Center()
-	motd:SetSkin( "Exsto" )
-	
-	local html = vgui.Create( "HTML", motd )
-	html:SetPos( 5, 25 )
-	html:SetSize( motd:GetWide() - 10, motd:GetTall() - motd:GetTall() / 25 - 2.5 - html.y )
-	
-	local button = vgui.Create( "DButton", motd )
-	button:SetText( "Close" )
-	button.DoClick = function() motd:SetVisible( false ) end
-	button:SetPos( 5, motd:GetTall() - motd:GetTall() / 25 + 2.5 )
-	button:SetSize( motd:GetWide() - 10, motd:GetTall() - 5 - button.y )
-	
-	exsto.CreateReader( "ExMOTD", function( reader )
-		local t = reader:ReadChar()
-		if t == 1 then -- URL
-			html:OpenURL( reader:ReadString() )
-		elseif t == 2 then -- HTML
-			html:SetHTML( reader:ReadString() )
+	local function reader( reader )
+		-- Error checking
+		if !PLUGIN.motd or !PLUGIN.motd:IsValid() or !PLUGIN.html or !PLUGIN.html:IsValid() then
+			PLUGIN:Init()
 		end
 		
-		motd:SetVisible( true )
-		motd:MakePopup()
-	end )
+		local t = reader:ReadChar()
+		if t == 1 then 
+			PLUGIN.html:OpenURL( reader:ReadString() )
+		elseif t == 2 then
+			PLUGIN.html:SetHTML( reader:ReadString() )
+		end
+		
+		PLUGIN.motd:SetVisible( true )
+		PLUGIN.motd:MakePopup()
+	end
+	exsto.CreateReader( "ExMOTD", reader )
+	
+	function PLUGIN:Init()
+		self.motd = vgui.Create( "DFrame" )
+			self.motd:SetVisible( false )
+			self.motd:SetTitle( "MOTD" )
+			self.motd:SetSize( ScrW() * 0.95, ScrH() * 0.95 )
+			self.motd:SetDeleteOnClose( false )
+			self.motd:Center()
+			self.motd:SetSkin( "Exsto" )
+	
+		self.html = vgui.Create( "HTML", self.motd )
+			self.html:Dock( FILL )
+			self.html:DockMargin( 5, 5, 5, 25 )
 
+		self.button = vgui.Create( "DButton", self.motd )
+			self.button:SetText( "Close" )
+			self.button.DoClick = function() self.motd:SetVisible( false ) end
+			self.button:Dock( BOTTOM )
+	end
+	
 end	
 
 PLUGIN:Register()
