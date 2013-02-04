@@ -75,6 +75,11 @@ function page:OnShowtime( func )
 	self._OnShowtime = func
 end
 
+function page:OnBackstage( func )
+	if type( func ) != "function" then self:Error( "OnBackstage supplied non-function!" ) return end
+	self._OnBackstage = func
+end
+
 function page:OnSearchTyped( func )
 	if type( func ) != "function" then self:Error( "OnSearchTyped supplied non-function!" ) return end
 	self._SearchOnTextChanged = func
@@ -111,6 +116,9 @@ function page:Backstage() -- Time to sleep him
 	
 	-- Hide the search.
 	exsto.Menu.DisableSearch()
+	
+	-- Call OnBackstage
+	if self._OnBackstage then self._OnBackstage() end
 end
 
 function page:Showtime( noAnim ) -- Wake him up!
@@ -158,9 +166,12 @@ function page:SetPanelStyle( stl )
 end
 
 function page:CreateContentHolder()
+	local h = exsto.Menu.FrameScroller:GetTall()
+	if self._Serachable then h = h - 40 end
+	
 	self.Content = vgui.Create( self._PanelStyle, exsto.Menu.FrameScroller )
 		self.Content:SetPos( -exsto.Menu.FrameScroller:GetWide() - 2, 0 )
-		self.Content:SetSize( exsto.Menu.FrameScroller:GetWide(), exsto.Menu.FrameScroller:GetTall() )
+		self.Content:SetSize( exsto.Menu.FrameScroller:GetWide(), h )
 		self.Content:SetSkin( "ExstoQuick" )
 
 	exsto.Animations.CreateAnimation( self.Content )

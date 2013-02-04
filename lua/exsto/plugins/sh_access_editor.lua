@@ -37,16 +37,16 @@ if SERVER then
 	exsto.CreateReader( "ExDelRankFromClient", PLUGIN.DeleteRank )
 	
 	function PLUGIN.CommitChanges( reader )
-		local immunity = nil
 		local id = reader:ReadString()
-		if !exsto.Ranks[ id ] then immunity = 10 end
 
 		-- Write the data
-		PLUGIN:WriteAccess( id, reader:ReadString(), reader:ReadString(), reader:ReadString(), reader:ReadColor(), reader:ReadTable(), reader:ReadTable() )
-		if immunity then
-			PLUGIN.RecieveImmunityData( nil, id, immunity )
-		end
+		PLUGIN:WriteAccess( id, reader:ReadString(), reader:ReadString(), reader:ReadColor(), reader:ReadTable(), reader:ReadTable() )
 		
+		-- Give him immunity.
+		if !exsto.Ranks[ id ] then
+			PLUGIN:WriteImmunity( id, 10 )
+		end
+
 		-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
 		exsto.aLoader.Initialize()
 		
@@ -60,22 +60,6 @@ if SERVER then
 	exsto.CreateReader( "ExPushRankToSrv", PLUGIN.CommitChanges )
 	
 	function PLUGIN.RecieveImmunityData( reader, id, immunity )
-		if !reader then
-			exsto.RankDB:AddRow( {
-			ID = id;
-			Immunity = immunity;
-		} )
-		else
-			local numChange = reader:ReadShort()
-			print( numChange )
-			for I = 1, numChange do
-				local id, immunity = reader:ReadString(), reader:ReadShort()
-				exsto.RankDB:AddRow( {
-					ID = id,
-					Immunity = immunity,
-				} )
-			end
-		end
 	end
 	exsto.CreateReader( "ExRecImmuneChange", PLUGIN.RecieveImmunityData )
 	
@@ -85,11 +69,17 @@ if SERVER then
 		end		
 	end
 	
-	function PLUGIN:WriteAccess( short, name, derive, desc, color, flagsallow, flagsdeny )
+	function PLUGIN:WriteImmunity( id, imm )
+		exsto.RankDB:AddRow( {
+			ID = id;
+			Immunity = num;
+		} )
+	end
+	
+	function PLUGIN:WriteAccess( short, name, derive, color, flagsallow, flagsdeny )
 		exsto.RankDB:AddRow( {
 			Name = name;
 			ID = short;
-			Description = desc;
 			Parent = derive;
 			Color = von.serialize( color );
 			FlagsAllow = von.serialize( flagsallow );
@@ -99,22 +89,54 @@ if SERVER then
 
 elseif CLIENT then
 
+	local function errors( rank, pnl ) -- Error checking
+		return false
+	end
+
+	--[[ UPDATE PUSHING FUNCTIONS ]]
+	local function pushUpdate()
+		local rank = PLUGIN.WorkingRank
+		local pnl = PLUGIN.Page.Content
+		if !rank then return end -- We weren't working with anything.
+		if errors( rank, pnl ) then return end
+		
+		PLUGIN:Debug( "Updating rank content for " .. rank.Name )
+		local sender = exsto.CreateSender( "ExPushRankToSrv" )
+			sender:AddString( rank.ID )
+			sender:AddString( pnl.RankName:GetValue() )
+			sender:AddString( pnl.Derive:GetValue() )
+			sender:AddColor( pnl.RankColor:GetColor() )
+			sender:AddTable( rank.FlagsAllow ) -- TODO
+			sender:AddTable( rank.FlagsDeny )
+		sender:Send()
+	end
+
 	local function updateContent( rank )
 		local pnl = PLUGIN.Page.Content
-		
-		PrintTable( rank )
+		PLUGIN.WorkingRank = rank 
 		
 		pnl.RankName:SetText( rank.Name )
 		pnl.Derive:SetValue( rank.Parent )
 		pnl.RankColor:SetColor( rank.Color )
+		pnl.RankText:SetTextColor( rank.Color )
 		pnl.Flags:Populate( rank )
 		
 		pnl.OverlayPanel:SetVisible( false )
 	end
 	
 	local function editorRankSelected( box, index, value, data )
+		-- Push the rank update to server, if we did so.
+		pushUpdate()
+		
 		-- Update our content.
 		updateContent( data )
+	end
+	
+	local function flagIndicator( line )
+		if !PLUGIN.WorkingRank then return end
+		local data = PLUGIN.Page.Content.Flags:GetLineDataFromObj( line )
+		
+		draw.SimpleText( data.Status, "ExGenericText14", 0, 2, Color( 0, 0, 0, 255 ) )
 	end
 	
 	local function flagPopulate( lst, rank )
@@ -123,8 +145,14 @@ elseif CLIENT then
 		local drv_allow = exsto.Ranks[ rank.Parent ] and exsto.Ranks[ rank.Parent].FlagsAllow or {}
 		
 		lst:Clear()
+		local status = "open"
 		for flag, desc in pairs( exsto.Flags ) do
-			lst:AddRow( { flag }, desc )
+			-- Do some flag status checking first.
+			if table.HasValue( allow, flag ) then status = "allowed" end
+			if table.HasValue( deny, flag ) then status = "denied" end
+			if table.HasValue( drv_allow, flag ) then status = "locked" end
+			
+			lst:AddRow( { flag }, {Desc = desc, Status = status } )
 		end
 	end
 
@@ -135,41 +163,72 @@ elseif CLIENT then
 		pnl.Holder = exsto.CreatePanel( 0, 0, pnl:GetWide(), pnl:GetTall() - 10, nil, pnl )
 			pnl.Holder.Paint = function() end
 			pnl:Add( pnl.Holder, "Rank Editor" )
+			pnl.Holder:Dock( FILL )
+			pnl.Holder:DockPadding( 4, 0, 4, 0 )
+			--pnl.Holder:DockMargin( 0, 4, 0, 4 )
+
+		pnl.Header = vgui.Create( "DPanel", pnl.Holder )
+			pnl.Header:Dock( TOP )
+			pnl.Header:SetTall( 32 )
+			pnl.Header.Paint = function() end
 			
-		pnl.RankSelect = exsto.CreateMultiChoice( 4, 0, pnl.Holder:GetWide() - 86, 32, pnl.Holder )
+		pnl.RankSelect = vgui.Create( "DComboBox", pnl.Header )
 			pnl.RankSelect:SetValue( "Select a rank" )
+			pnl.RankSelect:Dock( FILL )
 			pnl.RankSelect.OnSelect = editorRankSelected
 
 		-- TODO: Turn these into ImageButtons
-		pnl.CreateRank = exsto.CreateButton( 0, 0, 32, 32, "+", pnl.Holder )
-			pnl.CreateRank:MoveRightOf( pnl.RankSelect, 1 )
+		pnl.CreateRank = vgui.Create( "DButton", pnl.Header )
+			pnl.CreateRank:SetText( "+" )
+			pnl.CreateRank:SetWide( 32 )
+			pnl.CreateRank:Dock( RIGHT )
 		
-		pnl.DeleteRank = exsto.CreateButton( 0, 0, 32, 32, "-", pnl.Holder )
-			pnl.DeleteRank:MoveRightOf( pnl.CreateRank, 1 )
+		pnl.DeleteRank = vgui.Create( "DButton", pnl.Header )
+			pnl.DeleteRank:SetText( "-" )
+			pnl.DeleteRank:SetWide( 32 )
+			pnl.DeleteRank:Dock( RIGHT )
 			
-		pnl.RankName = exsto.CreateTextEntry( 4, 0, pnl.Holder:GetWide() - 20, 32, pnl.Holder )
-			pnl.RankName:MoveBelow( pnl.RankSelect, 4 )
+		pnl.RankName = vgui.Create( "DTextEntry", pnl.Holder )
+			pnl.RankName:Dock( TOP )
+			pnl.RankName:SetTall( 32 )
+			pnl.RankName:DockMargin( 0, 4, 0, 0 )
 		
-		pnl.Derive = exsto.CreateMultiChoice( 4, 0, pnl.Holder:GetWide() - 20, 32, pnl.Holder )
-			pnl.Derive:MoveBelow( pnl.RankName, 4 )
+		pnl.Derive = vgui.Create( "DComboBox", pnl.Holder )
 			pnl.Derive:AddChoice( "NONE" )
+			pnl.Derive:SetTall( 32 )
+			pnl.Derive:Dock( TOP )
+			pnl.Derive:DockMargin( 0, 4, 0, 0 )
 			
-		pnl.RankColor = exsto.CreateColorMixer( 14, 0, pnl.Holder:GetWide() - 84, 76, Color( 100, 100, 100, 255 ), pnl.Holder )
-			pnl.RankColor:MoveBelow( pnl.Derive, 4 )
+		pnl.ColorHolder = vgui.Create( "DPanel", pnl.Holder )
+			pnl.ColorHolder:SetTall( 76 )
+			pnl.ColorHolder:Dock( TOP )
+			pnl.ColorHolder:DockMargin( 6, 4, 6, 0 )
+			pnl.ColorHolder.Paint = function() end
+
+		pnl.RankColor = vgui.Create( "DColorMixer", pnl.ColorHolder )
+			pnl.RankColor:Dock( FILL )
+			pnl.RankColor:DockMargin( 0, 0, 12, 0 )
+			pnl.RankColor:SetPalette( false )
 			pnl.RankColor:SetAlphaBar( false )
+		
+		pnl.RankText = vgui.Create( "DLabel", pnl.ColorHolder )
+			pnl.RankText:SetText( "ABC\n\nabc\n\n123" )
+			pnl.RankText:SetFont( "ExGenericText15" )
+			pnl.RankText:SizeToContents()
+			pnl.RankText:Dock( RIGHT )
 			
-		--pnl.Flags = exsto.CreateListView( 4, 0, pnl:GetWide() - 8, 150, pnl )
 		pnl.Flags = vgui.Create( "ExListView", pnl.Holder )
-			pnl.Flags:SetPos( 4, 0 )
-			pnl.Flags:MoveBelow( pnl.RankColor, 4 )
+			pnl.Flags:Dock( FILL )
+			pnl.Flags:DockMargin( 0, 4, 0, 4 )
+			pnl.Flags:SetDataHeight( 22 )
 			pnl.Flags:NoHeaders()
+			pnl.Flags:LinePaintOver( flagIndicator )
 			pnl.Flags.Populate = flagPopulate
 			
-			local x, y = pnl.Flags:GetPos()
-			pnl.Flags:SetSize( pnl.Holder:GetWide() - 20, pnl.Holder:GetTall() - y - 45 )
-			
 		local x, y = pnl.RankName:GetPos()
-		pnl.OverlayPanel = exsto.CreatePanel( 0, y - 1, pnl.Holder:GetWide(), pnl.Holder:GetTall(), nil, pnl.Holder )
+		pnl.OverlayPanel = vgui.Create( "DPanel", pnl.Holder )
+			pnl.OverlayPanel:SetSize( pnl:GetWide(), pnl:GetTall() - 10 )
+			pnl.OverlayPanel:MoveBelow( pnl.Header, 1 )
 			pnl.OverlayPanel.Paint = function( slf )
 				surface.SetDrawColor( 255, 255, 255, 100 )
 				surface.DrawRect( 0, 0, slf:GetWide(), slf:GetTall() )
@@ -189,6 +248,9 @@ elseif CLIENT then
 		self.Page = exsto.Menu.CreatePage( "rankeditor", editorInit )
 			self.Page:SetTitle( "Rank Editor" )
 			self.Page:SetSearchable( true )
+			self.Page:OnBackstage( pushUpdate )
+			
+		self.WorkingRank = nil
 	end
 
 end

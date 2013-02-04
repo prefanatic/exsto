@@ -24,7 +24,12 @@ function PANEL:Init()
 
 	-- Data for OnRowSelected
 	self.Data = {}
+	self:SetTextIndent( 5 )
 
+end
+
+function PANEL:SetTextIndent( num )
+	self._Indent = num
 end
 
 function PANEL:NoHeaders()
@@ -32,13 +37,33 @@ function PANEL:NoHeaders()
 	self:AddColumn( "" )
 end
 
+function PANEL:LinePaintOver( func )
+	self._LinePaintOver = func
+end
+
 function PANEL:AddRow( cols, data )
 	
 	local line = self:AddLine( unpack( cols ) )
-	table.insert( self.Data, { Data = data, Display = { unpack( cols ) } } ) -- It will match up with the lineID.  I think.  :I
+	table.insert( self.Data, { Data = data, Display = { unpack( cols ) }, Obj = line } ) -- It will match up with the lineID.  I think.  :I
+	
+	for i, label in ipairs( line.Columns ) do
+		label:SetTextInset( 25, 0 )
+		label:SetFont( "ExGenericTextNoBold14" )
+	end
+	
+	if self._LinePaintOver then
+		line.PaintOver = self._LinePaintOver
+	end
 	
 	return line
 
+end
+
+function PANEL:GetLineDataFromObj( obj )
+	for id, linedata in ipairs( self.Data ) do
+		if linedata.Obj == obj then return linedata.Data end
+	end
+	return nil
 end
 
 function PANEL:GetLineData( disp )
@@ -65,5 +90,16 @@ function PANEL:OnRowSelected( lineID, line )
 	
 	self:LineSelected( disp, data, line )
 end
+--[[
+function PANEL:PerformLayout()
+	-- Loop through all our lines and their columns AND THEIR LABELSSSS!!!111
+	for id, line in ipairs( self:GetLines() ) do
+		if line.Columns then
+			for i, label in ipairs( line.Columns ) do
+				label:SetTextInset( self._Indent or 5, 0 )
+			end
+		end
+	end
+end]]
 
 derma.DefineControl( "ExListView", "Exsto ListView", PANEL, "DListView" )
