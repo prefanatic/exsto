@@ -11,31 +11,34 @@ PLUGIN:SetInfo({
 
 if SERVER then
 	
+	util.AddNetworkString("BannerInfo")
+	
 	function PLUGIN:Init()
-		BText = "Welcome to "..GetConVarString("hostname").."!"
-				
-		local function BEnabledChange(enabled)
-			PLUGIN:SendBannerInfo(player.GetAll(),enabled)
-			return true
-		end
-		
-		PLUGIN:AddVariable({
-			Pretty = "Banner Enabled",
-			Dirty = "banner",
-			Default = true,
-			Description = "If the banner is shown or not.",
-			Possible = {true,false},
-			OnChange = BEnabledChange
-		})
-		PLUGIN:AddVariable({
-			Pretty = "Banner Text",
-			Dirty = "bannertext",
-			Default = "Welcome to #hostname, enjoy your stay!",
-			Description = "Sets the banner's default text.",
-		})
+		BText = exsto.GetVar("bannertext").Value
 	end
 	
+	local function BEnabledChange(enabled)
+		PLUGIN:SendBannerInfo(player.GetAll(),enabled)
+		return true
+	end
+	
+	PLUGIN:AddVariable({
+		Pretty = "Banner Enabled",
+		Dirty = "banner",
+		Default = true,
+		Description = "If the banner is shown or not.",
+		OnChange = BEnabledChange,
+		Possible = {true,false}
+	})
+	PLUGIN:AddVariable({
+		Pretty = "Banner Text",
+		Dirty = "bannertext",
+		Default = "Welcome to #hostname, enjoy your stay!",
+		Description = "Sets the banner's default text.",
+	})
+	
 	function PLUGIN:SendBannerInfo(ply, enabled)
+		MsgN(exsto.GetVar("banner").Value)
 		enabled = enabled or exsto.GetVar("banner").Value
 		    //Sender args = Banner Enabled and Banner text.
 		local sender = exsto.CreateSender("BannerInfo",ply)
@@ -45,13 +48,13 @@ if SERVER then
 	end
 
 	function PLUGIN:ExClientPluginsReady(ply)
-		self:SendBannerInfo(ply)
+		self:BannerText(ply, BText)
 	end
 
 	function PLUGIN:BannerText(owner, text)
 		BText = text
 		BText = string.gsub(BText,"#hostname",GetConVarString("hostname")) //Not able to be retrieved from Client easily.
-		BText = string.gsub(BText,"#maxplayers",MaxPlayers()) //Non-updated so we will sub it here.
+		BText = string.gsub(BText,"#maxplayers",game.MaxPlayers()) //Non-updated so we will sub it here.
 		self:SendBannerInfo(player.GetAll())
 		return { COLOR.NAME,owner:Nick(),COLOR.NORM," has changed the banner text to \"",COLOR.NAME,text,COLOR.NORM,"\"" }
 	end

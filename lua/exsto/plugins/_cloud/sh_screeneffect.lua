@@ -2,6 +2,8 @@
 
 if SERVER then
 	local PLUGIN = exsto.CreatePlugin()
+	
+	util.AddNetworkString("ExEffects")
 
 	PLUGIN:SetInfo({
 		Name = "Screen Effect Plugin",

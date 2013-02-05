@@ -10,38 +10,43 @@ PLUGIN:SetInfo({
 })
 
 --Hook for checking weapon switches and colouring accordingly.
-function PLUGIN:DoAnimationEvent(ply,event,data)
+function PLUGIN:Think()
 
-	local weap = ply:GetActiveWeapon()
-	if weap then
-		--event 38 is weapon switching
-		if event == 38 then
-			local r,g,b,a = weap:GetColor()
-			if a != ply.GAlpha then
-				weap:SetColor(255,255,255,ply.GAlpha or 255)
+	for _, ply in ipairs(player.GetAll()) do
+
+		if ply:GetActiveWeapon() then weap = ply:GetActiveWeapon() end
+		if weap and weap:IsValid() and weap != ply.LastWeap then
+			if ply.Ghosted and weap:GetNWBool("Shadow", true) then
+				weap:DrawShadow(false)
+				weap:SetNWBool("Shadow", false)
+			elseif !ply.Ghosted and !weap:GetNWBool("Shadow", true) then
+				weap:DrawShadow(true)
+				weap:SetNWBool("Shadow", true)
 			end
+			ply.LastWeap = weap
 		end
+		
 	end
 	
 end
 
-function PLUGIN:Ghost( owner, ply, a )
+function PLUGIN:Ghost( owner, ply )
 
-	if !ply.Ghosted or a > 0 then
-		ply:SetColor(255,255,255,a)
-		ply:GetActiveWeapon():SetColor(255,255,255,a)
-		ply:SetCollisionGroup(COLLISION_GROUP_DEBRIS)
+	if !ply.Ghosted then
+		if ply:GetModel() != "models/m_anm.mdl" then ply.OldModel = ply:GetModel() end
+		ply:SetModel("models/m_anm.mdl")
+		ply:GetActiveWeapon():DrawShadow(false)
+		ply:GetActiveWeapon():SetNWBool("Shadow", false)
 		ply.Ghosted = true
-		ply.GAlpha = a
+		ply:SetCollisionGroup(COLLISION_GROUP_DEBRIS) -- TODO: Find what doesn't collide with players
 		ply:SetNWBool("HideTag",true)
 		return { COLOR.NAME, owner:Nick(), COLOR.NORM, " has ghosted ",COLOR.NAME, ply:Nick(),COLOR.NORM,"." }
 		
 	elseif ply.Ghosted then
-		ply:SetColor(255,255,255,255)
-		ply:GetActiveWeapon():SetColor(255,255,255,255)
-		ply:SetCollisionGroup(COLLISION_GROUP_PLAYER)
+		ply:SetModel(ply.OldModel)
 		ply.Ghosted = false
-		ply.GAlpha = 255
+		ply:GetActiveWeapon():SetRenderMode(1)
+		ply:SetCollisionGroup(COLLISION_GROUP_PLAYER)
 		ply:SetNWBool("HideTag",false)
 		return { COLOR.NAME, owner:Nick(), COLOR.NORM, " has unghosted ",COLOR.NAME, ply:Nick(),COLOR.NORM,"." }
 	end
@@ -52,8 +57,8 @@ PLUGIN:AddCommand( "ghost", {
 	Desc = "Hides players",
 	Console = { "ghost" },
 	Chat = { "!ghost" },
-	ReturnOrder = "Player-Alpha",
-	Args = {Player = "PLAYER", Alpha = "NUMBER"},
+	ReturnOrder = "Player",
+	Args = {Player = "PLAYER"},
 	Optional = {Alpha = 0},
 	Category = "Fun",
 })

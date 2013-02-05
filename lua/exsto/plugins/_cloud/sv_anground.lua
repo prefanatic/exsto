@@ -35,8 +35,8 @@ end
 PLUGIN:AddCommand( "round", {
 	Call = PLUGIN.Round,
 	Desc = "Rounds a prop's angle.",
-	Console = { "round" },
-	Chat = { "!round" },
+	Console = { "anground" },
+	Chat = { "!anground" },
     ReturnOrder = "Pitch-Yaw-Roll",
     Args = { Pitch = "NUMBER", Yaw = "NUMBER", Roll = "NUMBER" },
 	Optional = { Pitch = 90, Yaw = 90, Roll = 90 }

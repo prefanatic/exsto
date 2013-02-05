@@ -24,7 +24,7 @@ PLUGIN:AddVariable( {
 } )
 
 function PLUGIN:Init()
-	if !GeoIP then 
+	if !GeoIP and exsto.GetVar( "country-on-connect" ).Value == true then 
 		local succ, err = pcall( require, "geoip" )
 		if !succ then
 			self:Error( "Unable to load GeoIP module.  If you want to display countries on connect, you need this." )
