@@ -27,23 +27,9 @@ function PLUGIN.ClearDecals(self, ply)
 	
 	return {
 		Activator = ply,
-		Player = "all players'",
+		Player = "all",
 		Wording = " cleared ",
 		Secondary = " decals"
-	}
-end
-
-function PLUGIN.StopSounds(self, ply)
-	local rp = RecipientFilter()
-	rp:AddAllPlayers()
-	umsg.Start("exsto_stopsounds", rp)
-	umsg.End()
-	
-	return {
-		Activator = ply,
-		Player = "all players'",
-		Wording = " stopped ",
-		Secondary = " sounds"
 	}
 end
 
@@ -55,6 +41,20 @@ PLUGIN:AddCommand( "decals", {
 	Args = {},
 	Category = "Utilities",
 })
+
+function PLUGIN.StopSounds(self, ply)
+	local rp = RecipientFilter()
+	rp:AddAllPlayers()
+	umsg.Start("exsto_stopsounds", rp)
+	umsg.End()
+	
+	return {
+		Activator = ply,
+		Player = "all",
+		Wording = " stopped ",
+		Secondary = " sounds"
+	}
+end
 
 PLUGIN:AddCommand( "stopsounds", {
 	Call = PLUGIN.StopSounds,

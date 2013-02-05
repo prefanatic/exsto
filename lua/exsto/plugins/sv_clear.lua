@@ -15,7 +15,7 @@ function PLUGIN:Clear( owner, targ, clr, show )
 	
 	if( targ == "map" or targ == "world") then
 		game.CleanUpMap()
-		Return = { COLOR.NAME,owner,COLOR.NORM, " cleaned the map" }
+		Return = { COLOR.NAME,owner,COLOR.NORM, " cleaned the map!" }
 		
 	elseif (targ == "all") then
 		cleanup.CC_AdminCleanup(owner, nil, {clr != "" and clr or nil} )
@@ -41,7 +41,11 @@ function PLUGIN:Clear( owner, targ, clr, show )
 	else
 		ply = exsto.FindPlayer(targ)
 		cleanup.CC_Cleanup(ply, nil, {clr != "" and clr or nil} )
-		Return = { COLOR.NAME,owner,COLOR.NORM, " removed ",COLOR.NAME, ply, COLOR.NORM, "'s ", COLOR.NAME, clr, COLOR.NORM, "!" }			
+		if clr == "" then
+			Return = { COLOR.NAME,owner,COLOR.NORM, " removed all ",COLOR.NAME, ply, COLOR.NORM, "'s property!" }			
+		else
+			Return = { COLOR.NAME,owner,COLOR.NORM, " removed ",COLOR.NAME, ply, COLOR.NORM, "'s ", COLOR.NAME, clr, COLOR.NORM, "!" }	
+		end
 		
 	end
 	
@@ -52,7 +56,6 @@ end
 
 PLUGIN:AddCommand( "clear", {
 	Call = PLUGIN.Clear,
-	--Desc = "Clear's things. Egs: !clear Hobo, !clear Hobo e2 or !clear all props. \n"..table.ToString(Shortcuts,"  Shortcuts:",true),
 	Desc = "Clears objects and other things. Exmpl: !clear Hobo, !clear map, !clear all, !clear that.", 
 	FlagDesc = "Allows a user to clear someone's stuff.",
 	Console = { "cleanup","clear" },

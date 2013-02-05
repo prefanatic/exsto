@@ -162,6 +162,10 @@ elseif CLIENT then
 	
 		if self.Open == bool then return end
 		
+		autoopt = 1
+		ACExtra = 0
+		ACSlots = {}
+		
 		self.Open = bool
 		self.TeamMode = team
 		
@@ -257,24 +261,27 @@ elseif CLIENT then
 	
 	-- Commonly used variables for chatchange
 	local split
+	local oldText = oldText or ""
+	
 	function PLUGIN:OnChatChange( text )
-		if !text or text == "" or text == " " then return end
 		split = string.Explode( " ", text )
-		
-		if !split[1] then return end
 		split[1] = string.gsub(split[1],"#","")
-		
-		if self.Panel:AutoCompleteBuilt() and split[1]:sub( 1, 1 ) != "!" then
-			self.Panel:ClearAutoComplete()
+		if text != oldText then
+			ACExtra = 0
+			autoopt = 1
+			oldText = text
 		end
 		
+		if self.Panel:AutoCompleteBuilt() and text:sub( 1, 1 ) != "!" then
+			self.Panel:ClearAutoComplete()		end	
+		
 		-- If we are going to PM somebody.
-		if split[1]:sub( 1, 1 ) == "@" then 
+		if text:sub( 1, 1 ) == "@" then 
 			self.ChatLabel = "PM"
 			self.Panel:Resize()
-            
+           
 		-- If we are going to run an Exsto command.
-		elseif split[1]:sub( 1, 1 ) == "!" then
+		elseif text:sub( 1, 1 ) == "!" then
 			
 			if !exsto.Commands then return end
 			
@@ -301,12 +308,11 @@ elseif CLIENT then
 			self.Panel:Resize()
             	
 		else
-			
-			if self.ChatLabel != self.ChatLabelDefault then
-				self.ChatLabel = self.ChatLabelDefault
-				self.Panel:Resize()
-			end
+			self.ChatLabel = "Chat"
+			self.Panel:Resize()
+		
 		end
+		
 	end
 	
 	-- Commonly used variables for animate
@@ -467,7 +473,7 @@ elseif CLIENT then
 		end
 		
 		-- Clean the chatbox when it gets too big.
-		if table.Count( self.Lines ) > 30 then
+		if table.Count( self.Lines ) > 100 then
 			table.remove( self.Lines, 1 )
 		end
 		        
@@ -694,7 +700,10 @@ elseif CLIENT then
 	end
     
 	local PANEL = {}
-    
+    autoopt = autoopt or 1
+	ACExtra = ACExtra or 0
+	ACSlots = ACSlots or {}
+	
 	function PANEL:Init()
 		
 		self.X = 35
@@ -738,15 +747,30 @@ elseif CLIENT then
 		local split
 		self.Entry.OnKeyCodeTyped = function( self, code )
 			local text = self:GetValue()
+			local ctrl = input.IsKeyDown(KEY_LCONTROL) or input.IsKeyDown(KEY_RCONTROL)
+			autoopt = autoopt + (code==KEY_DOWN and 1 or code==KEY_UP and -1 or 0)
+			
+			if autoopt < 1 then
+				if ACExtra > 0 then
+					ACExtra = ACExtra - 1 
+					self:OnTextChanged(text)
+				end
+				autoopt = 1
+			elseif autoopt > 7 or (autoopt > #ACSlots and #ACSlots > 0) then
+				if (ACExtra + autoopt) < #ACSlots then 
+					ACExtra = ACExtra + 1
+					self:OnTextChanged(text)
+				end
+				autoopt = (7 < #ACSlots) and 7 or #ACSlots
+			end
+			
 			
 			if code == KEY_ENTER then
 				RunConsoleCommand( PLUGIN.TeamMode and "say_team" or "say", text )
 				PLUGIN:Toggle( false )
-			-- elseif code == KEY_BACKSPACE and text == "" then
-				-- PLUGIN:Toggle( false )
-			elseif code == KEY_UP then
+			elseif ctrl and code == KEY_UP then
 				ScrollUp()
-			elseif code == KEY_DOWN then
+			elseif ctrl and code == KEY_DOWN then
 				ScrollDown()
 			elseif code == KEY_ESCAPE then
 				PLUGIN:Toggle( false )
@@ -806,20 +830,19 @@ elseif CLIENT then
         end
     end
 	
-	local build, arg, data
+	local build, arg
 	function PANEL:AddAutoComplete( name, command )
 	
 		if !LocalPlayer():IsAllowed( command.ID ) then return end
 	
 		surface.SetFont( PLUGIN.GlobalFont:GetString() )
-		data = { }
-		data.Name = name
+		local autoData = { }
+		autoData.Name = name
 		
 		build = ""
 		
 		-- Build the function requirements
 		if type( command.ReturnOrder ) == "table" then
-			--PrintTable( command.ReturnOrder )
 			for I = 1, #command.ReturnOrder do
 				arg = command.ReturnOrder[ I ]
 				
@@ -829,19 +852,28 @@ elseif CLIENT then
 				end
 			end
 			
-			data.Arguments = build
+			autoData.Arguments = build
 		end
 
-		--print( build )
-		table.insert( self.AutoComplete.Slots, data )
+		table.insert( self.AutoComplete.Slots, autoData )
 		
+	end
+		
+	local function sort( a, b )
+		if !a.Name or !b.Name then return end
+		if !a.Name[1] or !b.Name[1] then return end
+		
+		return a.Name < b.Name
 	end
 	
 	local w, h, slot, nw, nh
 	function PANEL:BuildAutoComplete()
 		surface.SetFont( PLUGIN.GlobalFont:GetString() )
 		
-		for I = 1, 7 do
+		table.sort(self.AutoComplete.Slots, sort)
+		ACSlots = self.AutoComplete.Slots
+		
+		for I = 1+ACExtra, 7+ACExtra do
 			slot = self.AutoComplete.Slots[I]
 			
 			if slot then
@@ -862,9 +894,11 @@ elseif CLIENT then
 		end
 		
 		-- Clean those who didn't make the cut.
-		for _, slot in ipairs( self.AutoComplete.Slots ) do
-			if !slot.Place then table.remove( self.AutoComplete.Slots, _ ) end
+		local temp = {}
+		for _, slot in pairs( self.AutoComplete.Slots ) do
+			if slot.Place then table.insert(temp, slot) end
 		end
+		self.AutoComplete.Slots = temp
 		
 		self.AutoComplete.Built = true
 
@@ -875,7 +909,7 @@ elseif CLIENT then
 	end
 	
 	function PANEL:AutoCompleteSelected()
-		return self.AutoComplete.Slots[1]
+		return self.AutoComplete.Slots[autoopt]
 	end
 	
 	function PANEL:ClearAutoComplete()
@@ -888,6 +922,7 @@ elseif CLIENT then
 	end
 	
 	function PANEL:Paint()
+		surface.SetFont( PLUGIN.GlobalFont:GetString() )
 	
 		-- Draw green fill on the nice label
 		surface.SetDrawColor( 119, 255, 91, PLUGIN.Fade / 2 )
@@ -914,7 +949,20 @@ elseif CLIENT then
 			surface.DrawOutlinedRect( PLUGIN.X, 25, self.AutoComplete.Width, self.AutoComplete.Height )
 			
 			for _, slot in ipairs( self.AutoComplete.Slots ) do
-				if slot.Place then
+				if slot.Place and _ == autoopt then
+					local textCount = #string.Explode(" ",self.Entry:GetValue())
+					draw.SimpleTextOutlined( slot.Name, PLUGIN.GlobalFont:GetString(), PLUGIN.X + 5, slot.Place + 25, PLUGIN:ColorAlpha( textCount == 1 and PLUGIN:BlinkColor(colName) or colName, PLUGIN.Fade ), 0, 0, 1, PLUGIN:ColorAlpha( PLUGIN.Colors.Outline, PLUGIN.Fade ) )
+					
+					local extraWidth = 0
+					local argSplit = string.Explode(" ",slot.Arguments)
+					table.remove(argSplit)
+					for _, arg in pairs (argSplit) do
+						draw.SimpleTextOutlined( arg, PLUGIN.GlobalFont:GetString(), PLUGIN.X + 10 + slot.NameWidth + extraWidth, slot.Place + 25, PLUGIN:ColorAlpha( (textCount - 1) == _ and PLUGIN:BlinkColor(colNorm) or colNorm, PLUGIN.Fade ), 0, 0, 1, PLUGIN:ColorAlpha( PLUGIN.Colors.Outline, PLUGIN.Fade ) )
+						w, h = surface.GetTextSize(arg.." ")
+						extraWidth = extraWidth + w
+					end
+					
+				elseif slot.Place then
 					draw.SimpleTextOutlined( slot.Name, PLUGIN.GlobalFont:GetString(), PLUGIN.X + 5, slot.Place + 25, PLUGIN:ColorAlpha( colName, PLUGIN.Fade ), 0, 0, 1, PLUGIN:ColorAlpha( PLUGIN.Colors.Outline, PLUGIN.Fade ) )
 					draw.SimpleTextOutlined( slot.Arguments, PLUGIN.GlobalFont:GetString(), PLUGIN.X + 10 + slot.NameWidth, slot.Place + 25, PLUGIN:ColorAlpha( colNorm, PLUGIN.Fade ), 0, 0, 1, PLUGIN:ColorAlpha( PLUGIN.Colors.Outline, PLUGIN.Fade ) )
 				end

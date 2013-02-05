@@ -12,7 +12,6 @@ PLUGIN:SetInfo({
 
 function PLUGIN:Spectate( owner, ply )
 
-	if ply.Spectating then return { owner, COLOR.NAME, ply:Nick(), COLOR.NORM, " is currently not availible for spectate!" } end
 	if owner.Spectating then
 		owner:UnSpectate()
 		owner:KillSilent()
@@ -26,6 +25,8 @@ function PLUGIN:Spectate( owner, ply )
 		owner.Spectating = false
 		return { owner, COLOR.NORM, "You have stopped ", COLOR.NAME, "specatating", COLOR.NORM, "!" }
 	end
+	
+	if ply.Spectating then return { owner, COLOR.NAME, ply:Nick(), COLOR.NORM, " is currently not availible for spectate!" } end
 	
 	owner.Weapons = {}
 	
@@ -48,7 +49,7 @@ PLUGIN:AddCommand( "spectate", {
 	Call = PLUGIN.Spectate,
 	Desc = "Allows users to spectate a person.",
 	Console = { "spectate","unspectate" },
-	Chat = { "!spec","!unspec" },
+	Chat = { "!spec", "!unspec" },
 	ReturnOrder = "Victim",
 	Args = {Victim = "PLAYER"},
 	Category = "Administration",
