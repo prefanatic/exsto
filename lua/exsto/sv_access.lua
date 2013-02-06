@@ -186,7 +186,9 @@ function exsto.aLoader.SegmentRank( id, data )
 end
 
 function exsto.aLoader.Error( id, msg )
-	exsto.RankErrors[ id ] = { exsto.aLoader.Loaded[ id ], msg }
+	exsto.aLoader.Errors[ id ] = exsto.aLoader.Errors[ id ] or {}
+	
+	exsto.aLoader.Errors[ id ] = { exsto.aLoader.Loaded[ id ], msg }
 end
 
 --[[ -----------------------------------

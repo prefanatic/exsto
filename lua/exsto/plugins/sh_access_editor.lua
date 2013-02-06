@@ -89,7 +89,44 @@ if SERVER then
 
 elseif CLIENT then
 
+	local function refreshEditor()
+		local pnl = PLUGIN.Page.Content
+		if !pnl then return end
+		
+		local derive = pnl.Derive:GetValue()
+		local option = pnl.RankSelect:GetValue()
+		
+		pnl.RankSelect:Clear()
+		pnl.Derive:Clear()
+		pnl.OverlayPanel:SetVisible( true )
+		-- Populate the RankSelect with our ranks.
+		for ID, data in pairs( exsto.Ranks ) do
+			if ID != "srv_owner" then 
+				pnl.RankSelect:AddChoice( data.ID, data ) 
+				pnl.Derive:AddChoice( data.ID )
+			end
+		end
+		pnl.Derive:AddChoice( "NONE" )
+		
+		if pnl.RankSelect.WorkingID then
+			pnl.RankSelect._IgnoreSelect = true
+			pnl.RankSelect:ChooseOptionID( pnl.RankSelect.WorkingID )
+			pnl.OverlayPanel:SetVisible( false )
+		end
+		
+		if derive then pnl.Derive:SetValue( derive ) end
+	end
+
+	function PLUGIN:ExReceivedRanks()
+		-- Called when exsto receives client ranks.
+		self.Updating = false
+		refreshEditor()
+	end
+
 	local function errors( rank, pnl ) -- Error checking
+		-- TODO: Print notification that this occurs.
+		-- TODO: Maybe we should just upload to the server and create an error-checking process and then report back to the client?
+		if pnl.RankName:GetValue() == "" then return true end
 		return false
 	end
 
@@ -99,6 +136,8 @@ elseif CLIENT then
 		local pnl = PLUGIN.Page.Content
 		if !rank then return end -- We weren't working with anything.
 		if errors( rank, pnl ) then return end
+		
+		PLUGIN.Updating = true
 		
 		PLUGIN:Debug( "Updating rank content for " .. rank.Name )
 		local sender = exsto.CreateSender( "ExPushRankToSrv" )
@@ -125,8 +164,14 @@ elseif CLIENT then
 	end
 	
 	local function editorRankSelected( box, index, value, data )
+		if box._IgnoreSelect then box._IgnoreSelect = false return end
+		
 		-- Push the rank update to server, if we did so.
-		pushUpdate()
+		if !PLUGIN.Updating then
+			pushUpdate()
+		end
+		
+		box.WorkingID = index
 		
 		-- Update our content.
 		updateContent( data )
@@ -139,9 +184,15 @@ elseif CLIENT then
 		draw.SimpleText( data.Status, "ExGenericText14", 0, 2, Color( 0, 0, 0, 255 ) )
 	end
 	
+	local function flagHandler( lst, display, data, line )
+		local status = data.Status
+		
+		-- if our status is open
+		
+	end
+	
 	local function flagPopulate( lst, rank )
 		local allow = rank.FlagsAllow
-		local deny = rank.FlagsDeny
 		local drv_allow = exsto.Ranks[ rank.Parent ] and exsto.Ranks[ rank.Parent].FlagsAllow or {}
 		
 		lst:Clear()
@@ -149,7 +200,6 @@ elseif CLIENT then
 		for flag, desc in pairs( exsto.Flags ) do
 			-- Do some flag status checking first.
 			if table.HasValue( allow, flag ) then status = "allowed" end
-			if table.HasValue( deny, flag ) then status = "denied" end
 			if table.HasValue( drv_allow, flag ) then status = "locked" end
 			
 			lst:AddRow( { flag }, {Desc = desc, Status = status } )
@@ -192,9 +242,12 @@ elseif CLIENT then
 			pnl.RankName:Dock( TOP )
 			pnl.RankName:SetTall( 32 )
 			pnl.RankName:DockMargin( 0, 4, 0, 0 )
+			pnl.RankName:SetTextInset( 5, 0 )
+			pnl.RankName.OnTextChanged = function( entry )
+				--pnl.RankSelect:SetValue( entry:GetValue() )
+			end
 		
 		pnl.Derive = vgui.Create( "DComboBox", pnl.Holder )
-			pnl.Derive:AddChoice( "NONE" )
 			pnl.Derive:SetTall( 32 )
 			pnl.Derive:Dock( TOP )
 			pnl.Derive:DockMargin( 0, 4, 0, 0 )
@@ -210,6 +263,9 @@ elseif CLIENT then
 			pnl.RankColor:DockMargin( 0, 0, 12, 0 )
 			pnl.RankColor:SetPalette( false )
 			pnl.RankColor:SetAlphaBar( false )
+			pnl.RankColor.ValueChanged = function( mixer, col )
+				pnl.RankText:SetTextColor( col )
+			end
 		
 		pnl.RankText = vgui.Create( "DLabel", pnl.ColorHolder )
 			pnl.RankText:SetText( "ABC\n\nabc\n\n123" )
@@ -223,6 +279,7 @@ elseif CLIENT then
 			pnl.Flags:SetDataHeight( 22 )
 			pnl.Flags:NoHeaders()
 			pnl.Flags:LinePaintOver( flagIndicator )
+			pnl.Flags.LineSelected = flagHandler
 			pnl.Flags.Populate = flagPopulate
 			
 		local x, y = pnl.RankName:GetPos()
@@ -234,14 +291,7 @@ elseif CLIENT then
 				surface.DrawRect( 0, 0, slf:GetWide(), slf:GetTall() )
 			end
 			
-		-- Populate the RankSelect with our ranks.
-		for ID, data in pairs( exsto.Ranks ) do
-			if ID != "srv_owner" then 
-				pnl.RankSelect:AddChoice( data.Name, data ) 
-				pnl.Derive:AddChoice( data.Name )
-			end
-		end
-
+		refreshEditor()
 	end
 
 	function PLUGIN:Init()

@@ -41,6 +41,7 @@ local function LoadVariables( srvVer )
 	exsto.StartTime = SysTime()
 	
 	exsto.VERSION = 100
+	exsto._DebugLevel = 3
 end
 
 function exstoInclude( fl )

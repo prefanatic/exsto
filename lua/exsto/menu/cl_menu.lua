@@ -346,6 +346,9 @@ function exsto.Menu.Close()
 	
 	exsto.Menu.Frame:Close()
 	exsto.Menu._Opened = false
+	
+	-- Backstage our open page.  Just for OnBackstage.
+	exsto.Menu.ActivePage:Backstage()
 end
 
 function exsto.Menu.Toggle()

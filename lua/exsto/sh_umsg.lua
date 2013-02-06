@@ -254,6 +254,7 @@ if CLIENT then
 	exsto.CreateReader( "ExClearRanks", recieve )
 	
 	function exsto.RecievedRanks()
+		hook.Call( "ExReceivedRanks" )
 	end
 	exsto.CreateReader( "ExRecievedRanks", exsto.RecievedRanks )
 	
