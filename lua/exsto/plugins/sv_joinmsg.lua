@@ -15,11 +15,21 @@ PLUGIN:AddVariable( {
 	Possible = { "disabled", "admins-only", "all" },
 } )
 
+local function dispCountryOnChange( val )
+	if val and !GeoIP then
+		local succ, err = pcall( require, "geoip" )
+		if !succ then
+			exsto.Error( "Unable to load GeoIP module.  If you want to display countries on connect, you need this." )
+		end	
+	end
+end
+
 PLUGIN:AddVariable( {
 	Pretty = "Display Country on connect",
 	Dirty = "country-on-connect",
 	Default = "disabled",
 	Description = "This designates if countries are shown on connect.",
+	OnChange = dispCountryOnChange,
 	Possible = { true, false },
 } )
 

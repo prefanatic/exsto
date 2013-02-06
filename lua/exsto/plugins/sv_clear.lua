@@ -19,7 +19,11 @@ function PLUGIN:Clear( owner, targ, clr, show )
 		
 	elseif (targ == "all") then
 		cleanup.CC_AdminCleanup(owner, nil, {clr != "" and clr or nil} )
-		Return = { COLOR.NAME,owner,COLOR.NORM, " removed ",COLOR.NAME, "all ".. clr, COLOR.NORM, "!" }		
+		if clr == "" then
+			Return = { COLOR.NAME,owner,COLOR.NORM, " removed everything!" }			
+		else
+			Return = { COLOR.NAME,owner,COLOR.NORM, " removed ",COLOR.NAME, "all ".. clr, COLOR.NORM, "!" }		
+		end
 		
 	elseif (targ == "that" or targ == "that+") then
             local e = owner:GetEyeTraceNoCursor().Entity
@@ -40,11 +44,15 @@ function PLUGIN:Clear( owner, targ, clr, show )
 		
 	else
 		ply = exsto.FindPlayer(targ)
-		cleanup.CC_Cleanup(ply, nil, {clr != "" and clr or nil} )
-		if clr == "" then
-			Return = { COLOR.NAME,owner,COLOR.NORM, " removed all ",COLOR.NAME, ply, COLOR.NORM, "'s property!" }			
+		if ply then
+			cleanup.CC_Cleanup(ply, nil, {clr != "" and clr or nil} )
+			if clr == "" then
+				Return = { COLOR.NAME,owner,COLOR.NORM, " removed all ",COLOR.NAME, ply, COLOR.NORM, "'s property!" }			
+			else
+				Return = { COLOR.NAME,owner,COLOR.NORM, " removed ",COLOR.NAME, ply, COLOR.NORM, "'s ", COLOR.NAME, clr, COLOR.NORM, "!" }	
+			end
 		else
-			Return = { COLOR.NAME,owner,COLOR.NORM, " removed ",COLOR.NAME, ply, COLOR.NORM, "'s ", COLOR.NAME, clr, COLOR.NORM, "!" }	
+			return { owner,COLOR.NAME, targ, COLOR.NORM, " is not a valid player!" }
 		end
 		
 	end
@@ -78,7 +86,6 @@ function ValidEnt( entity )
        -- Exlcludes essentials
     if entity:IsValid() then
         cl = entity:GetClass()
-Msg(tostring(entity).." ~ "..cl.."\n")
                 
         for I in pairs(Included) do
             if string.find(cl,Included[I]) then return 1 end

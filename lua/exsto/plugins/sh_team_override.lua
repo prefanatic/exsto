@@ -27,20 +27,20 @@ if SERVER then
 			return true
 		end
 	end
-
+	
+	PLUGIN:AddVariable( {
+		Pretty = "Rank Team Overrides",
+		Dirty = "rankteamoverride",
+		Description = "Sets up sandbox teams matching Exsto's ranks to allow for scoreboard and chat color/name support.",
+		Default = false,
+		Possible = { true, false },
+		OnChange = onchange,
+	} )
+		
 	function PLUGIN:Init()
 		self.Teams = {}
 		self.OldTeams = {}
 		self.OldTeamData = team.GetAllTeams()
-		
-		exsto.AddVariable( {
-			Pretty = "Rank Team Overrides";
-			Dirty = "rankteamoverride";
-			Description = "Sets up sandbox teams matching Exsto's ranks to allow for scoreboard and chat color/name support.";
-			Default = false;
-			Possible = { true, false };
-			OnChange = onchange;
-		} )
 		
 		if exsto.GetVar( "rankteamoverride" ).Value == true then
 			self:ExRanksLoaded()
