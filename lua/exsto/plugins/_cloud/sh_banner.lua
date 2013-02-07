@@ -38,7 +38,6 @@ if SERVER then
 	})
 	
 	function PLUGIN:SendBannerInfo(ply, enabled)
-		MsgN(exsto.GetVar("banner").Value)
 		enabled = enabled or exsto.GetVar("banner").Value
 		    //Sender args = Banner Enabled and Banner text.
 		local sender = exsto.CreateSender("BannerInfo",ply)
