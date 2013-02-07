@@ -76,6 +76,8 @@ sender.AddBool = sender.AddBoolean
 function sender:AddEntity( ent ) net.WriteEntity( ent ) end
 function sender:AddColor( col ) net.WriteTable( col ) end
 function sender:AddTable( tbl ) net.WriteTable( tbl ) end
+function sender:AddAngle( ang ) net.WriteAngle( ang ) end
+function sender:AddVector( vec ) net.WriteVector( vec ) end
 
 function sender:AddVariable( var )
 	local t = type( var )
@@ -145,6 +147,9 @@ function reader:ReadShort() return net.ReadFloat() end
 function reader:ReadString() return net.ReadString() end
 function reader:ReadColor() return net.ReadTable() end -- Might have to format as a color.
 function reader:ReadTable() return net.ReadTable() end
+function reader:ReadEntity() return net.ReadEntity() end
+function reader:ReadVector() return net.ReadVector() end
+function reader:ReadAngle() return net.ReadAngle() end
 
 function reader:ReadVariable()
 	local t = self:ReadChar()
@@ -157,7 +162,7 @@ function reader:ReadVariable()
 	elseif t == 4 then -- color
 		return self:ReadColor()
 	elseif t == 5 then -- ent
-		return Entity( self:ReadShort() )
+		return self:ReadEntity()
 	elseif t == 0 then -- nil
 		return nil
 	end
