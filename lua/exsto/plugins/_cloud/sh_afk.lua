@@ -14,11 +14,19 @@ if SERVER then
 	util.AddNetworkString("RequestAFKInfo")
 	util.AddNetworkString("ReceiveAFKInfo")
 	
+	local afkTime
+	
+	local function OnAFKTimeChange(time)
+		afkTime = time * 60
+		return true
+	end
+	
 	PLUGIN:AddVariable({
 		Pretty = "AFK Time",
 		Dirty = "afktime",
-		Default = 10,
+		Default = 5,
 		Description = "Sets the minutes until a player is marked AFK.",
+		OnChange = OnAFKTimeChange,
 	})
 	PLUGIN:AddVariable({
 		Pretty = "AFK Action",
@@ -28,9 +36,8 @@ if SERVER then
 		Possible = {"message","kick","off"},
 	})
 	
-	local afkTime
 	function PLUGIN:Init()
-		afkTime = exsto.GetVar("afktime").Value
+		afkTime = exsto.GetVar("afktime").Value-- * 60
 	end
 	
 	function PLUGIN:ExInitSpawn(ply)
