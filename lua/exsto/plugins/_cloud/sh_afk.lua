@@ -65,10 +65,10 @@ if SERVER then
 	end
 	
 	function ReceiveAFKInfo(msg)
-		ply = msg:ReadEntity()
-		timeMoved = msg:ReadShort()
-		time = afkTime-CurTime()+timeMoved
-		mode = exsto.GetVar("afkaction").Value
+		local ply = msg:ReadEntity()
+		local timeMoved = msg:ReadShort()
+		local time = afkTime-CurTime()+timeMoved
+		local mode = exsto.GetVar("afkaction").Value
 		
 		if time < 0 then
 			if !ply.isAFK then
