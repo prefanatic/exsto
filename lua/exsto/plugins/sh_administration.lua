@@ -54,11 +54,15 @@ if SERVER then
 		game.ConsoleCommand( string.format( "kickid %d %s\n", uid, reason:gsub( ";|\n", "" ) ) ) -- Taken from Map in a box - http://facepunch.com/showthread.php?t=695636&p=38514535&viewfull=1#post38514535
 	end
 	
+	local function callHook( data )
+		hook.Call( "ExPlayerConnect", nil, data )
+	end
+	
 	function PLUGIN:player_connect( data )
 		if !data.networkid then return end
 		
 		local bannedAt, banLen, banReason = exsto.BanDB:GetData( data.networkid, "BannedAt, Length, Reason" )
-		if !bannedAt or !banLen or !banReason then return end
+		if !bannedAt or !banLen or !banReason then callHook( data ) return end
 
 		-- If hes perma banned, designated by length == 0
 		if banLen == 0 then self:Drop( data.userid, "You are perma-banned!" ) return end
@@ -68,11 +72,11 @@ if SERVER then
 		local timeleft = string.ToMinutesSeconds( ( banLen + bannedAt ) - os.time() ) 
 		
 		-- Make sure we remove his ban if it has expired.
-		if banLen + bannedAt <= os.time() then exsto.BanDB:DropRow( data.networkid ) self:ResendToAll() return end
+		if banLen + bannedAt <= os.time() then exsto.BanDB:DropRow( data.networkid ) self:ResendToAll() callHook( data ) return end
 		if timeleft and banReason then self:Drop( data.userid, "BANNED! Time left: " .. timeleft .. " - Reason: " .. banReason ) return end
 		
 		-- Call our after-ban hook
-		hook.Call( "ExPlayerConnect", nil, data )
+		callHook( data )
 	
 	end
 	
