@@ -46,6 +46,9 @@ function PANEL:AddRow( cols, data )
 	local line = self:AddLine( unpack( cols ) )
 	table.insert( self.Data, { Data = data, Display = { unpack( cols ) }, Obj = line } ) -- It will match up with the lineID.  I think.  :I
 	
+	-- Reference so we don't have to search for the line's data
+	line.Info = self.Data[ #self.Data ]
+	
 	for i, label in ipairs( line.Columns ) do
 		label:SetTextInset( 25, 0 )
 		label:SetFont( "ExGenericTextNoBold14" )

@@ -89,6 +89,25 @@ if SERVER then
 
 elseif CLIENT then
 
+	local function updateContent( rank, updating )
+		local pnl = PLUGIN.Page.Content
+		
+		if updating and PLUGIN.WorkingRank then -- We need to hook back into what we just were using.
+			local id = PLUGIN.WorkingRank.ID
+			PLUGIN.WorkingRank = exsto.Ranks[ id ]
+		else
+			PLUGIN.WorkingRank = rank 
+		end
+		
+		pnl.RankName:SetText( rank.Name )
+		pnl.Derive:SetValue( rank.Parent .. " (" .. rank.Name .. ")" )
+		pnl.RankColor:SetColor( rank.Color )
+		pnl.RankText:SetTextColor( rank.Color )
+		pnl.Flags:Populate( rank )
+		
+		pnl.OverlayPanel:SetVisible( false )
+	end
+
 	local function refreshEditor()
 		local pnl = PLUGIN.Page.Content
 		if !pnl then return end
@@ -103,18 +122,25 @@ elseif CLIENT then
 		for ID, data in pairs( exsto.Ranks ) do
 			if ID != "srv_owner" then 
 				pnl.RankSelect:AddChoice( data.ID, data ) 
-				pnl.Derive:AddChoice( data.ID )
+				pnl.Derive:AddChoice( data.ID .. " (" .. data.Name .. ")" )
 			end
 		end
 		pnl.Derive:AddChoice( "NONE" )
 		
-		if pnl.RankSelect.WorkingID then
+		if PLUGIN.WorkingRank then
+			updateContent( PLUGIN.WorkingRank, true )
+		end
+		
+		--[[if pnl.RankSelect.WorkingID then
 			pnl.RankSelect._IgnoreSelect = true
 			pnl.RankSelect:ChooseOptionID( pnl.RankSelect.WorkingID )
 			pnl.OverlayPanel:SetVisible( false )
-		end
+		end]]
 		
-		if derive then pnl.Derive:SetValue( derive ) end
+		--if derive then 
+			--derive = string.Explode( " ", derive )[1]
+			--pnl.Derive:SetValue( derive ) 
+		--end
 	end
 
 	function PLUGIN:ExReceivedRanks()
@@ -143,24 +169,11 @@ elseif CLIENT then
 		local sender = exsto.CreateSender( "ExPushRankToSrv" )
 			sender:AddString( rank.ID )
 			sender:AddString( pnl.RankName:GetValue() )
-			sender:AddString( pnl.Derive:GetValue() )
+			sender:AddString( string.Explode( " ", pnl.Derive:GetValue() )[1] )
 			sender:AddColor( pnl.RankColor:GetColor() )
 			sender:AddTable( rank.FlagsAllow ) -- TODO
 			sender:AddTable( rank.FlagsDeny )
 		sender:Send()
-	end
-
-	local function updateContent( rank )
-		local pnl = PLUGIN.Page.Content
-		PLUGIN.WorkingRank = rank 
-		
-		pnl.RankName:SetText( rank.Name )
-		pnl.Derive:SetValue( rank.Parent )
-		pnl.RankColor:SetColor( rank.Color )
-		pnl.RankText:SetTextColor( rank.Color )
-		pnl.Flags:Populate( rank )
-		
-		pnl.OverlayPanel:SetVisible( false )
 	end
 	
 	local function editorRankSelected( box, index, value, data )
@@ -179,15 +192,25 @@ elseif CLIENT then
 	
 	local function flagIndicator( line )
 		if !PLUGIN.WorkingRank then return end
-		local data = PLUGIN.Page.Content.Flags:GetLineDataFromObj( line )
-		
-		draw.SimpleText( data.Status, "ExGenericText14", 0, 2, Color( 0, 0, 0, 255 ) )
+		draw.SimpleText( line.Info.Data.Status, "ExGenericText14", 0, 2, Color( 0, 0, 0, 255 ) )
 	end
 	
 	local function flagHandler( lst, display, data, line )
-		local status = data.Status
+		local status = line.Info.Data.Status
 		
-		-- if our status is open
+		print( status )
+		-- if our status is open, allow it!
+		if status == "open" then
+			line.Info.Data.Status = "allowed"
+			table.insert( PLUGIN.WorkingRank.FlagsAllow, line.Info.Display[1] )
+		elseif status == "allowed" then -- otherwise, open it up.
+			line.Info.Data.Status = "open"
+			for _, flag in ipairs( PLUGIN.WorkingRank.FlagsAllow ) do
+				if flag == line.Info.Display[1] then table.remove( PLUGIN.WorkingRank.FlagsAllow, _ ) end
+			end
+		end
+		
+		PrintTable( PLUGIN.WorkingRank.FlagsAllow )
 		
 	end
 	
@@ -195,11 +218,14 @@ elseif CLIENT then
 		local allow = rank.FlagsAllow
 		local drv_allow = exsto.Ranks[ rank.Parent ] and exsto.Ranks[ rank.Parent].FlagsAllow or {}
 		
+		print( rank.Name )
+		PrintTable( allow )
+		
 		lst:Clear()
 		local status = "open"
 		for flag, desc in pairs( exsto.Flags ) do
 			-- Do some flag status checking first.
-			if table.HasValue( allow, flag ) then status = "allowed" end
+			if table.HasValue( allow, flag ) then print( rank.Name, "ELLO" ) status = "allowed" end
 			if table.HasValue( drv_allow, flag ) then status = "locked" end
 			
 			lst:AddRow( { flag }, {Desc = desc, Status = status } )
