@@ -3,7 +3,7 @@ local PLUGIN = exsto.CreatePlugin()
 PLUGIN:SetInfo({
 	Name = "Player Join Messages",
 	ID = "plyjoinmsg",
-	Desc = "Nodex shit.",
+	Desc = "Displays player join messages.",
 	Owner = "Prefanatic",
 } )
 
@@ -19,7 +19,8 @@ local function dispCountryOnChange( enabled )
 	if enabled and !GeoIP then
 		local succ, err = pcall( require, "geoip" )
 		if !succ then
-			exsto.Error( "Unable to load GeoIP module.  If you want to display countries on connect, you need this." )
+			exsto.ErrorNoHalt( "Unable to load GeoIP module.  If you want to display countries on connect, you need this." )
+			return false, { COLOR.NORM, "Unable to locate the ", COLOR.NAME, "GeoIP module", COLOR.NORM, ".  If you want to display countries on connect, you need this." }
 		end	
 	end
 	return true
