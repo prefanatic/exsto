@@ -366,7 +366,7 @@ function exsto.Registry.Player:SetRank( rank )
 	self:SetNetworkedString( "rank", rank )
 	exsto.UserDB:AddRow( {
 		SteamID = self:SteamID();
-		Rank = self:GetNWString( "rank" );
+		Rank = rank;
 		Name = self:Nick();
 	} )
 	hook.Call( "ExSetRank", nil, self, rank )
