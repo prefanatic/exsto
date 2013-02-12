@@ -27,6 +27,7 @@ exsto.FlagIndex = {}
 
 local function AddArg( style, type, func ) table.insert( exsto.Arguments, {Style = style, Type = type, Func = func} ) end
 AddArg( "PLAYER", "Player", function( nick, caller ) if nick == "" then return -1 else return exsto.FindPlayers( nick, caller ) end end )
+AddArg( "ONEPLAYER", "Player", function( nick, caller ) if nick == "" then return -1 else return exsto.FindPlayers( nick, caller ) end end )
 AddArg( "NUMBER", "number", function( num ) return tonumber( num ) end )
 AddArg( "STRING", "string", function( string ) return tostring( string ) end )
 AddArg( "BOOLEAN", "boolean", function( bool ) return tobool( bool ) end )
@@ -437,8 +438,12 @@ function exsto.ParseArguments( ply, data, args )
 		if currentSplice then
 			local converted = currentArgumentData.Func( currentSplice, ply )
 			
+			if currentArgumentData.Style == "ONEPLAYER" and #converted > 1 then
+				ply:Print( exsto_CHAT, COLOR.NAME, currentArgument, COLOR.NORM, " may only match one player, try refining your search!")
+				return nil
+			
 			-- See if we can catch our acting players variable and store it
-			if currentArgumentData.Type == "Player" and type( converted ) == "table" and #converted >= 1 then
+			elseif currentArgumentData.Type == "Player" and type( converted ) == "table" and #converted >= 1 then
 				activePlayers = converted
 				playersSlot = #cleanedArguments + 1
 				table.insert( cleanedArguments, converted )

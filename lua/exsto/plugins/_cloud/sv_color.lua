@@ -10,15 +10,15 @@ PLUGIN:SetInfo({
 	Owner = "Prefanatic",
 } )
 
-function PLUGIN:Color( self, ply, r, g, b, a )
+function PLUGIN:Color( self, ply, r, g, b )
 
-	ply:SetColor( r, g, b, a )
+	ply:SetPlayerColor( Vector(r, g, b) )
 	
 	return {
 		Activator = self,
 		Player = ply,
 		Wording = " has colored ",
-		Secondary = " with " .. r .. ", " .. g .. ", " .. b .. ", " .. a
+		Secondary = " with " .. r .. ", " .. g .. ", " .. b 
 	}
 	
 end
@@ -27,9 +27,9 @@ PLUGIN:AddCommand( "color", {
 	Desc = "Allows users to color people and make pink babies.",
 	Console = { "color" },
 	Chat = { "!color" },
-	ReturnOrder = "Victim-Red-Green-Blue-Alpha",
-	Args = {Victim = "PLAYER", Red = "NUMBER", Green = "NUMBER", Blue = "NUMBER", Alpha = "NUMBER"},
-	Optional = {Red = 255, Green = 255, Blue = 255, Alpha = 255},
+	ReturnOrder = "Victim-Red-Green-Blue",
+	Args = {Victim = "PLAYER", Red = "NUMBER", Green = "NUMBER", Blue = "NUMBER"},
+	Optional = {Red = 255, Green = 255, Blue = 255},
 	Category = "Fun"
 })
 PLUGIN:RequestQuickmenuSlot( "color", {
@@ -48,13 +48,6 @@ PLUGIN:RequestQuickmenuSlot( "color", {
 			{ Display = "255" },
 		},
 		Blue = {
-			{ Display = "50" },
-			{ Display = "100" },
-			{ Display = "150" },
-			{ Display = "200" },
-			{ Display = "255" },
-		},
-		Alpha = {
 			{ Display = "50" },
 			{ Display = "100" },
 			{ Display = "150" },

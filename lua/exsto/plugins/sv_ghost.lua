@@ -13,19 +13,13 @@ PLUGIN:SetInfo({
 function PLUGIN:Think()
 
 	for _, ply in ipairs(player.GetAll()) do
-
 		if ply:GetActiveWeapon() then weap = ply:GetActiveWeapon() end
 		if weap and weap:IsValid() and weap != ply.LastWeap then
-			if ply.Ghosted and weap:GetNWBool("Shadow", true) then
-				weap:DrawShadow(false)
-				weap:SetNWBool("Shadow", false)
-			elseif !ply.Ghosted and !weap:GetNWBool("Shadow", true) then
-				weap:DrawShadow(true)
-				weap:SetNWBool("Shadow", true)
+			if ply.Ghosted then
+				ply:DrawWorldModel(false)
 			end
 			ply.LastWeap = weap
 		end
-		
 	end
 	
 end
@@ -33,20 +27,21 @@ end
 function PLUGIN:Ghost( owner, ply )
 
 	if !ply.Ghosted then
-		if ply:GetModel() != "models/m_anm.mdl" then ply.OldModel = ply:GetModel() end
-		ply:SetModel("models/m_anm.mdl")
-		ply:GetActiveWeapon():DrawShadow(false)
-		ply:GetActiveWeapon():SetNWBool("Shadow", false)
+		ply:SetRenderMode(RENDERMODE_NONE)
+		ply.WeapCol = ply:GetWeaponColor()
+		ply:SetWeaponColor(Vector(0,0,0))
+		ply:DrawWorldModel(false)
+		ply:SetCollisionGroup(COLLISION_GROUP_DEBRIS)
 		ply.Ghosted = true
-		ply:SetCollisionGroup(COLLISION_GROUP_DEBRIS) -- TODO: Find what doesn't collide with players
 		ply:SetNWBool("HideTag",true)
 		return { COLOR.NAME, owner:Nick(), COLOR.NORM, " has ghosted ",COLOR.NAME, ply:Nick(),COLOR.NORM,"." }
 		
 	elseif ply.Ghosted then
-		ply:SetModel(ply.OldModel)
-		ply.Ghosted = false
-		ply:GetActiveWeapon():SetRenderMode(1)
+		ply:SetRenderMode(RENDERMODE_NORMAL)
+		ply:SetWeaponColor(ply.WeapCol)
+		ply:DrawWorldModel(true)
 		ply:SetCollisionGroup(COLLISION_GROUP_PLAYER)
+		ply.Ghosted = false
 		ply:SetNWBool("HideTag",false)
 		return { COLOR.NAME, owner:Nick(), COLOR.NORM, " has unghosted ",COLOR.NAME, ply:Nick(),COLOR.NORM,"." }
 	end
@@ -55,8 +50,8 @@ end
 PLUGIN:AddCommand( "ghost", {
 	Call = PLUGIN.Ghost,
 	Desc = "Hides players",
-	Console = { "ghost" },
-	Chat = { "!ghost" },
+	Console = { "ghost", "cloak" },
+	Chat = { "!ghost", "!cloak" },
 	ReturnOrder = "Player",
 	Args = {Player = "PLAYER"},
 	Optional = {Alpha = 0},

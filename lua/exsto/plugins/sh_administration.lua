@@ -196,7 +196,7 @@ if SERVER then
 		Console = { "ban" }, 
 		Chat = { "!ban" }, 
 		ReturnOrder = "Victim-Length-Reason", 
-		Args = {Victim = "PLAYER", Length = "TIME", Reason = "STRING"}, 
+		Args = {Victim = "ONEPLAYER", Length = "TIME", Reason = "STRING"}, 
 		Optional = {Length = 0, Reason = "Banned by [self]"}, 
 		Category = "Administration", 
 		DisallowCaller = true, 

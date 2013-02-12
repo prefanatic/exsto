@@ -35,9 +35,10 @@ if SERVER then
 		Description = "Action to be taken when a player is afk.",
 		Possible = {"message","kick","off"},
 	})
+	exsto.CreateFlag("afkkkickignore","Makes the group immune to the AFK Plugin's auto-kicker")
 	
 	function PLUGIN:Init()
-		afkTime = exsto.GetVar("afktime").Value-- * 60
+		afkTime = exsto.GetVar("afktime").Value * 60
 	end
 	
 	function PLUGIN:ExInitSpawn(ply)
@@ -50,7 +51,7 @@ if SERVER then
 		local time = CurTime()
 		if (time - lastThink) > 1 then
 			for _, ply in ipairs(player.GetAll()) do
-				if (time - ply.lastMoved) > afkTime then
+				if ply.lastMoved and (time - ply.lastMoved) > afkTime then
 					CheckAFK(ply)
 				end
 			end
@@ -72,11 +73,11 @@ if SERVER then
 		
 		if time < 0 then
 			if !ply.isAFK then
-				if mode == "message" then
+				if mode == "kick" and !ply:HasFlag("afkkickignore") then
+					ply:Kick("You have been kicked for being afk")
+				elseif mode == "message" then
 					ply:SendLua("GAMEMODE:AddNotify(\"You have been marked as AFK.\", NOTIFY_ERROR, 10)")
 					exsto.Print(exsto_CHAT_ALL, COLOR.NAME, ply:Name(), COLOR.NORM, " has been marked as AFK!")
-				elseif mode == "kick" then
-					ply:Kick("You have been kicked for being afk")
 				end
 				ply.isAFK = true	
 			end
@@ -132,6 +133,14 @@ elseif CLIENT then
 			SendAFKInfo()
 			isAFK = false
 		end
+	end
+	
+	function PLUGIN:OnPlayerChat( ply, text, teamChat, playerIsDead )
+		timeMoved = CurTime()
+		if isAFK then
+			SendAFKInfo()
+			isAFK = false
+		end	
 	end
 end
  
