@@ -58,10 +58,14 @@ if SERVER then
 		hook.Call( "ExOnRankCreate", nil, id )
 	end
 	exsto.CreateReader( "ExPushRankToSrv", PLUGIN.CommitChanges )
-	
-	function PLUGIN.RecieveImmunityData( reader, id, immunity )
+
+	function PLUGIN.WriteImmunityData( reader )
+		exsto.RankDB:AddRow( {
+			ID = reader:ReadString();
+			Immunity = reader:ReadShort();
+		} )
 	end
-	exsto.CreateReader( "ExRecImmuneChange", PLUGIN.RecieveImmunityData )
+	exsto.CreateReader( "ExRecImmuneChange", PLUGIN.WriteImmunityData )
 	
 	function PLUGIN:ExClientData( hook, ply, data )
 		if hook == "ExRecImmuneChange" or hook == "ExRecRankData" then
@@ -83,7 +87,6 @@ if SERVER then
 			Parent = derive;
 			Color = von.serialize( color );
 			FlagsAllow = von.serialize( flagsallow );
-			FlagsDeny = von.serialize( flagsdeny );
 		} )
 	end
 
@@ -93,12 +96,12 @@ elseif CLIENT then
 		local pnl = PLUGIN.Page.Content
 		
 		if updating and PLUGIN.WorkingRank then -- We need to hook back into what we just were using.
-			local id = PLUGIN.WorkingRank.ID
-			PLUGIN.WorkingRank = exsto.Ranks[ id ]
+			PLUGIN.WorkingRank = exsto.Ranks[ PLUGIN.WorkingRank.ID ]
 		else
 			PLUGIN.WorkingRank = rank 
 		end
 		
+		pnl.RankSelect:SetValue( rank.Name )
 		pnl.RankName:SetText( rank.Name )
 		pnl.Derive:SetValue( rank.Parent .. " (" .. rank.Name .. ")" )
 		pnl.RankColor:SetColor( rank.Color )
@@ -106,6 +109,18 @@ elseif CLIENT then
 		pnl.Flags:Populate( rank )
 		
 		pnl.OverlayPanel:SetVisible( false )
+		
+		-- Set the delete button accordingly.  We need to make sure NOBODY derives off us.
+		pnl.DeleteRank._Disabled = false
+		pnl.DeleteRank:SetImage( "exsto/trash.png" )
+		
+		for id, rdata in pairs( exsto.Ranks ) do
+			if rdata.Parent == rank.ID then -- Oh noes
+				pnl.DeleteRank._Disabled = true
+				pnl.DeleteRank:SetImage( "exsto/trash_disabled.png" )
+				return
+			end
+		end
 	end
 
 	local function refreshEditor()
@@ -130,17 +145,7 @@ elseif CLIENT then
 		if PLUGIN.WorkingRank then
 			updateContent( PLUGIN.WorkingRank, true )
 		end
-		
-		--[[if pnl.RankSelect.WorkingID then
-			pnl.RankSelect._IgnoreSelect = true
-			pnl.RankSelect:ChooseOptionID( pnl.RankSelect.WorkingID )
-			pnl.OverlayPanel:SetVisible( false )
-		end]]
-		
-		--if derive then 
-			--derive = string.Explode( " ", derive )[1]
-			--pnl.Derive:SetValue( derive ) 
-		--end
+
 	end
 
 	function PLUGIN:ExReceivedRanks()
@@ -172,8 +177,15 @@ elseif CLIENT then
 			sender:AddString( string.Explode( " ", pnl.Derive:GetValue() )[1] )
 			sender:AddColor( pnl.RankColor:GetColor() )
 			sender:AddTable( rank.FlagsAllow ) -- TODO
-			sender:AddTable( rank.FlagsDeny )
 		sender:Send()
+		
+		-- Also, immunity.  If this is a new rank or somethin.
+		if !rank.Immunity then
+			local sender = exsto.CreateSender( "ExRecImmuneChange" )
+				sender:AddString( rank.ID )
+				sender:AddShort( 10 )
+			sender:Send()
+		end
 	end
 	
 	local function editorRankSelected( box, index, value, data )
@@ -197,8 +209,6 @@ elseif CLIENT then
 	
 	local function flagHandler( lst, display, data, line )
 		local status = line.Info.Data.Status
-		
-		print( status )
 		-- if our status is open, allow it!
 		if status == "open" then
 			line.Info.Data.Status = "allowed"
@@ -210,17 +220,12 @@ elseif CLIENT then
 			end
 		end
 		
-		PrintTable( PLUGIN.WorkingRank.FlagsAllow )
-		
 	end
 	
 	local function flagPopulate( lst, rank )
 		local allow = rank.FlagsAllow
 		local drv_allow = exsto.Ranks[ rank.Parent ] and exsto.Ranks[ rank.Parent].FlagsAllow or {}
-		
-		print( rank.Name )
-		PrintTable( allow )
-		
+
 		lst:Clear()
 		local status = "open"
 		for flag, desc in pairs( exsto.Flags ) do
@@ -229,7 +234,45 @@ elseif CLIENT then
 			if table.HasValue( drv_allow, flag ) then status = "locked" end
 			
 			lst:AddRow( { flag }, {Desc = desc, Status = status } )
+			status = "open" -- reset.  Why didn't I realize this earlier :/
 		end
+	end
+	
+	local function createNewRank()
+		-- Create our client holder.
+		local count = table.Count( exsto.Ranks )
+		local id = "exrank_" .. count
+		
+		-- Saftey check
+		while true do
+			if !exsto.Ranks[ id ] then break end
+			if count > 20 then PLUGIN:Error( "Failed to perform saftey check on new rank creation.  This is a bug!" ) return end
+			count = count + 1
+			id = "exrank_" .. count
+		end
+		
+		exsto.Ranks[ id ] = {
+			Name = "Type a name";
+			ID = id;
+			Parent = "NONE";
+			Color = COLOR.NAME;
+			FlagsAllow = {};
+		};
+		
+		updateContent( exsto.Ranks[ id ] );
+		
+	end
+
+	local function deleteRank( self )
+		if self._Disabled then
+			-- TODO: Tooltips!
+			return
+		end
+		
+		-- Otherwise, delete this asshole.
+		local sender = exsto.CreateSender( "ExDelRankFromClient" )
+			sender:AddString( PLUGIN.WorkingRank.ID )
+		sender:Send()
 	end
 
 	local function editorInit( pnl )
@@ -241,7 +284,6 @@ elseif CLIENT then
 			pnl:Add( pnl.Holder, "Rank Editor" )
 			pnl.Holder:Dock( FILL )
 			pnl.Holder:DockPadding( 4, 0, 4, 0 )
-			--pnl.Holder:DockMargin( 0, 4, 0, 4 )
 
 		pnl.Header = vgui.Create( "DPanel", pnl.Holder )
 			pnl.Header:Dock( TOP )
@@ -254,19 +296,23 @@ elseif CLIENT then
 			pnl.RankSelect.OnSelect = editorRankSelected
 
 		-- TODO: Turn these into ImageButtons
-		pnl.CreateRank = vgui.Create( "DButton", pnl.Header )
-			pnl.CreateRank:SetText( "+" )
-			pnl.CreateRank:SetWide( 32 )
-			pnl.CreateRank:Dock( RIGHT )
-		
-		pnl.DeleteRank = vgui.Create( "DButton", pnl.Header )
-			pnl.DeleteRank:SetText( "-" )
+		pnl.DeleteRank = vgui.Create( "DImageButton", pnl.Header )
+			pnl.DeleteRank:SetImage( "exsto/trash_disabled.png" )
 			pnl.DeleteRank:SetWide( 32 )
+			pnl.DeleteRank:DockMargin( 2, 0, 0, 0 )
 			pnl.DeleteRank:Dock( RIGHT )
+			pnl.DeleteRank.DoClick = deleteRank
+			
+		pnl.CreateRank = vgui.Create( "DImageButton", pnl.Header )
+			pnl.CreateRank:SetImage( "exsto/add.png" )
+			pnl.CreateRank:SetWide( 32 )
+			pnl.CreateRank:DockMargin( 3, 0, 2, 0 )
+			pnl.CreateRank:Dock( RIGHT )
+			pnl.CreateRank.DoClick = createNewRank
 			
 		pnl.RankName = vgui.Create( "DTextEntry", pnl.Holder )
 			pnl.RankName:Dock( TOP )
-			pnl.RankName:SetTall( 32 )
+			pnl.RankName:SetTall( 31 )
 			pnl.RankName:DockMargin( 0, 4, 0, 0 )
 			pnl.RankName:SetTextInset( 5, 0 )
 			pnl.RankName.OnTextChanged = function( entry )
@@ -301,7 +347,7 @@ elseif CLIENT then
 			
 		pnl.Flags = vgui.Create( "ExListView", pnl.Holder )
 			pnl.Flags:Dock( FILL )
-			pnl.Flags:DockMargin( 0, 4, 0, 4 )
+			pnl.Flags:DockMargin( 0, 4, 0, 2 )
 			pnl.Flags:SetDataHeight( 22 )
 			pnl.Flags:NoHeaders()
 			pnl.Flags:LinePaintOver( flagIndicator )
