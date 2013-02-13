@@ -167,7 +167,7 @@ end
 
 function page:CreateContentHolder()
 	local h = exsto.Menu.FrameScroller:GetTall()
-	if self._Serachable then h = h - 40 end
+	if self._Searchable then h = h - 32 end
 	
 	self.Content = vgui.Create( self._PanelStyle, exsto.Menu.FrameScroller )
 		self.Content:SetPos( -exsto.Menu.FrameScroller:GetWide() - 2, 0 )
