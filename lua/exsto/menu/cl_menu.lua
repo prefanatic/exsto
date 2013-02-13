@@ -69,7 +69,8 @@ function exsto.Menu.Initialize()
 		exsto.Menu.Frame.btnClose.DoClick = function( btn )
 			-- Remove ourself from the open pages.
 			--exsto.Menu.OpenPages[ self:GetID() ] = nil;
-			btn:GetParent():Close()
+			--btn:GetParent():Close()
+			exsto.Menu.Close()
 		end
 		
 	-- Our amazing logo.
@@ -151,9 +152,6 @@ function exsto.Menu.SearchOnTextChanged( entry )
 	if entry._Disabled then return end
 	if !exsto.Menu.ActivePage then return end
 	
-	-- Hold an open lock
-	exsto.Menu.OpenLock = true
-	
 	local obj = exsto.Menu.ActivePage
 	if !obj_SearchOnTextChanged then return end
 	
@@ -183,10 +181,7 @@ function exsto.Menu.SearchDoClick( entry )
 	-- Check stuff first.
 	if entry._Disabled then return end
 	if !exsto.Menu.ActivePage then return end
-	
-	-- Hold an open lock.
-	exsto.Menu.OpenLock = true
-	
+
 	local obj = exsto.Menu.ActivePage
 	if !obj._SearchDoClick then return end
 	
@@ -269,10 +264,44 @@ function exsto.Menu.GetPageByKey( key )
 end
 
 --[[
+	** Text Entry Focus Handling **
+	Thank the gods Garry decided to havea universal implementation I can slightly recreate.
+]]
+
+function exsto.Menu.HoldFocus( pnl )
+	exsto.Menu.HoldingFocus = pnl
+	exsto.Menu.Frame:SetKeyboardInputEnabled( true )
+	exsto.Menu.OpenLock = true
+end
+
+function exsto.Menu.LoseFocus( pnl )
+	if exsto.Menu.HoldingFocus != pnl then return end -- This isn't ours to mess with!
+	
+	exsto.Menu.Frame:SetKeyboardInputEnabled( false )
+	exsto.Menu.OpenLock = false
+end
+
+local function keyboardFocusOn( pnl )
+	exsto.Menu.HoldFocus( pnl )
+end
+hook.Add( "OnTextEntryGetFocus", "ExMenuTextFocus", keyboardFocusOn )
+
+local function keyboardFocusOff( pnl )
+	exsto.Menu.LoseFocus( pnl )
+end
+hook.Add( "OnTextEntryLoseFocus", "ExMenuTextFocusOff", keyboardFocusOff )
+
+--[[
 	** Menu open/close **
 ]]
 
 function exsto.Menu.Open()
+	-- Handle close if we're open.  We don't want to re-open it I guess.
+	if exsto.Menu._Opened then
+		exsto.Menu.Close()
+		return
+	end
+	
 	-- Read our window pos info
 	local f = file.Read( "exsto_windows.txt", "DATA" )
 	local posInfo = {}
@@ -331,7 +360,7 @@ end
 hook.Add( "Think", "WHYDOWEHAVETODOTHIS", shit )
 
 function exsto.Menu.Close()
-	if exsto.Menu.OpenLock then return end -- We're locked open.  Wait until this thing becomes false
+	if exsto.Menu.OpenLock == true then return end -- We're locked open.  Wait until this thing becomes false
 	local posInfo = {}
 	
 	-- Throw in mouse info too.
