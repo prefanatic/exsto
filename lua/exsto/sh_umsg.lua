@@ -125,7 +125,6 @@ if SERVER then
 			sender:AddColor( rank.Color )
 			
 			sender:AddTable( rank.FlagsAllow )
-			sender:AddTable( rank.FlagsDeny )
 			
 			sender:Send()
 	end
@@ -236,7 +235,6 @@ if CLIENT then
 			Immunity = reader:ReadShort(),
 			Color = reader:ReadColor(),
 			FlagsAllow = reader:ReadTable(),
-			FlagsDeny = reader:ReadTable(),
 		}
 	end
 	exsto.CreateReader( "ExRecRank", recieve )

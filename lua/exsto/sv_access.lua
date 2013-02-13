@@ -78,7 +78,6 @@ function exsto.aLoader.LoadRanks()
 			ID = data.ID;
 			Parent = data.Parent;
 			FlagsAllow = von.deserialize( data.FlagsAllow );
-			FlagsDeny = von.deserialize( data.FlagsDeny );
 			Immunity = data.Immunity;
 			Color = von.deserialize( data.Color );
 		}
@@ -213,17 +212,9 @@ function exsto.aLoader.Initialize()
 	exsto.Ranks = {}
 	exsto.aLoader.Loaded = {}
 	
-	-- Check to see if defaults need to be saved.
-	if #exsto.RankDB:GetAll() == 0 then exsto.aLoader.CreateDefaults() end
-	exsto.aLoader.LoadRanks()
-	exsto.aLoader.Process()
-
-	exsto.Debug( "aLoader --> End main core sequence.", 2 )
-	exsto.Debug( "aLoader --> Injecting srv_owner.", 2 )
-	
+	-- Inject our srv_owner rank.  Needs to be done before anything is loaded in case of load failure.
 	exsto.Ranks[ "srv_owner" ] = {
 		FlagsAllow = {},
-		FlagsDeny = {},
 		Immunity = -1,
 		ID = "srv_owner",
 		Color = Color( 60, 200, 124, 200 ),
@@ -231,6 +222,14 @@ function exsto.aLoader.Initialize()
 		Parent = "NONE",
 		Description = "Owner of the server.",
 	}
+	
+	-- Check to see if defaults need to be saved.
+	if #exsto.RankDB:GetAll() == 0 then exsto.aLoader.CreateDefaults() end
+	exsto.aLoader.LoadRanks()
+	exsto.aLoader.Process()
+
+	exsto.Debug( "aLoader --> End main core sequence.", 2 )
+	exsto.Debug( "aLoader --> Injecting srv_owner.", 2 )
 	
 	hook.Call( "ExRanksLoaded" )
 	
