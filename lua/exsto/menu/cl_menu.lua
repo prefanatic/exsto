@@ -357,7 +357,7 @@ local function shit()
 		temp = true
 	end
 end
-hook.Add( "Think", "WHYDOWEHAVETODOTHIS", shit )
+--hook.Add( "Think", "WHYDOWEHAVETODOTHIS", shit )
 
 function exsto.Menu.Close()
 	if exsto.Menu.OpenLock == true then return end -- We're locked open.  Wait until this thing becomes false
