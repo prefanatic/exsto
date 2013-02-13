@@ -18,6 +18,14 @@ function exsto.GetRankData( rank )
 end
 
 --[[ -----------------------------------
+	Function: exsto.GetRankName	
+	Description: Returns the rank display name based on ID provided
+	----------------------------------- ]]
+function exsto.GetRankName( rank )
+	return exsto.GetRankData( rank ).Name or "Unknown"
+end
+
+--[[ -----------------------------------
 	Function: exsto.GetRankColor
 	Description: Returns the rank color, or white if there is none.
 	----------------------------------- ]]
