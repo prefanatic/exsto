@@ -172,7 +172,7 @@ function page:CreateContentHolder()
 	self.Content = vgui.Create( self._PanelStyle, exsto.Menu.FrameScroller )
 		self.Content:SetPos( -exsto.Menu.FrameScroller:GetWide() - 2, 0 )
 		self.Content:SetSize( exsto.Menu.FrameScroller:GetWide(), h )
-		self.Content:SetSkin( "ExstoQuick" )
+		self.Content:SetSkin( "Exsto" )
 
 	exsto.Animations.CreateAnimation( self.Content )
 end

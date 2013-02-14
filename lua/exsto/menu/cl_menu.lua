@@ -59,7 +59,7 @@ function exsto.Menu.Initialize()
 		
 	-- Create the holding frame.  I'm excited!
 	exsto.Menu.Frame = exsto.CreateFrame( 0, 0, exsto.Menu.Sizes.FrameW, exsto.Menu.Sizes.FrameH )
-		exsto.Menu.Frame:SetSkin( "ExstoQuick" )
+		exsto.Menu.Frame:SetSkin( "Exsto" )
 		exsto.Menu.Frame:SetDeleteOnClose( false )
 		exsto.Menu.Frame:SetDraggable( true )
 		exsto.Menu.Frame:Center()
@@ -108,6 +108,9 @@ function exsto.Menu.Initialize()
 		exsto.Menu.QM:SetTitle( "Quick Menu" )
 		exsto.Menu.QM:SetPanelStyle( "DPanel" )
 		exsto.Menu.QM:Build()
+		
+		-- Override our quick menu skin
+		exsto.Menu.QM.Content:SetSkin( "ExstoQuick" )
 		
 	-- Now create our page icon list.
 	--exsto.Menu.PageList = exsto.Menu.CreatePage( "pagelist", exsto.InitPageList )
