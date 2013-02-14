@@ -20,28 +20,27 @@
 	Category:  Script Loading
      ----------------------------------- ]]
 	
+	exstoClient( "fel.lua" )
+	
 	-- Load our derma controls
-	include( "exsto/menu/controls/exbutton.lua" )
-	include( "exsto/menu/controls/exlistview.lua" )
-	include( "exsto/menu/controls/exmultichoice.lua" )
-	include( "exsto/menu/controls/expanelscroller.lua" )
-	 
-	include( "exsto/menu/cl_derma.lua" )
-	include( "exsto/menu/cl_anim.lua" )
-	include( "exsto/sh_tables.lua" )
-	include( "exsto/sh_umsg_core.lua" )
-	include( "exsto/sh_umsg.lua" )
-	include( "exsto/sh_print.lua" )
-	include( "exsto/fel.lua" )
-	include( "exsto/menu/cl_menu_skin_main.lua" )
-	include( "exsto/menu/cl_menu_skin_quick.lua" )
-	include( "exsto/menu/cl_menu.lua" )
-	include( "exsto/menu/cl_page.lua" )
-	include( "exsto/menu/cl_quickmenu.lua" )
-	include( "exsto/cl_menu.lua" )
-	include( "exsto/sh_access.lua" )
-	include( "exsto/sh_plugins.lua" )
-	--include( "exsto/sh_cloud.lua" )
+	exstoClientFolder( "menu/controls" )
+	
+	exstoClient( "menu/cl_menu_skin_main.lua" )
+	exstoClient( "menu/cl_menu_skin_quick.lua" )
+	exstoClient( "menu/cl_derma.lua" )
+	exstoClient( "menu/cl_anim.lua" )
+	exstoClient( "sh_tables.lua" )
+	exstoClient( "sh_umsg_core.lua" )
+	exstoClient( "sh_umsg.lua" )
+	exstoClient( "sh_print.lua" )
+	exstoClient( "menu/cl_menu.lua" )
+	exstoClient( "menu/cl_page.lua" )
+	exstoClient( "menu/cl_quickmenu.lua" )
+	exstoClient( "cl_menu.lua" )
+	exstoClient( "sh_access.lua" )
+	exstoClient( "sh_plugin_metatable.lua" )
+	exstoClient( "sh_plugins.lua" )
+	--exstoClient( "sh_cloud.lua" )
 	
 	-- Init clientside items.
 	exsto.LoadPlugins()

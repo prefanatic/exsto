@@ -21,60 +21,42 @@
     ----------------------------------- ]]
 	resource.AddFile( "materials/gwenskin/exsto_quick.png" )
 	resource.AddFile( "materials/gwenskin/exsto_main.png")
-	resource.AddFile( "materials/exsto/exstoLogo.png" )
-	resource.AddFile( "materials/exsto/exstoGenericAnim.png" )
-	resource.AddFile( "materials/exsto/exstoErrorAnim.png" )
-	resource.AddFile( "materials/exsto/icon_on.png" )
-	resource.AddFile( "materials/exsto/icon_off.png" )
-	resource.AddFile( "materials/exsto/loading.png" )
-	resource.AddFile( "materials/exsto/iconview.png" )
-	resource.AddFile( "materials/exsto/listview.png" )
-	resource.AddFile( "materials/exsto/iconviewsel.png" )
-	resource.AddFile( "materials/exsto/listviewsel.png" )
-	resource.AddFile( "materials/exsto/downloading.png" )
-	resource.AddFile( "materials/exsto/refresh.png" )
-	resource.AddFile( "materials/exsto/fail.png" )
-	resource.AddFile( "materials/exsto/exlogo_qmenu.png" )
-	resource.AddFile( "materials/exsto/back_norm.png" )
-	resource.AddFile( "materials/exsto/back_highlight.png" )
-	resource.AddFile( "materials/exsto/loading.png" )
-	resource.AddFile( "materials/exsto/greentick.png" )
-	resource.AddFile( "materials/exsto/gradient.png" )
-
-	include( "exsto/sh_tables.lua" )
-	include( "sh_umsg_core.lua" )
-	include( "exsto/sh_umsg.lua" )
-	include( "exsto/sh_print.lua" )
-	include( "exsto/fel.lua" )
-	include( "exsto/sv_variables.lua" )
-	include( "exsto/sv_commands.lua" )
-	include( "exsto/sh_access.lua" )
-	include( "exsto/sv_access.lua" )
-	include( "exsto/sh_plugins.lua" )
-	--include( "exsto/sh_cloud.lua" )
+	exstoResources()
 	
-	-- Derma Controls
-	AddCSLuaFile( "exsto/menu/controls/exbutton.lua" )
-	AddCSLuaFile( "exsto/menu/controls/exmultichoice.lua" )
-	AddCSLuaFile( "exsto/menu/controls/exlistview.lua" )
-	AddCSLuaFile( "exsto/menu/controls/expanelscroller.lua" )
+	-- Includes!
+	exstoShared( "fel.lua" ) -- The main data-saving backend.  Has no ties with Exsto.  Can be loaded first!
+	
+	exstoShared( "sh_tables.lua" )
+	exstoShared( "sh_umsg_core.lua" )
+	exstoShared( "sh_umsg.lua" )
+	exstoShared( "sh_print.lua" )
+	exstoServer( "sv_variables.lua" )
+	exstoServer( "sv_commands.lua" )
+	exstoShared( "sh_access.lua" )
+	exstoServer( "sv_access.lua" )
+	exstoShared( "sh_plugin_metatable.lua" )
+	exstoShared( "sh_plugins.lua" )
+	exstoShared( "sh_cloud.lua" )
+	
+	-- Clientside things we haven't sent yet.
+		-- Derma Controls!
+	exstoClientFolder( "menu/controls" )
+	
+		-- Modules
 	AddCSLuaFile( "includes/modules/von.lua" )
-	AddCSLuaFile( "exsto/sh_tables.lua" )
-	AddCSLuaFile( "exsto/menu/cl_derma.lua" )
-	AddCSLuaFile( "exsto/menu/cl_quickmenu.lua" )
-	AddCSLuaFile( "exsto/menu/cl_anim.lua" )
-	AddCSLuaFile( "exsto/fel.lua" )
-	AddCSLuaFile( "sh_umsg_core.lua" )
-	AddCSLuaFile( "exsto/sh_umsg.lua" )
-	AddCSLuaFile( "exsto/menu/cl_menu_skin_main.lua" )
-	AddCSLuaFile( "exsto/menu/cl_menu_skin_quick.lua" )
-	AddCSLuaFile( "exsto/cl_menu.lua" )
-	AddCSLuaFile( "exsto/menu/cl_page.lua" )
-	AddCSLuaFile( "exsto/menu/cl_menu.lua" )
-	AddCSLuaFile( "exsto/sh_access.lua" )
-	AddCSLuaFile( "exsto/sh_print.lua" )
-	AddCSLuaFile( "exsto/sh_plugins.lua" )
-	--AddCSLuaFile( "exsto/sh_cloud.lua" )
+	exstoClient( "fel.lua" )
+	
+		-- Menu
+	exstoClient( "menu/cl_derma.lua" )
+	exstoClient( "menu/cl_quickmenu.lua" )
+	exstoClient( "menu/cl_anim.lua" )
+	exstoClient( "menu/cl_menu_skin_main.lua" )
+	exstoClient( "menu/cl_menu_skin_quick.lua" )
+	exstoClient( "menu/cl_page.lua" )
+	exstoClient( "menu/cl_menu.lua" )
+	
+		-- Misc
+	exstoClient( "cl_menu.lua" )
 
 --[[ -----------------------------------
 	Category:  Player Utils
