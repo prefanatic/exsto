@@ -8,6 +8,56 @@ PLUGIN:SetInfo({
 	Owner = "Hobo",
 } )
 
+local dcClearTime
+local function OnDCTimeChange(time)
+	dcClearTime = time * 60
+	return true
+end
+
+PLUGIN:AddVariable( {
+	Pretty = "Clean DC Players",
+	Dirty = "cleandctime",
+	Default = -1,
+	Description = "Clears a player's props after X minutes if they disconnect. (-1 = off)",
+	OnChange = OnDCTimeChange,
+} )
+
+function PLUGIN:Init()
+	dcClearTime = exsto.GetVar("cleandctime").Value * 60
+	self.DCTable = {}
+end
+
+function PLUGIN:PlayerDisconnected( ply )
+	local UID = ply:UniqueID()
+	table.Add(self.DCTable, {{ UID = UID, StartTime = CurTime(), Name = ply:Name() }})
+end
+
+local lastThink = CurTime()
+function PLUGIN:Think()
+	local time = CurTime()
+	
+	if (time - lastThink) > 5 and self.DCTable[1] and dcClearTime >= 0 then
+		local clearData = self.DCTable[1]
+		if (time - clearData.StartTime) > dcClearTime then
+			for _, group in pairs(cleanup.GetList()[clearData.UID]) do
+				for _, ent in ipairs(group) do
+					if ent:IsValid() then ent:Remove() end
+				end
+			end
+			exsto.Print(exsto_CHAT_ALL, COLOR.NAME, clearData.Name, COLOR.NORM, " has not returned and their props have been removed!")
+			table.remove(self.DCTable,1)
+		end
+		lastThink = time
+	end
+end
+
+function PLUGIN:PlayerSpawn( ply )
+	local UID = ply:UniqueID()
+	for _, info in ipairs(self.DCTable) do
+		if info.UID == UID then table.remove(self.DCTable, _) end
+	end
+end
+
 function PLUGIN:Clear( owner, targ, clr, show )
 	local Return = {}
 

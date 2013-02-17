@@ -161,6 +161,19 @@ function exsto.GetPlayerByID( id )
 	return nil
 end
 
+function exsto.dbGetPlayerByID( id )
+	if string.match( id, "STEAM_[0-5]:[0-9]:[0-9]+" ) then
+		id = string.upper(id)
+		local users = exsto.UserDB:GetAll()
+		for _, user in ipairs(users) do
+			if user.SteamID == id then 
+				return user
+			end
+		end
+	end
+	return nil
+end
+
 timer.Create( "Exsto_TagCheck", 1, 0, function()
 	if not GetConVar( "sv_tags" ) then CreateConVar( "sv_tags", "" ) end -- Why do we have to do this now?
 	if !string.find( GetConVar( "sv_tags" ):GetString(), "Exsto" ) then

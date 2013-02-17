@@ -32,6 +32,7 @@ AddArg( "NUMBER", "number", function( num ) return tonumber( num ) end )
 AddArg( "STRING", "string", function( string ) return tostring( string ) end )
 AddArg( "BOOLEAN", "boolean", function( bool ) return tobool( bool ) end )
 AddArg( "NIL", "nil", function( object ) return "" end )
+AddArg( "STEAMID", "table", function( str ) if str == "" then return str else return exsto.dbGetPlayerByID(str) end end )
 
 AddArg( "TIME", "number", function( num )
 	local split = string.Explode( ":", num )
@@ -454,6 +455,9 @@ function exsto.ParseArguments( ply, data, args )
 				-- See if it is a player that we were looking for.  Maybe we can give a suggestion!
 				if type( converted ) == "table" and currentArgumentData.Type == "Player" and #converted == 0 then
 					exsto.GetClosestString( currentSplice, exsto.BuildPlayerNicks(), nil, ply, "Unknown player" )
+					return nil
+				elseif currentArgumentData.Style == "STEAMID" and !converted then
+					ply:Print( exsto_CHAT, COLOR.NORM, "Unable to find a player under the SteamID ", COLOR.NAME, currentSplice, COLOR.NORM, "!" )
 					return nil
 				end
 				

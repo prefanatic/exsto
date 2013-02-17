@@ -275,6 +275,45 @@ exsto.AddChatCommand( "rank", {
 })
 
 --[[ -----------------------------------
+	Function: exsto.SetAccessID()
+	Description: Sets a SteamID's rank.
+	Used: Any time required; called normally through commands.
+	----------------------------------- ]]
+function exsto.SetAccessID( ply, user, id )
+		
+	local rank = exsto.Ranks[id]
+	
+	if !rank then
+		local closeRank = exsto.GetClosestString( id, exsto.Ranks, "ID", ply, "Unknown rank" )
+		return
+	end
+	
+	local SelfIm = ply:EntIndex() > 0 and tonumber(exsto.Ranks[ply:GetRank()].Immunity) or -1
+	local RankIm  = tonumber(rank.Immunity)
+	
+	if SelfIm > RankIm then return { ply,COLOR.NORM,"You cannot set yourself a higher rank" } end
+	
+	exsto.UserDB:AddRow( {
+		SteamID = user.SteamID;
+		Rank = rank.ID;
+	} )
+	
+	exsto.Print( exsto_CHAT_ALL, COLOR.NAME, user.Name, COLOR.NORM, " has been given rank ", COLOR.NAME, rank.Name )
+	
+end
+exsto.AddChatCommand( "rankid", {
+	Call = exsto.SetAccessID,
+	Desc = "Sets a user access",
+	Console = { "rankid" },
+	Chat = { "!rankid" },
+	ReturnOrder = "SteamID-Rank",
+	Args = {SteamID = "STEAMID", Rank = "STRING"},
+	Optional = { },
+	Category = "Administration",
+	DisallowOwner = true,
+})
+
+--[[ -----------------------------------
 	Function: exsto.PrintRank
 	Description: Prints a users rank
 	----------------------------------- ]]

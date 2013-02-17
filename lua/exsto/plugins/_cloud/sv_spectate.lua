@@ -10,6 +10,22 @@ PLUGIN:SetInfo({
 	Owner = "Prefanatic",
 } )
 
+function PLUGIN:KeyPress( ply, key )
+	if ply.Spectating and key == IN_JUMP then
+		ply:UnSpectate()
+		ply:KillSilent()
+		ply:Spawn()
+		ply:SetPos( ply.StartSpectatePos )
+		
+		for k,v in pairs( ply.Weapons ) do
+			ply:Give( tostring( v ) )
+		end		
+
+		ply.Spectating = false
+		return { ply, COLOR.NORM, "You have stopped ", COLOR.NAME, "specatating", COLOR.NORM, "!" }
+	end
+end
+
 function PLUGIN:Spectate( owner, ply )
 
 	if owner.Spectating then
