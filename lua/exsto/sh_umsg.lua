@@ -115,12 +115,11 @@ if SERVER then
      ----------------------------------- ]]
 	function exsto.SendRank( ply, short )
 		local rank = exsto.Ranks[ short ]
-		
+
 		local sender = exsto.CreateSender( "ExRecRank", ply )
 			sender:AddString( short )
 			sender:AddString( rank.Name )
 			sender:AddString( rank.Parent )
-			sender:AddString( rank.Description )
 			sender:AddShort( rank.Immunity )
 			sender:AddColor( rank.Color )
 			
@@ -231,7 +230,6 @@ if CLIENT then
 			Name = reader:ReadString(),
 			ID = ID,
 			Parent = reader:ReadString(),
-			Description = reader:ReadString(),
 			Immunity = reader:ReadShort(),
 			Color = reader:ReadColor(),
 			FlagsAllow = reader:ReadTable(),

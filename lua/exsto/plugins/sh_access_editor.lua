@@ -40,22 +40,26 @@ if SERVER then
 		local id = reader:ReadString()
 
 		-- Write the data
-		PLUGIN:WriteAccess( id, reader:ReadString(), reader:ReadString(), reader:ReadColor(), reader:ReadTable(), reader:ReadTable() )
+		PLUGIN:WriteAccess( id, reader:ReadString(), reader:ReadString(), reader:ReadColor(), reader:ReadTable() )
 		
 		-- Give him immunity.
 		if !exsto.Ranks[ id ] then
 			PLUGIN:WriteImmunity( id, 10 )
 		end
+		
+		-- Give FEL some time to save shit.
+		timer.Simple( 0.1, function()
 
-		-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
-		exsto.aLoader.Initialize()
-		
-		-- We sadly have to resend everything, with flags and stuff being the way they are.
-		exsto.SendRanks( player.GetAll() )
-		
-		-- Reload the rank editor.
-		--timer.Create( "reload_" .. ply:EntIndex(), 1, 1, PLUGIN.SendData, PLUGIN, "ExRankEditor_Reload", ply )
-		hook.Call( "ExOnRankCreate", nil, id )
+			-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
+			exsto.aLoader.Initialize()
+			
+			-- We sadly have to resend everything, with flags and stuff being the way they are.
+			exsto.SendRanks( player.GetAll() )
+			
+			-- Reload the rank editor.
+			hook.Call( "ExOnRankCreate", nil, id )
+			
+		end )
 	end
 	exsto.CreateReader( "ExPushRankToSrv", PLUGIN.CommitChanges )
 
@@ -80,10 +84,10 @@ if SERVER then
 		} )
 	end
 	
-	function PLUGIN:WriteAccess( short, name, derive, color, flagsallow, flagsdeny )
+	function PLUGIN:WriteAccess( id, name, derive, color, flagsallow )
 		exsto.RankDB:AddRow( {
 			Name = name;
-			ID = short;
+			ID = id;
 			Parent = derive;
 			Color = von.serialize( color );
 			FlagsAllow = von.serialize( flagsallow );
@@ -169,8 +173,8 @@ elseif CLIENT then
 		if errors( rank, pnl ) then return end
 		
 		PLUGIN.Updating = true
-		
-		PLUGIN:Debug( "Updating rank content for " .. rank.Name )
+
+		PLUGIN:Debug( "Updating rank content for '" .. rank.Name .. "'" )
 		local sender = exsto.CreateSender( "ExPushRankToSrv" )
 			sender:AddString( rank.ID )
 			sender:AddString( pnl.RankName:GetValue() )
@@ -256,7 +260,7 @@ elseif CLIENT then
 			ID = id;
 			Parent = "NONE";
 			Color = COLOR.NAME;
-			FlagsAllow = {};
+			FlagsAllow = { "test" };
 		};
 		
 		updateContent( exsto.Ranks[ id ] );
@@ -290,7 +294,7 @@ elseif CLIENT then
 			pnl.Header:SetTall( 32 )
 			pnl.Header.Paint = function() end
 			
-		pnl.RankSelect = vgui.Create( "DComboBox", pnl.Header )
+		pnl.RankSelect = vgui.Create( "ExComboBox", pnl.Header )
 			pnl.RankSelect:SetValue( "Select a rank" )
 			pnl.RankSelect:Dock( FILL )
 			pnl.RankSelect.OnSelect = editorRankSelected
@@ -314,7 +318,7 @@ elseif CLIENT then
 			pnl.RankName:Dock( TOP )
 			pnl.RankName:SetTall( 31 )
 			pnl.RankName:DockMargin( 0, 4, 0, 0 )
-			pnl.RankName:SetTextInset( 5, 0 )
+			pnl.RankName:SetTextInset( 10, 0 )
 			pnl.RankName.OnTextChanged = function( entry )
 				--pnl.RankSelect:SetValue( entry:GetValue() )
 			end
@@ -347,7 +351,7 @@ elseif CLIENT then
 			
 		pnl.Flags = vgui.Create( "ExListView", pnl.Holder )
 			pnl.Flags:Dock( FILL )
-			pnl.Flags:DockMargin( 0, 4, 0, 2 )
+			pnl.Flags:DockMargin( 0, 4, 0, 0 )
 			pnl.Flags:SetDataHeight( 22 )
 			pnl.Flags:NoHeaders()
 			pnl.Flags:LinePaintOver( flagIndicator )

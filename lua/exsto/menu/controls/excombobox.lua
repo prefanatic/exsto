@@ -24,8 +24,16 @@ function PANEL:Init()
 
 end
 
+PANEL.OldClick = DComboBox.DoClick
 function PANEL:DoClick()
-	print( ":)" )
+	self:OldClick()
+	
+	if self:IsMenuOpen() then
+		self.PostTextColor = self:GetTextColor()
+		self:SetTextColor( Color( 255, 255, 255, 255 ) )
+	else
+		self:SetTextColor( self.PostTextColor )
+	end
 end
 
 derma.DefineControl( "ExComboBox", "Exsto Combobox", PANEL, "DComboBox" )

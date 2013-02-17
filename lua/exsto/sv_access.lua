@@ -34,7 +34,7 @@ exsto.RankDB = FEL.CreateDatabase( "exsto_data_ranks" );
 		Parent = "VARCHAR(100):not_null";		-- Parental rank; used to derive flags.
 		FlagsAllow = "TEXT";					-- Flags allowed for this rank.
 		FlagsDeny = "TEXT";						-- Flags denied for this rank.
-		Color = "TEXT";					-- Color of the rank
+		Color = "TEXT";							-- Color of the rank
 		Immunity = "INTEGER";					-- Immunity, we go from 0 as the highest and onward.
 	} )
 	
