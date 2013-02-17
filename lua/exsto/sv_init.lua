@@ -197,3 +197,4 @@ end )
 	
 	local seconds = SysTime() - exsto.StartTime
 	MsgC( Color( 146, 232, 136, 255 ), "Exsto load finished.\n"	)
+	hook.Call( "ExInitialized" )

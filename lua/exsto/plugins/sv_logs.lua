@@ -17,6 +17,18 @@ function PLUGIN:Init()
 	end
 end
 
+function PLUGIN:ShutDown()
+	self:SaveEvent( "The server is shutting down/switching maps!", "server" )
+end
+
+function PLUGIN:ExInitialized()
+	self:SaveEvent( "Exsto has finished loading.", "server" )
+end
+
+function PLUGIN:CanTool( ply, tr, tool )
+	self:SaveEvent( self:Player( ply ) .. " has attempted to use tool (" .. tool .. ") on " .. IsValid( tr.Entity ) or "Unknown", "player" )
+end
+
 function PLUGIN:PlayerSpawnProp( ply, mdl )
 	self:SaveEvent( self:Player( ply ) .. " has spawned prop (" .. mdl .. ")", "spawns" )
 end
@@ -71,7 +83,7 @@ function PLUGIN:ExInitSpawn( ply, sid, uid )
 end
 
 function PLUGIN:PlayerDisconnected( ply )
-	self:SaveEvent( self:Player( ply ) .. " has disconnected!" )
+	self:SaveEvent( self:Player( ply ) .. " has disconnected!", "player" )
 end
 
 function PLUGIN:ExCommandCalled( id, plug, caller, ... )
