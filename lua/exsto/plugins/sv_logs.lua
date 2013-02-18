@@ -9,7 +9,7 @@ PLUGIN:SetInfo({
 } )
 
 function PLUGIN:Init()
-	self.Types = { "all", "commands", "player", "errors", "chat", "spawns" }
+	self.Types = { "all", "commands", "player", "errors", "chat", "spawns", "server" }
 	
 	file.CreateDir( "exsto_logs" )
 	for _, type in ipairs( self.Types ) do
@@ -26,7 +26,8 @@ function PLUGIN:ExInitialized()
 end
 
 function PLUGIN:CanTool( ply, tr, tool )
-	self:SaveEvent( self:Player( ply ) .. " has attempted to use tool (" .. tool .. ") on " .. IsValid( tr.Entity ) or "Unknown", "player" )
+	local ent = IsValid( tr.Entity ) and tr.Entity:GetClass() or "Unknown"
+	self:SaveEvent( self:Player( ply ) .. " has attempted to use tool (" .. tool .. ") on " .. ent, "player" )
 end
 
 function PLUGIN:PlayerSpawnProp( ply, mdl )
