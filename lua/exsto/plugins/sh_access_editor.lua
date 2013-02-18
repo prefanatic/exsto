@@ -281,13 +281,14 @@ elseif CLIENT then
 
 	local function editorInit( pnl )
 		-- Build our layout.
-		pnl:CreateCategory( "Rank Editor" )
+		local cat = pnl:CreateCategory( "Rank Editor" )
 		pnl:DisableScroller()
-		pnl.Holder = exsto.CreatePanel( 0, 0, pnl:GetWide(), pnl:GetTall() - 10, nil, pnl )
+		pnl.Holder = vgui.Create( "DPanel", cat )
+		--pnl.Holder = exsto.CreatePanel( 0, 0, pnl:GetWide(), pnl:GetTall() - 10, nil, cat )
 			pnl.Holder.Paint = function() end
-			pnl:Add( pnl.Holder, "Rank Editor" )
-			pnl.Holder:Dock( FILL )
-			pnl.Holder:DockPadding( 4, 0, 4, 0 )
+			pnl.Holder:Dock( TOP )
+			pnl.Holder:DockMargin( 4, 0, 4, 0 )
+			pnl.Holder:SetTall( pnl:GetTall() - 35 )
 
 		pnl.Header = vgui.Create( "DPanel", pnl.Holder )
 			pnl.Header:Dock( TOP )
@@ -366,6 +367,8 @@ elseif CLIENT then
 				surface.SetDrawColor( 255, 255, 255, 100 )
 				surface.DrawRect( 0, 0, slf:GetWide(), slf:GetTall() )
 			end
+			
+		cat:InvalidateLayout( true )
 			
 		refreshEditor()
 	end

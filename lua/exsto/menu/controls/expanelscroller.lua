@@ -49,7 +49,7 @@ function PANEL:Paint()
 end
 
 function PANEL:Think()
-	if self.List.VBar:IsVisible() and self._VBarDisabled then print( "Fixing vbar" ) self:DisableScroller() end
+	--if self.List.VBar:IsVisible() and self._VBarDisabled then print( "Fixing vbar" ) self:DisableScroller() end
 	--if !self.List.VBar:IsVisible() and !self._VBarDisabled then print( "drgu" ) self.List.VBar:SetEnabled( true ) end
 end
 
@@ -60,14 +60,11 @@ function PANEL:DisableScroller()
 	self._VBarDisabled = true
 end
 
+-- Deprecating
 function PANEL:Add( obj, catName )
 	if !self.Objects[ catName ] then self.Objects[ catName ] = {} end
 	
 	local cat = self.Categories[ catName ]
-
-	cat:SetContents( obj )
-	cat:SetTall( obj:GetTall() )
-	cat:SetExpanded( true )
 
 	table.insert( self.Objects[ catName ], obj )
 end
@@ -87,12 +84,14 @@ function PANEL:CreateCategory( catName )
 		cat.Header:SetTextColor( Color( 0, 180, 255, 255 ) )
 		cat.Header:SetFont( "ExGenericText19" )
 		cat.Header.UpdateColours = function( self, skin ) end
-		cat.Header.OnMousePressed = function( c )
+		--cat.Header.OnMousePressed = function( c )
 			--cat:Toggle() -- Fuck you garry.
-		end
+		--end
 		cat.Paint = categoryPaint
 		
 	self.Categories[ catName ] = cat
+	
+	return cat
 end
 
 function PANEL:PerformLayout()
