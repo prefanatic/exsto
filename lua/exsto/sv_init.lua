@@ -113,31 +113,34 @@ function exsto.FindPlayers( search, ply )
 		search = search:Replace("!","")
 	end
 	
-	if search == "me" then
-		table.insert(players, ply)
+	for _, str in ipairs(string.Explode(",", search)) do
+		local str = string.Trim(str) PrintTable(players)
+		local tempPlayers = {}
 	
-	-- Rank styles
-	elseif search:sub( 1, 1 ) == "%" then
-		search = search:Replace( "%", "" ):lower()
-		for _, ply in ipairs( player.GetAll() ) do
-			if ply:GetRank() == search then table.insert( players, ply ) end
-		end
-	else -- Other stuff
+		-- The player themself
+		if str == "me" then
+			table.insert(tempPlayers, _, ply)
 		
-		-- Are we wildcarding?
-		local wc, start = search:find( "*", 1, true )
-		if wc and start and ( start == search:len() ) and ( search:sub( start - 1 ) != " " ) then
-			search = search:gsub( "*", "" ):lower()
+		-- Rank styles
+		elseif str:sub( 1, 1 ) == "%" then
+			str = str:Replace("%",""):lower()
 			for _, ply in ipairs( player.GetAll() ) do
-				if ply:Nick():lower():find( search, 1, true ) then table.insert( players, ply ) end
+				if ply:GetRank() == str then table.insert(tempPlayers, _, ply) end
 			end
 		
-		-- We are just specific matching.
+		-- WildCard
+		elseif str == "*" then
+			tempPlayers = player.GetAll()
+		
+		-- Specific matching
 		else
 			for _, ply in ipairs( player.GetAll() ) do
-				if ply:Nick():lower():find( search:lower(), 1, true ) then table.insert( players, ply ) break end
+				if ply:Nick():lower():find( str:lower(), 1, true ) then table.insert(tempPlayers, _, ply) end
 			end
 		end
+	
+		table.Merge(players, tempPlayers)
+		players = table.ClearKeys(players, false)
 	end
 	
 	if inverse == 1 then

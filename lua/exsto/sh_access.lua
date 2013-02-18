@@ -128,3 +128,12 @@ end
 function exsto.Registry.Player:IsUserGroup( id )	
 	return self:GetRank() == id
 end
+
+--[[ -----------------------------------
+	Function: player:HasUserGroup
+	Description: Checks if a player is a rank.
+	----------------------------------- ]]
+function exsto.Registry.Player:HasUserGroup( id )	
+	if self:GetRank() == id then return true end
+	return exsto.aLoader.CheckParent(self:GetRank(), id)
+end
