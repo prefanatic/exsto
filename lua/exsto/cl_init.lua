@@ -33,6 +33,7 @@
 	exstoClient( "sh_umsg_core.lua" )
 	exstoClient( "sh_umsg.lua" )
 	exstoClient( "sh_print.lua" )
+	exstoClient( "sh_variables.lua" )
 	exstoClient( "menu/cl_menu.lua" )
 	exstoClient( "menu/cl_page.lua" )
 	exstoClient( "menu/cl_quickmenu.lua" )

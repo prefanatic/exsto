@@ -7,45 +7,43 @@ PLUGIN:SetInfo({
 	Owner = "Prefanatic",
 } )
 
-PLUGIN:AddVariable( {
-	Pretty = "Display IP on connect",
-	Dirty = "ip-on-connect",
-	Default = "disabled",
-	Description = "This changed what IP will be displayed on connect.",
-	Possible = { "disabled", "admins-only", "all" },
-} )
+local function loadGeoIP()
+	local succ, err = pcall( require, "geoip" )
+	if !succ then
+		exsto.Error( "Unable to load GeoIP module.  If you want to display countries on connect, you need this." )
+	end	
+end
 
-local function dispCountryOnChange( enabled )
-	if enabled and !GeoIP then
-		local succ, err = pcall( require, "geoip" )
-		if !succ then
-			exsto.Error( "Unable to load GeoIP module.  If you want to display countries on connect, you need this." )
-		end	
+local function dispCountryOnChange( old, new )
+	if new == true and not GeoIP then
+		loadGeoIP()
 	end
 	return true
 end
 
-PLUGIN:AddVariable( {
-	Pretty = "Display Country on connect",
-	Dirty = "country-on-connect",
-	Default = false,
-	Description = "This designates if countries are shown on connect.",
-	OnChange = dispCountryOnChange,
-	Possible = { true, false },
-} )
-
 function PLUGIN:Init()
-	if !GeoIP and exsto.GetVar( "country-on-connect" ).Value == true then 
-		local succ, err = pcall( require, "geoip" )
-		if !succ then
-			self:Error( "Unable to load GeoIP module.  If you want to display countries on connect, you need this." )
-		end
+	-- Variables
+	self.IPStyle = exsto.CreateVariable( "ExIPOnConnect", 
+		"Display IP on connect", 
+		"disabled", 
+		"Designates what style of IP on connect shows up.\n - 'disabled' : Does nothing.\n - 'admins-only' : Displays IP for admins only.\n - 'all' : Displays IP for everybody."
+	)
+	
+	self.Country = exsto.CreateVariable( "ExCountryOnConnect",
+		"Display origin country on connect",
+		false,
+		"Designates if user's countries are shown on connect."
+	)
+		self.Country:SetCallback( dispCountryOnChange )
+	
+	if not GeoIP and self.Country:GetValue() == true then 
+		loadGeoIP()
 	end
 end
 
 function PLUGIN:ExPlayerConnect( data )
-	local var = exsto.GetVar( "ip-on-connect").Value
-	local countryVar = exsto.GetVar( "country-on-connect" ).Value
+	local var = self.IPStyle:GetValue()
+	local countryVar = self.Country:GetValue()
 	local append = "has connected!"
 	local name = data.name
 	local addr = data.address

@@ -15,7 +15,7 @@ if SERVER then
 
 	util.AddNetworkString( "teamToRankSend" )
 	
-	local function onchange( val )
+	local function onchange( old, val )
 		if val == true then -- We need to send this code out and push the ranks down.
 			PLUGIN.OldTeamData = team.GetAllTeams();
 			PLUGIN.OldTeams = {};
@@ -38,11 +38,19 @@ if SERVER then
 	} )
 		
 	function PLUGIN:Init()
+		-- Variables
+		self.Enabled = exsto.CreateVariable( "ExTeamOverride",
+			"Team Rank Colors",
+			false,
+			"Sets up sandbox teams to match Exsto's rank colors.\n - Allows for scoreboard and chat color names."
+		)
+			self.Enabled:SetCallback( onchange )
+		
 		self.Teams = {}
 		self.OldTeams = {}
 		self.OldTeamData = team.GetAllTeams()
 		
-		if exsto.GetVar( "rankteamoverride" ).Value == true then
+		if self.Enabled:GetValue() == true then
 			self:ExRanksLoaded()
 		else
 			self:Unload()

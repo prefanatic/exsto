@@ -10,18 +10,19 @@ PLUGIN:SetInfo({
 	Owner = "Prefanatic",
 } )
 
-PLUGIN:AddVariable({
-	Pretty = "Exsto Credit Delay",
-	Dirty = "notify_delay",
-	Default = 5,
-	Description = "How long in minutes till players are notified of Exsto.",
-})
+function PLUGIN:Init()
+	self.Delay = exsto.CreateVariable( "ExCreditDelay", 
+		"Exsto's Credit Delay", 
+		5,
+		"Specifies a delay (in minutes) for when players are notified of Exsto." )
+		
+	self.Next = CurTime() + self.Delay:GetValue() * 60
+end
 
-PLUGIN.Next = 0
 function PLUGIN:Think()
 	if self.Next <= CurTime() then
 		exsto.Print( exsto_CHAT_ALL, COLOR.NORM, "This server is proudly protected by ", COLOR.EXSTO, "Exsto" )
-		self.Next = CurTime() + exsto.GetVar( "notify_delay" ).Value * 60
+		self.Next = CurTime() + self.Delay:GetValue() * 60
 	end
 end
 
