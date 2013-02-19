@@ -395,62 +395,8 @@ if SERVER then
 
 elseif CLIENT then 
 
-	PLUGIN.Recieved = false
-
-	local function receive( reader )
-		if !PLUGIN.Bans then PLUGIN.Bans = {} end
-		local steamid = reader:ReadString()
-		PLUGIN.Bans[ steamid ] = {
-			SteamID = steamid,
-			Name = reader:ReadString(),
-			Reason = reader:ReadString(),
-			BannedBy = reader:ReadString(),
-			Length = reader:ReadShort(),
-			BannedAt = reader:ReadLong(),
-			BannerID = reader:ReadString(),
-		}
-	end
-	exsto.CreateReader( "ExRecBans", receive )
 	
-	local function save()
-		PLUGIN.Recieved = true
-		if PLUGIN.Panel then
-			PLUGIN.Panel:EndLoad() 
-			if PLUGIN.List and PLUGIN.List:IsValid() then
-				PLUGIN.List:Update()
-			else
-				PLUGIN:Build( PLUGIN.Panel )
-			end
-		end
-	end
-	exsto.CreateReader( "ExSaveBans", save )
-	
-	function PLUGIN:ReloadList( panel ) 
-		if !self.List then return end 
-		if !panel then return end
-
-		panel:PushLoad()
-		self.Bans = nil 
-		self.Recieved = false
-		RunConsoleCommand( "_ResendBans" ) 
-	end 
-
-	function PLUGIN:GetSelected( column ) 
-		if self.List:GetSelected()[1] then 
-			return self.List:GetSelected()[1]:GetValue( column or 1 ) 
-		end 
-	end 	
-
-	function PLUGIN:Build( panel ) 
-		self.List = exsto.CreateListView( 10, 10, panel:GetWide() - 20, panel:GetTall() - 60, panel ) 
-		self.List:AddColumn( "Player" ) 
-		self.List:AddColumn( "SteamID" ) 
-		self.List:AddColumn( "Reason" ) 
-		self.List:AddColumn( "Banned By" )
-		self.List:AddColumn( "Banner ID" )
-		self.List:AddColumn( "Unban Date" ) 
-
-		self.List.Update = function() 
+		--[[self.List.Update = function() 
 			self.List:Clear() 
 			if type( self.Bans ) == "table" then
 				for _, data in pairs( self.Bans ) do 
@@ -462,39 +408,31 @@ elseif CLIENT then
 				end 
 			end
 		end 
-		self.List:Update() 
-
-		self.unbanButton = exsto.CreateButton( ( (panel:GetWide() / 2) - ( 74 / 2 ) ) + 50, panel:GetTall() - 40, 74, 27, "Remove", panel ) 
-		self.unbanButton.OnClick = function( button ) 
-			local id = self:GetSelected( 2 ) 
-			if id then 
-				RunConsoleCommand( "exsto", "unban", tostring( id ) ) 
-				self:ReloadList( panel ) 
-			else
-				panel:PushGeneric( "Please select a ban to remove." )
-			end
-		end 
-		self.unbanButton:SetStyle( "positive" ) 
-
-		self.refreshButton = exsto.CreateButton( ( (panel:GetWide() / 2) - ( 74 / 2 ) ) - 50, panel:GetTall() - 40, 74, 27, "Refresh", panel ) 
-		self.refreshButton.OnClick = function( button ) 
-			self:ReloadList( panel ) 
-		end      
-	end 
-
-	Menu:CreatePage({ 
-		Title = "Ban List", 
-		Short = "banlist", 
-	},      function( panel )
-		if !PLUGIN.Recieved then
-			panel:PushLoad()
-			RunConsoleCommand( "_ResendBans" ) 
-		else
-			PLUGIN:Build( panel ) 
-		end
-		PLUGIN.Panel = panel
-	end 
-	) 
+		self.List:Update() ]]
+	
+	local function banInit( pnl )
+		local cat = pnl:CreateCategory( "Bans" )
+		
+		pnl.List = vgui.Create( "ExListView", cat )
+			pnl.List:NoHeaders()
+			pnl.List:DockMargin( 4, 0, 4, 0 )
+			pnl.List:Dock( TOP )
+			pnl.List:DisableScrollbar()
+			
+		-- This needs to be run after a list has been filled with contents.
+		pnl.List:SetDirty( true )
+		pnl.List:InvalidateLayout( true )
+		
+		pnl.List:SizeToContents()
+		
+		cat:InvalidateLayout( true )
+	end
+	
+	function PLUGIN:Init()
+		self.Page = exsto.Menu.CreatePage( "banlist", banInit )
+			self.Page:SetTitle( "Bans" )
+			self.Page:SetSearchable( true )
+	end
 
 end 
 
