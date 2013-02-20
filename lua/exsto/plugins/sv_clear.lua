@@ -9,21 +9,16 @@ PLUGIN:SetInfo({
 } )
 
 local dcClearTime
-local function OnDCTimeChange(time)
+local function OnDCTimeChange(old, time)
 	dcClearTime = time * 60
 	return true
 end
 
-PLUGIN:AddVariable( {
-	Pretty = "Clean DC Players",
-	Dirty = "cleandctime",
-	Default = -1,
-	Description = "Clears a player's props after X minutes if they disconnect. (-1 = off)",
-	OnChange = OnDCTimeChange,
-} )
-
 function PLUGIN:Init()
-	dcClearTime = exsto.GetVar("cleandctime").Value * 60
+	self.ClearTime = exsto.CreateVariable( "ExClearTime", "Clean Disconnected Player's Objects", -1, "Clears a player's props after X minutes if they disconnect. (-1 is off)" )
+		self.ClearTime:SetCallback( OnDCTimeChange )
+	
+	dcClearTime = self.ClearTime:GetValue() * 60
 	self.DCTable = {}
 end
 

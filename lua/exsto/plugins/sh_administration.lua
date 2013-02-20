@@ -15,22 +15,21 @@ if SERVER then
 
 	util.AddNetworkString( "ExRecBans" )
 	
-	PLUGIN:AddVariable( {
-		Pretty = "FEL --> Ban Refresh Rate";
-		Dirty = "fel.banrefreshrate";
-		Default = 3 * 60;
-		Description = "Changes how often FEL should refresh the ban table.  Defaults at 3 minutes.  Value is in seconds, not minutes.";
-		OnChange = PLUGIN.RefreshRateChanged;
-	} )
-	
-	function PLUGIN.RefreshRateChanged( val )
+	local function setRefresh( old, val )
 		if !exsto.BanDB then return false, "Ban table doesn't exist!" end
 		
-		exsto.BanDB:SetRefreshRate( val )
+		exsto.BanDB:SetRefreshRate( val * 60 )
 	end
 
 	function PLUGIN:Init() 
 		exsto.CreateFlag( "banlist", "Allows users to access the ban list." )
+		
+		self.BanRefreshRate = exsto.CreateVariable( "ExBanRefreshRate",
+			"Ban Refresh Rate",
+			3,
+			"Changes how often the bans should be refreshed on the server.  Value is in minutes."
+		)
+		self.BanRefreshRate:SetCallback( setRefresh )
 		
 		self.OldPlayers = {}
 		exsto.BanDB = FEL.CreateDatabase( "exsto_data_bans" )
@@ -43,7 +42,7 @@ if SERVER then
 				BannerID = "VARCHAR(50)";
 				BannedAt = "INTEGER:not_null";
 			} )
-			exsto.BanDB:SetRefreshRate( exsto.GetValue( "fel.banrefreshrate" ) )
+			exsto.BanDB:SetRefreshRate( self.BanRefreshRate:GetValue() * 60 )
 			
 		-- Setup our "gatekeeper"  Its sad the module died :(
 		gameevent.Listen( "player_connect" )

@@ -43,6 +43,8 @@ local dataTypes = {
 	Description: Creates a variable and inserts it into the Exsto table.
 	 ----------------------------------- ]]
 function exsto.AddVariable( data )
+	print( "variable " .. data.Pretty )
+	debug.Trace()
 	if type( data ) != "table" then exsto.ErrorNoHalt( "Issue creating variable!  Not continuing in this function call!" ) return end
 	
 	if exsto.FindVar( data.Dirty ) then

@@ -97,8 +97,8 @@ function var:PossibleCheck( val )
 	return false
 end
 
-function var:SetPossible( tbl )
-	self.Possible = tbl
+function var:SetPossible( ... )
+	self.Possible = {...}
 end
 
 function var:SetCallback( func )

@@ -28,15 +28,6 @@ if SERVER then
 		end
 	end
 	
-	PLUGIN:AddVariable( {
-		Pretty = "Rank Team Overrides",
-		Dirty = "rankteamoverride",
-		Description = "Sets up sandbox teams matching Exsto's ranks to allow for scoreboard and chat color/name support.",
-		Default = false,
-		Possible = { true, false },
-		OnChange = onchange,
-	} )
-		
 	function PLUGIN:Init()
 		-- Variables
 		self.Enabled = exsto.CreateVariable( "ExTeamOverride",

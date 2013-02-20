@@ -7,13 +7,6 @@ PLUGIN:SetInfo( {
 	Owner = "Prefanatic",
 } )
 
-PLUGIN:AddVariable( {
-		Pretty = "Votemap Timeout",
-		Dirty = "votemap-timeout",
-		Default = 30,
-		Description = "The timeout for the votemap, until it is finished.",
-	} )
-
 concommand.Add( "_VOTEMAP", function() PLUGIN:Votemap() end )
 
 function PLUGIN:Votemap()
@@ -49,7 +42,7 @@ function PLUGIN:Votemap()
 	local vote = exsto.GetPlugin( "votefuncs" )
 	if !vote then self:Print( "Couldn't find the vote API.  This shouldn't ever happen." ) return end
 	
-	vote:Vote( "votemap", "Next map!", lst, exsto.GetVar( "votemap-timeout" ).Value or 30, "large" )
+	vote:Vote( "votemap", "Next map!", lst, self.Timeout:GetValue(), "large" )
 	self.MapList = lst
 end
 
@@ -90,6 +83,7 @@ end
 
 function PLUGIN:Init()
 	-- Purely for statistical purposes.  Votemap also puts the most played above everything else in the list.
+	self.Timeout = exsto.CreateVariable( "ExVotemapTimeout", "Votemap timeout", 30, "How long the votemap has until it is done polling for votes." )
 	exsto.VotemapDB = FEL.CreateDatabase( "exsto_plugin_votemap" )
 		exsto.VotemapDB:ConstructColumns( {
 			Map = "VARCHAR(255):primary:not_null";

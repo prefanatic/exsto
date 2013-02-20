@@ -18,28 +18,13 @@ if SERVER then
 	util.AddNetworkString( "ExVoteTLeft" )
 	util.AddNetworkString( "ExVoteClear" )
 	
-	PLUGIN:AddVariable( {
-		Pretty = "Vote Timeout Time",
-		Dirty = "vote-timeout",
-		Default = 30,
-		Description = "This sets the default time for a vote, if no delay is passed.",
-	} )
-
-	PLUGIN:AddVariable( {
-	    Pretty = "Vote Default Style";
-	    Dirty = "vote-defaultstyle";
-	    Default = "chat";
-	    Description = "This sets the default voting style.  Either 'small' for a small menu, 'large' for a large menu, or 'chat' for chat voting.";
-	    Possible = { "chat", "large" };
-	} )
-	
-	PLUGIN:AddVariable( {
-	    Pretty = "Revote on Votes";
-	    Dirty = "vote-revote";
-	    Default = true;
-	    Description = "Setting this to true allows players to revote after they already casted a vote.";
-	    Possible = { true, false };
-	} )
+	function PLUGIN:Init()
+		self.Timeout = exsto.CreateVariable( "ExVoteTimeout", "Vote Timeout Lenght", 30, "This sets the default time for a vote, if no delay is passed." )
+		self.DefaultStyle = exsto.CreateVariable( "ExVoteDefaultStyle", "Default Vote Style", "chat", "This sets the default voting style.\n - 'small' : Small vote menu.\n - 'large' : Large vote menu.\n - 'chat' : Chat voting.")
+			self.DefaultStyle:SetPossible( "chat", "large" )
+		self.AllowRevote = exsto.CreateVariable( "ExAllowRevote", "Allow revotes", true, "Setting true allows players to revote after they have already cast a vote." )
+			self.AllowRevote:SetPossible( true, false )
+	end
 
 	-- We should send him the vote stuff so he can vote, because he just joined.
 	function PLUGIN:ExInitSpawn( ply )
@@ -75,7 +60,7 @@ if SERVER then
 	end
 	
 	function PLUGIN:VoteYes( caller )
-		local status = self:VoteHandler( 1, caller, exsto.GetVar( "vote-revote" ).Value )
+		local status = self:VoteHandler( 1, caller, self.AllowRevote:GetValue() )
 		if status then
 			return { caller, COLOR.NORM, "Voted ", COLOR.NAME, "yes." }
 		else
@@ -91,7 +76,7 @@ if SERVER then
 	})
 	
 	function PLUGIN:VoteNo( caller )
-		local status = self:VoteHandler( 2, caller, exsto.GetVar( "vote-revote" ).Value )
+		local status = self:VoteHandler( 2, caller, self.AllowRevote:GetValue() )
 		if status then
 			return { caller, COLOR.NORM, "Voted ", COLOR.NAME, "no." }
 		else
@@ -131,9 +116,9 @@ if SERVER then
 		self.Voted = {}
 		self.VoteID = id
 		self.VoteQuestion = question
-		self.VoteDelay = delay or exsto.GetVar( "vote-timeout" ).Value
+		self.VoteDelay = delay or self.Timeout:GetValue()
 		self.VoteQuestions = optiontbl
-		self.VoteStyle = style or exsto.GetVar( "vote-defaultstyle" ).Value
+		self.VoteStyle = style or self.DefaultStyle:GetValue()
 
 		self:SendVoteInfo( player.GetAll() )
 
@@ -145,7 +130,7 @@ if SERVER then
 		end
 		
 		-- Create the handler for us to end with
-		timer.Create( "ExVote_" .. id, delay or exsto.GetVar( "vote-timeout" ).Value, 1, function()
+		timer.Create( "ExVote_" .. id, delay or self.Timeout:GetValue(), 1, function()
 			PLUGIN:EndVote()
 		end )
 		

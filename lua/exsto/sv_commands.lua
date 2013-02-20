@@ -58,13 +58,10 @@ AddArg( "TIME", "number", function( num )
 	end
 end )
 
-exsto.AddVariable({
-	Pretty = "Enable Chat Spelling Suggestion",
-	Dirty = "spellingcorrect",
-	Default = true,
-	Description = "Enable to have Exsto tell you if you mis-spell a command.",
-	Possible = { true, false },
-})
+exsto.ChatSpellingSuggest = exsto.CreateVariable( "ExSpellingCorrect",
+	"Enable Chat Spelling Suggestions",
+	true,
+	"If enabled, Exsto will tell you when you type a command incorrectly." )
 
 --[[ -----------------------------------
 	Function: exsto.SendCommandList
@@ -507,13 +504,11 @@ function exsto.ParseArguments( ply, data, args )
 end
 
 -- Variable for ImmuneStyles
-exsto.AddVariable( {
-	Pretty = "Command Immunity Style";
-	Dirty = "com.immune.style";
-	Default = "immune.remove";
-	Description = "Changes how command immunity works, on selection basis.  immune.remove --> Removes players who cannot be accessed in commands.  immune.kill --> Kills the command run if immune isn't possible.";
-	Possible = { "immune.remove", "immune.kill" };
-} )
+exsto.ComImmuneStyle = exsto.CreateVariable( "ExComImmuneStyle",
+	"Command Immunity Style",
+	"remove",
+	"Changes how command immunity works, on a selection basis.\n - 'remove' : Removes players who cannot be accessed.\n - 'kill' : Stops the command from running if Exsto fails immune checks."
+)
 
 --[[ -----------------------------------
 	Function: ExstoParseCommand
@@ -551,11 +546,11 @@ local function ExstoParseCommand( ply, command, args, style )
 				for I = 1, #activePlayers do
 					allowed, reason = ply:IsAllowed( data.ID, type( argTable[ slot ] ) == "Player" and argTable[ slot ] or argTable[ slot ][ I ] )
 					if !allowed then
-						if exsto.GetValue( "com.immune.style" ) == "immune.remove" then
+						if exsto.ComImmuneStyle:GetValue() == "remove" then
 							table.remove( activePlayers, I )
 							I=I-1
 							remTriggered = true
-						elseif exsto.GetValue( "com.immune.style" ) == "immune.kill" then
+						elseif exsto.ComImmuneStyle:GetValue() == "kill" then
 							break
 						end
 					end
@@ -642,7 +637,7 @@ local function ExstoParseCommand( ply, command, args, style )
 	end
 	
 	-- I don't think we found anything?
-	if string.sub( command, 0, 1 ) == "!" and exsto.GetVar( "spellingcorrect" ).Value and style != "console" then
+	if string.sub( command, 0, 1 ) == "!" and exsto.ChatSpellingSuggest:GetValue() == true and style != "console" then
 		local data = { Max = 100, Com = "" } // Will a command ever be more than 100 chars?
 		local dist
 		// Apparently we didn't find anything...
