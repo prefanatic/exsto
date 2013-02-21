@@ -284,7 +284,6 @@ elseif CLIENT then
 		local cat = pnl:CreateCategory( "Rank Editor" )
 		pnl:DisableScroller()
 		pnl.Holder = vgui.Create( "DPanel", cat )
-		--pnl.Holder = exsto.CreatePanel( 0, 0, pnl:GetWide(), pnl:GetTall() - 10, nil, cat )
 			pnl.Holder.Paint = function() end
 			pnl.Holder:Dock( TOP )
 			pnl.Holder:DockMargin( 4, 0, 4, 0 )

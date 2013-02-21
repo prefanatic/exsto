@@ -412,6 +412,11 @@ elseif CLIENT then
 	local function banInit( pnl )
 		local cat = pnl:CreateCategory( "Bans" )
 		
+		pnl.Holder = vgui.Create( "DPanel", cat )
+			pnl.Holder.Paint = function() end
+			pnl.Holder:DockMargin( 4, 0, 4, 0 )
+			pnl.Holder:Dock( TOP )
+		
 		pnl.List = vgui.Create( "ExListView", cat )
 			pnl.List:NoHeaders()
 			pnl.List:DockMargin( 4, 0, 4, 0 )

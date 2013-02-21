@@ -34,7 +34,7 @@ local function playerObjectClick( lst, lineID, line )
 		qm.Parent.ComWindow:SetVisible( true )
 		qm.Parent.ComWindow:SetPos( 4, 0 )
 		
-		qm.Parent.PlayerListScroller:SetPos( -qm.Parent:GetWide() - 2, 0 )
+		qm.Parent.PlayerList:SetPos( -qm.Parent:GetWide() - 2, 0 )
 		
 		-- Button stuff
 		qm.Object:EnableBack()
@@ -134,30 +134,11 @@ function exsto.InitQuickMenu( pnl )
 	qm.Object:OnSearchTyped( searchTyped )
 	qm.Object:OnSearchEntered( searchEntered )
 	
-	-- Create the player list
-	pnl.PlayerListScroller = vgui.Create( "DScrollPanel", pnl )
-		pnl.PlayerListScroller:SetPos( 4, 0 )
-		pnl.PlayerListScroller:SetSize( pnl:GetWide() - 8, pnl:GetTall() - 45 )
-		
-	local function scrollHandler( p, dlta )
-		print( 'ldkfjdsf', dlta )
-		return pnl.PlayerListScroller:OnMouseWheeled( dlta )
-	end
-		
-	pnl.PlayerList = vgui.Create( "DPanelList", pnl.PlayerListScroller )
-		pnl.PlayerList:SetSize( pnl:GetWide() - 8, pnl:GetTall() - 45 )
+	pnl.Paint = function() end
+
+	pnl.PlayerList = vgui.Create( "ExPanelScroller", pnl )
 		pnl.PlayerList:SetPos( 0, 0 )
-		pnl.PlayerList:SetSpacing( 5 )
-		pnl.PlayerList:SetPadding( 5 )
-		pnl.PlayerList:EnableHorizontal( false )
-		--pnl.PlayerList:EnableVerticalScrollbar( true )
-		pnl.PlayerList.OnMouseWheeled = scrollHandler
-		
-		pnl.PlayerList.Paint = function( pnl )
-			pnl:GetSkin().tex.Input.ListBox.Background( 0, 0, pnl:GetWide(), pnl:GetTall() );
-		end
-		
-		pnl.PlayerList.PaintOver = pntShadow
+		pnl.PlayerList:SetSize( pnl:GetWide() - 2, pnl:GetTall() - 37 )
 		
 		-- We need to format a table with ranks and all the players in that rank for the collapseable cats.
 		pnl.PlayerList.Format = function( lst )
@@ -191,21 +172,12 @@ function exsto.InitQuickMenu( pnl )
 			-- Loop through the formatted table
 			for rank, plyTbl in SortedPairsByMemberValue( lst.Objects, "Immunity", true ) do
 				
-				-- Create the collapsible category for it.
-				local cat = exsto.CreateCollapseCategory( 0, 0, lst:GetWide(), 50, exsto.Ranks[ rank ].Name, pnl.PlayerList )
-					cat.Header:SetTextColor( Color( 0, 180, 255, 255 ) )
-					cat.Header:SetFont( "ExGenericText19" )
-					cat.Header.UpdateColours = function( self, skin ) end
-					cat.Header.OnMousePressed = function( c )
-						--cat:Toggle() -- Fuck you garry.
-					end
-					cat.Header.OnMouseWheeled = scrollHandler
-					cat.Paint = categoryPaint
+				local cat = lst:CreateCategory( exsto.Ranks[ rank ].Name )
 				
 				-- Now, we need to go through and add our playes to it.
-				cat.PlyList = exsto.CreateListView( 0, 0, 0, 0, cat )
-					cat.PlyList:AddColumn( "" )
-					cat.PlyList:SetHideHeaders( true )
+				cat.PlyList = vgui.Create( "ExListView", cat )
+					cat.PlyList:Dock( TOP )
+					cat.PlyList:NoHeaders()
 					cat.PlyList:SetDataHeight( 30 )
 					cat.PlyList:DisableScrollbar() -- Shouldn't need it.  We're going to resize based on content anyways.
 					cat.PlyList.OnRowSelected = playerObjectClick
@@ -213,29 +185,19 @@ function exsto.InitQuickMenu( pnl )
 					cat.PlyList.OnMouseWheeled = scrollHandler
 					cat.PlyList.Paint = function() end
 				
-				local count = 0
 				for _, data in ipairs( plyTbl ) do
 					if string.find( data.Ply:Nick(), search or "" ) then
 						local obj = cat.PlyList:AddLine( data.Ply:Nick() )
 							obj.Columns[1]:SetFont( "ExGenericTextMidBold16" )
 							obj.Data = data
-						count = count + 34
 					end
 				end
 				
-				-- Set the list's size based off our content we just added to it.
-				cat.PlyList:SetSize( cat:GetWide(), count )
-				--cat.PlyList:SizeToContents()
+				cat.PlyList:SetDirty( true )
+				cat.PlyList:InvalidateLayout( true )
+				cat.PlyList:SizeToContents()
 				
-				-- Set the contents of the collapsable to the list.
-				cat:SetContents( cat.PlyList )
-				cat:SetExpanded( true )
-				--cat:SetTall( count )
-				cat:SetTall( count + cat.Header:GetTall() )
-				
-				-- And add the category to the DIconLayout
-				lst:AddItem( cat )
-				
+				cat:InvalidateLayout()
 				lst.Categories[ rank ] = cat
 				
 			end
@@ -246,23 +208,21 @@ function exsto.InitQuickMenu( pnl )
 			lst:CreateContent()
 		end
 		
-		exsto.Animations.CreateAnimation( pnl.PlayerList )
-		exsto.Animations.CreateAnimation( pnl.PlayerListScroller )
-		
+	exsto.Animations.CreateAnimation( pnl.PlayerList )
 	qm.CreateCommandWindow( pnl )
 	
 end
 
 function qm.Reset( bool, disableAnim )
 	if bool then
-		qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, -qm.Parent:GetWide() - 2, 0 )
-		qm.Parent.PlayerListScroller.Anims[ 1 ].Current = -qm.Parent:GetWide() - 2
-		qm.Parent.PlayerListScroller.Anims[ 1 ].Last = -qm.Parent:GetWide() - 2
-		qm.Parent.PlayerListScroller:SetPos( 4, 0 )
+		qm.Parent.PlayerList.OldFuncs.SetPos( qm.Parent.PlayerList, -qm.Parent:GetWide() - 2, 0 )
+		qm.Parent.PlayerList.Anims[ 1 ].Current = -qm.Parent:GetWide() - 2
+		qm.Parent.PlayerList.Anims[ 1 ].Last = -qm.Parent:GetWide() - 2
+		qm.Parent.PlayerList:SetPos( 0, 0 )
 	else
-		qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, 4, 0 )
-		qm.Parent.PlayerListScroller.Anims[ 1 ].Current = 4
-		qm.Parent.PlayerListScroller.Anims[ 1 ].Last = 4
+		qm.Parent.PlayerList.OldFuncs.SetPos( qm.Parent.PlayerList, 0, 0 )
+		qm.Parent.PlayerList.Anims[ 1 ].Current = 0
+		qm.Parent.PlayerList.Anims[ 1 ].Last = 0
 	end
 	
 	qm.Parent.PlayerList:Update()
@@ -299,7 +259,7 @@ end
 function qm.CreateCommandWindow( pnl )
 	-- Create the command window.
 
-	pnl.ComWindow = exsto.CreatePanel( pnl:GetWide() + 2, 0, pnl:GetWide() - 8, pnl:GetTall() - 65, Color( 255, 255, 255, 255 ), pnl )
+	pnl.ComWindow = exsto.CreatePanel( pnl:GetWide() + 2, 0, pnl:GetWide() - 8, pnl:GetTall() - 37, Color( 255, 255, 255, 255 ), pnl )
 	pnl.ComWindow:SetVisible( false )
 	
 	pnl.ComWindow.Objects = {}

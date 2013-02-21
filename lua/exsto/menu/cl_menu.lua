@@ -116,12 +116,6 @@ function exsto.Menu.Initialize()
 	--exsto.Menu.PageList = exsto.Menu.CreatePage( "pagelist", exsto.InitPageList )
 		--exsto.Menu.PageList:SetTitle( "Pages" )
 		--exsto.Menu.PageList:Build()
-		
-	for I = 1, 3 do
-		local pg = exsto.Menu.CreatePage( "Test_" .. I, function( pnl ) local lbl = exsto.CreateLabel( 10, 40, ":)", "ExGenericText30", pnl ) pnl:CreateCategory( "Test" ) pnl:Add( lbl, "Test" ) end )
-			pg:SetTitle( "Testing Page " .. I )	
-		pg:Build()
-	end
 	
 	-- Finally, lets create these pages that we have, if they're not already created.
 	for _, obj in ipairs( exsto.Menu.Pages ) do
