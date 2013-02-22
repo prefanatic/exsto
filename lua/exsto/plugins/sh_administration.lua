@@ -30,6 +30,7 @@ if SERVER then
 			"Changes how often the bans should be refreshed on the server.  Value is in minutes."
 		)
 		self.BanRefreshRate:SetCallback( setRefresh )
+		self.BanRefreshRate:SetCategory( "Administration" )
 		
 		self.OldPlayers = {}
 		exsto.BanDB = FEL.CreateDatabase( "exsto_data_bans" )

@@ -48,6 +48,7 @@ exsto.Net = {
 		"ExSendPlugs";
 		"ExClientErr";
 		"ExClientPrint";
+		"ExSendVariable";
 	},
 	NotifiedNetStrings = {}
 }

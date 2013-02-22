@@ -17,7 +17,6 @@
 ]]
 
 if !von then require( "von" ) end
-//if !datastream then require( "datastream" ) end
 
 AddCSLuaFile( "autorun/exsto_init.lua" )
 
@@ -39,9 +38,9 @@ local function LoadVariables( srvVer )
 	exsto = {}
 	exsto.DebugEnabled = true
 	exsto.StartTime = SysTime()
+	exsto.Debug = function() end -- To prevent nil functions if something tries debugging before the print system handles it.
 	
 	exsto.VERSION = 100
-	exsto._DebugLevel = 3
 end
 
 -- Helpers

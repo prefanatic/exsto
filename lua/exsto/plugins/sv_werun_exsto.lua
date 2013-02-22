@@ -15,6 +15,7 @@ function PLUGIN:Init()
 		"Exsto's Credit Delay", 
 		5,
 		"Specifies a delay (in minutes) for when players are notified of Exsto." )
+		self.Delay:SetCategory( "Exsto" )
 		
 	self.Next = CurTime() + self.Delay:GetValue() * 60
 end

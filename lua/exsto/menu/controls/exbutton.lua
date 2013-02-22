@@ -151,4 +151,8 @@ function PANEL:Paint()
 	
 end
 
+function PANEL:PerformLayout()
+	self:SetFontStyle( "resize", self:GetFont() )
+end
+
 derma.DefineControl( "ExButton", "Exsto Button", PANEL, "DButton" )

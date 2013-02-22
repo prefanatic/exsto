@@ -299,7 +299,6 @@ elseif CLIENT then
 			pnl.RankSelect:Dock( FILL )
 			pnl.RankSelect.OnSelect = editorRankSelected
 
-		-- TODO: Turn these into ImageButtons
 		pnl.DeleteRank = vgui.Create( "DImageButton", pnl.Header )
 			pnl.DeleteRank:SetImage( "exsto/trash_disabled.png" )
 			pnl.DeleteRank:SetWide( 32 )

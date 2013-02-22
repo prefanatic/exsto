@@ -84,6 +84,8 @@ end
 function PLUGIN:Init()
 	-- Purely for statistical purposes.  Votemap also puts the most played above everything else in the list.
 	self.Timeout = exsto.CreateVariable( "ExVotemapTimeout", "Votemap timeout", 30, "How long the votemap has until it is done polling for votes." )
+	self.Timeout:SetMinimum( 0 )
+	self.Timeout:SetCategory( "Votes" )
 	exsto.VotemapDB = FEL.CreateDatabase( "exsto_plugin_votemap" )
 		exsto.VotemapDB:ConstructColumns( {
 			Map = "VARCHAR(255):primary:not_null";

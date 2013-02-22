@@ -172,209 +172,94 @@ if SERVER then
 	
 elseif CLIENT then
 
-	local function done()
-		PLUGIN.Panel:EndLoad()
-		if PLUGIN.List and PLUGIN.List:IsValid() then PLUGIN.List:Refresh() else PLUGIN:Build( PLUGIN.Panel ) end
-	end
-	exsto.CreateReader( "ExRecVarsFinal", done )
-	
-	local function receive( reader ) 
-		if !PLUGIN.Vars then PLUGIN.Vars = {} end
-		
-		local data = {
-			Dirty = reader:ReadString(),
-			Pretty = reader:ReadString(),
-			Value = reader:ReadVariable(),
-			DataType = reader:ReadString(),
-			Description = reader:ReadString(),
-			EnvVar = reader:ReadBool(),
-			Possible = {}
-		}
-		
-		for I = 1, reader:ReadShort() do
-			table.insert( data.Possible, reader:ReadVariable() )
-		end
+	-- TODO: Refresh this editor if variables are changed.
+		-- Check and make sure the ID belongs to the currently selected page.  If so, refresh and reselect.  If not, refresh anyways.
 
-		table.insert( PLUGIN.Vars, data )
-		
+	local function onShowtime( pnl )
+		pnl.Content.Select:Populate()
 	end
-	exsto.CreateReader( "ExRecVars", receive )
-	
-	function PLUGIN:Build( panel )
-		self.List = exsto.CreateListView( 10, 10, panel:GetWide() - 20, panel:GetTall() - 80, panel )
-			self.List:AddColumn( "Name" )
-			self.List:AddColumn( "ID" )
-			self.List:AddColumn( "Value" )
-			self.List:AddColumn( "Data Type" )
-			
-			self.List.Refresh = function( lst )
-				lst:Clear()
-				for _, data in ipairs( self.Vars ) do
-					lst:AddLine( data.Pretty, data.Dirty, tostring( data.Value ), data.DataType )
-				end
-				lst:SortByColumn( 1 )
-			end
-			self.List:Refresh()
-			
-			self.List.OnRowSelected = function( lst, line )
-				self.CurrentLine = lst:GetLine( line )
-				self.CurrentLineID = line
-				self.ShortBox:SetText( self.CurrentLine:GetValue( 2 ) )
-				self.ShortBox:SetEditable( false )
-				
-				self.PossibleBox:Clear()
-				
-				for _, data in ipairs( self.Vars ) do
-					if data.Dirty == self.CurrentLine:GetValue( 2 ) then
-						if table.Count( data.Possible ) > 1 then
-							-- He has possibles.
-							self.PossibleBox:SetVisible( true )
-							self.ValueBox:SetVisible( false )
-							
-							self.PossibleBox:SetText( tostring( self.CurrentLine:GetValue( 3 ) ) )
-							
-							for _, possible in ipairs( data.Possible ) do
-								self.PossibleBox:AddChoice( tostring( possible ) )
-							end
-						else
-							self.ValueBox:SetText( tostring( self.CurrentLine:GetValue( 3 ) ) )
-							self.ValueBox:SetVisible( true )
-							self.PossibleBox:SetVisible( false )
-						end
-						break
-					end
-				end
-				
-				self.DeleteVar:SetVisible( false )
-				
-				local found = false
-				for _, data in ipairs( self.Vars ) do
-					if data.Dirty == self.CurrentLine:GetValue( 2 ) then found = data break end
-				end
 
-				if !found or tobool( found.EnvVar ) == true then
-					-- Give him a delete option.
-					self.DeleteVar:SetVisible( true )
-				end
-			end
-			
-		local function hideOnSelect( entry )
-			if !entry.hideAble then return end
-			entry:SetText( "" )
-			entry.hideAble = false
+	local function selectPopulate( pnl )
+		pnl:Clear()
+		
+		local tmp = {}
+		for id, data in pairs( exsto.ServerVariables ) do
+			if !tmp[ data.Category ] then tmp[ data.Category ] = {} end
+			table.insert( tmp[ data.Category ], id )
 		end
 		
-		self.DataColorPanel = Menu:CreateColorPanel( 10, self.List:GetTall() + 15, 180, 60, panel )
-		
-		self.ShortLabel = exsto.CreateLabel( 5, 5, "ID:", "exstoListColumn", self.DataColorPanel )
-		self.ShortBox = exsto.CreateTextEntry( 20, 5, 140, 20, self.DataColorPanel )
-			self.ShortBox.OnMousePressed = hideOnSelect
-			self.ShortBox.OnTextChanged = function( entry )
-				if !self.CurrentLine then
-					self.DataColorPanel:Deny()
-					entry:SetToolTip( "You have not selected a variable to change!" )
-					return
-				end
-				if string.find( entry:GetValue(), " " ) then
-					self.DataColorPanel:Deny()
-					entry:SetToolTip( "You cannot have a space in the ID!" )
-				else
-					self.DataColorPanel:Accept()
-				end
-				
-				self.CurrentLine:SetValue( 1, "envvar_" .. entry:GetValue() )
-				self.CurrentLine:SetValue( 2, entry:GetValue() )
-			end
-			
-		self.ValueLabel = exsto.CreateLabel( 5, 35, "Value:", "exstoListColumn", self.DataColorPanel )
-		self.ValueBox = exsto.CreateTextEntry( 40, 35, 120, 20, self.DataColorPanel )
-			self.ValueBox.OnMousePressed = hideOnSelect
-			self.ValueBox.OnTextChanged = function( entry )
-				if !self.CurrentLine then
-					self.DataColorPanel:Deny()
-					entry:SetToolTip( "You have not selected a variable to change!" )
-					return
-				end
-				self.CurrentLine:SetValue( 3, entry:GetValue() )
-			end
-		self.PossibleBox = exsto.CreateMultiChoice( 40, 35, 120, 20, self.DataColorPanel )
-			self.PossibleBox:SetVisible( false )
-			--self.PossibleBox:SetEditable( false )
-			self.PossibleBox.OnSelect = function( index, value, data )
-				self.CurrentLine:SetValue( 3, data )
-			end
-		
-		self.ChangeButton = exsto.CreateButton( panel:GetWide() - 80, panel:GetTall() - 40, 74, 27, "Save", panel )
-			self.ChangeButton:SetStyle( "positive" )
-			self.ChangeButton.OnClick = function( button )
-				if !self.CurrentLine or !self.CurrentLine:IsValid() then panel:PushError( "Please select a variable to change!" ) return end
-				if string.find( self.ShortBox:GetValue(), " " ) then panel:PushError( "You cannot have a space in the variable ID!" ) return end
-				local short = self.CurrentLine:GetValue( 2 )
-				local done = false
-				for _, data in ipairs( self.Vars ) do
-					if data.Dirty == short then
-						RunConsoleCommand( "exsto", "changevar", data.Dirty, tostring( self.CurrentLine:GetValue( 3 ) ) )
-						done = true
-						break
-					end
-				end 
-				if done then
-					self.Refresh:OnClick()
-					return
-				end
-				
-				-- Apparently, its an new var
-				RunConsoleCommand( "exsto", "createenv", short, self.CurrentLine:GetValue( 3 ) )
-				self.Refresh:OnClick()
-			end
-			
-		self.CreateVar = exsto.CreateButton( 0, panel:GetTall() - 40, 94, 27, "Create Var", panel )
-			self.CreateVar:MoveLeftOf( self.ChangeButton, 15 )
-			self.CreateVar:SetStyle( "positive" )
-			self.CreateVar.OnClick = function( button )
-				self.ShortBox.hideAble = true
-				self.ValueBox.hideAble = true
-				
-				local line = self.List:AddLine( "envvar_create_new", "create_new", "value", "string" )
-				self.List:OnClickLine( line, true )
-				
-				self.ShortBox:SetText( "create_new" )
-				self.ShortBox:SetEditable( true )
-				self.ValueBox:SetText( "value" )
-				self.ValueBox:SetVisible( true )
-				self.PossibleBox:SetVisible( false )
-			end
-			
-		self.Refresh = exsto.CreateButton( 0, panel:GetTall() - 40, 74, 27, "Refresh", panel )
-			self.Refresh:MoveLeftOf( self.CreateVar, 15 )
-			self.Refresh.OnClick = function()
-				self.DataColorPanel:Neutral()
-				self.DeleteVar:SetVisible( false )
-				self:RefreshVars( panel )
-			end
-			
-		self.DeleteVar = exsto.CreateButton( 0, panel:GetTall() - 40, 74, 27, "Delete", panel )
-			self.DeleteVar:MoveLeftOf( self.Refresh, 15 )
-			self.DeleteVar:SetVisible( false )
-			self.DeleteVar.OnClick = function()
-				RunConsoleCommand( "exsto", "deleteenv", self.CurrentLine:GetValue( 2 ) )
-				self.Refresh:OnClick()
-			end
+		for cat, data in pairs( tmp ) do
+			pnl:AddChoice( cat, data )
+		end
 	end
 	
-	function PLUGIN:RefreshVars( panel )
-		panel:PushLoad()
-		RunConsoleCommand( "_RequestVars" )
-		self.Vars = nil
-	end 
+	local function selectSelected( box, index, value, data )
+		local page = PLUGIN.Page.Content
+		if !page.Objects then page.Objects = {} end
+		
+		-- Clear the old objects.
+		for _, obj in ipairs( page.Objects ) do
+			obj:Remove()
+		end
+		page.Objects = {}
+		
+		-- Now, we need to loop through all of our data and create objects for each of these things.  Cross your fingers.
+		local data
+		for _, id in ipairs( data ) do
+			data = exsto.ServerVariables[ id ] -- So this is 'live' so to speak
+		
+			-- If we're a boolean
+			if data.Maximum == 1 and data.Minimum == 0 then
+				local obj = vgui.Create( "ExBooleanChoice", page.Cat )
+					obj:Dock( TOP )
+					obj:DockMargin( 0, 4, 0, 0 )
+					obj:SetTall( 32 )
+					obj:SetText( data.Display )
+					obj:SetValue( data.Value )
+					
+				table.insert( page.Objects, obj )
+			elseif data.Type == "string" then -- If we require a text box!
+				local obj = vgui.Create( "DTextEntry", page.Cat )
+					obj:Dock( TOP )
+					obj:DockMargin( 0, 4, 0, 0 )
+					obj:SetTall( 32 )
+					obj:SetText( data.Value )
+					
+				table.insert( page.Objects, obj )
+			elseif data.Type == "number" then -- Anddd WANG IT.
+				local obj = vgui.Create( "ExNumberChoice", page.Cat )
+					obj:Dock( TOP )
+					obj:DockMargin( 0, 4, 0, 0 )
+					obj:SetTall( 32 )
+					-- TODO
+					
+				table.insert( page.Objects, obj )
+			end
+			
+		end
 
-	Menu:CreatePage({
-		Title = "Variable Editor",
-		Short = "vareditor",
-	}, function( panel )
-		PLUGIN.Panel = panel
-		PLUGIN:RefreshVars( panel )
-	end )
+		page.Cat:InvalidateLayout( true )
+	end
+
+	local function settingsInit( pnl )
+		pnl.Cat = pnl:CreateCategory( "Settings" )
+			pnl.Cat:DockMargin( 4, 0, 4, 0 )
+		
+		pnl.Select = vgui.Create( "ExComboBox", pnl.Cat )
+			pnl.Select:Dock( TOP )
+			pnl.Select:SetTall( 32 )
+			pnl.Select.Populate = selectPopulate
+			pnl.Select.OnSelect = selectSelected
+			
+		pnl.Cat:InvalidateLayout( true )
+	end
+
+	function PLUGIN:Init()
+		self.Page = exsto.Menu.CreatePage( "settings", settingsInit )
+			self.Page:SetTitle( "Settings" )
+			self.Page:SetSearchable( true )
+			self.Page:OnShowtime( onShowtime )
+	end
 	
 end
  

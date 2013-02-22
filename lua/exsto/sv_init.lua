@@ -31,7 +31,6 @@
 	exstoShared( "sh_umsg.lua" )
 	exstoShared( "sh_print.lua" )
 	exstoShared( "sh_variables.lua" )
-	exstoServer( "sv_variables.lua" )
 	exstoServer( "sv_commands.lua" )
 	exstoShared( "sh_access.lua" )
 	exstoServer( "sv_access.lua" )

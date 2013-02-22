@@ -118,7 +118,7 @@ function page:Backstage() -- Time to sleep him
 	exsto.Menu.DisableSearch()
 	
 	-- Call OnBackstage
-	if self._OnBackstage then self._OnBackstage() end
+	if self._OnBackstage then self:_OnBackstage() end
 end
 
 function page:Showtime( noAnim ) -- Wake him up!
@@ -136,7 +136,7 @@ function page:Showtime( noAnim ) -- Wake him up!
 	exsto.Menu.ActivePage = self;
 	
 	-- Call OnShowtime
-	if self._OnShowtime then self._OnShowtime() end
+	if self._OnShowtime then self:_OnShowtime() end
 	
 	-- Call search if required
 	if self._Searchable then exsto.Menu.EnableSearch() end

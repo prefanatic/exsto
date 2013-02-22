@@ -19,27 +19,104 @@
 -- Exsto's Variable System.  Ho ho!
 
 -- Data table
-exsto.VariablesT = {}
+exsto.Variables = {}
 
 local dataTypes = {
 	string = function( var ) return tostring( var:GetString() ) end,
-	boolean = function( var ) return tobool( var:GetString() ) end,
+	boolean = function( var ) return var:GetString() == "true" end,
 	number = function( var ) return tonumber( var:GetFloat() ) end,
 }
+
+-- Networking
+if SERVER then
+
+	function exsto.SendVariable( obj, ply )
+		if type( obj ) == "string" then obj = exsto.Variables[ obj ] end
+		if !obj then exsto.ErrorNoHalt( "Variables --> Unable to send variable!" ) return end
+		
+		exsto.Debug( "Variables --> Sending '" .. obj:GetID() .. "'", 3 )
+		
+		local sender = exsto.CreateSender( "ExSendVariable", ply )
+			sender:AddString( obj:GetID() )
+			sender:AddString( obj:GetDisplay() )
+			sender:AddString( obj:GetHelp() )
+			sender:AddVariable( obj:GetValue() )
+			sender:AddString( obj:GetType() )
+			sender:AddShort( obj.NumMax )
+			sender:AddShort( obj.NumMin )
+			sender:AddString( obj:GetCategory() )
+		sender:Send()
+	end
+	
+	function exsto.SendAllVariables( ply )
+		exsto.Debug( "Variables --> Sending all variables to '" .. tostring( ply ) .. "'", 2 )
+		for id, obj in pairs( exsto.Variables ) do
+			exsto.SendVariable( obj, ply )
+		end
+		exsto.Debug( "Variables --> Variables sent.", 2 )
+	end
+	hook.Add( "ExInitSpawn", "ExSendVariables", exsto.SendAllVariables )
+
+elseif CLIENT then
+	
+	exsto.ServerVariables = {}
+
+	exsto.CreateReader( "ExSendVariable", function( reader )
+		local id = reader:ReadString()
+		exsto.ServerVariables[ id ] = {
+			ID = id,
+			Display = reader:ReadString(),
+			Help = reader:ReadString(),
+			Value = reader:ReadVariable(),
+			Type = reader:ReadString(),
+			Maximum = reader:ReadShort(),
+			Minimum = reader:ReadShort(),
+			Category = reader:ReadString(),
+		}
+		exsto.Debug( "Variables --> Received '" .. id .. "' from the server!", 3 )
+	end )
+
+end
 
 -- Variable Object
 local var = {}
 	var.__index = var
 	
+--[[ Styles
+	number -- Wanger
+	string -- Text box
+	boolean -- Button either depressed or not
+	Color -- Figure this out.
+	MultiChoice -- DComboBox!
+]]
+	
 function exsto.CreateVariable( id, display, default, help )
 	local obj = {}
 	setmetatable( obj, var )
-	
+
 	obj:SetID( id )
 	obj:SetDisplay( display )
+	obj:SetHelp( help )
+	obj:SetCategory( "Misc" )
 	
 	-- Judging based off the default value: keep the variable the same data-type, unless specified otherwise.
 	obj:SetDataType( type( default ) )
+	
+	-- Set the maximum and default minimum values for the number wanger.
+	obj:SetMaximum( 100 )
+	obj:SetMinimum( 0 )
+	
+	-- Helper if we're a boolean
+	if obj:GetType() == "boolean" then 
+		exsto.Debug( "Variables --> '" .. id .. "' is an incorrect boolean!  Please change to use 0, 1 booleans instead of true, false.", 3 )
+		
+		default = ( default == true and 1 ) or ( 0 )
+		obj:SetPossible( 0, 1 ) 
+		obj:SetDataType( "number" )
+		
+		obj:SetMaximum( 1 )
+		obj:SetMinimum( 0 )
+	end
 	
 	-- Now we need to set the 'default' to either a number or string, because CreateConVar can't handle anything else.
 	if obj.Type != "number" or obj.Type != "string" then
@@ -53,22 +130,36 @@ function exsto.CreateVariable( id, display, default, help )
 
 	-- Callback for the cvar.
 	cvars.AddChangeCallback( id, function( cid, oldval, newval )
+		exsto.Debug( "Variables --> Attempting variable change on '" .. cid .. "' from '" .. oldval .. "' to '" .. newval .. "'", 3 )
+		
 		if obj._IgnoreCallback then obj._IgnoreCallback = false return end
 		if oldval == newval then return end -- No need.
-		
+			
 		-- QOS
-		if !obj:PossibleCheck( newval ) then
+		if !obj:PossibleCheck( obj:GetValue() ) then
 			-- I believe the only place that this can happen is through the console.  So print the result there.
 			exsto.Print( exsto_CONSOLE, "Unable to set '" .. cid .. "' to '" .. newval .. "' - It can only be the following values:" )
-			exsto.Print( exsto_CONSOLE, table.concat( obj.Possible, ", " ) )
+			
+			-- Clean the possibles into a string.
+			local str = ""
+			for I = 1, #obj.Possible do
+				str = str .. tostring( obj.Possible[ I ] ) .. ( I != #obj.Possible and ", " or "" )
+			end
+			exsto.Print( exsto_CONSOLE, str )
 			
 			-- Create a timer to re-change this value back to whatever it was.
 			timer.Simple( 0.01, function()
+				exsto.Debug( "Variables --> Resetting '" .. cid .. "' to prior value.", 3 )
+				obj._IgnoreCallback = true
 				RunConsoleCommand( cid, oldval )
 			end )
 			
 			return
 		end
+		
+		-- Send this information down to the client!
+		exsto.SendVariable( obj, player.GetAll() )
+		hook.Call( "ExVariableChanged", nil, obj, obj:GetValue() )
 		
 		if !obj.Callback then return end
 		local succ, err = pcall( obj.Callback, oldval, newval )
@@ -79,10 +170,36 @@ function exsto.CreateVariable( id, display, default, help )
 	end )
 	
 	-- Insert into the main table.
-	exsto.VariablesT[ obj:GetID() ] = obj;
+	exsto.Variables[ obj:GetID() ] = obj;
+	
+	-- If we make one, we need to send it!
+	exsto.SendVariable( obj, player.GetAll() )
 	
 	return obj
 end
+
+function var:SetCategory( cat )
+	self.Category = cat
+end
+
+function var:GetCategory() return self.Category end
+
+-- Extraneous settings for the settings page.
+function var:SetMaximum( num )
+	self.NumMax = num
+end
+
+function var:SetMinimum( num )
+	self.NumMin = num
+end
+
+-- Helper to designate between variables being booleans or not.
+function var:IsBoolean()
+	if self.NumMax == 1 and self.NumMin == 0 then return true end
+	return false
+end
+
+function var:GetType() return self.Type end
 
 function var:SetDataType( t )
 	self.Type = t
@@ -122,6 +239,8 @@ function var:GetID() return self.ID end
 function var:SetID( id ) self.ID = id end
 function var:GetDisplay() return self.Display end
 function var:SetDisplay( disp ) self.Display = disp end
+function var:GetHelp() return self.Help end
+function var:SetHelp( h ) self.Help = h end
 
 -- CVar transporters
 function var:GetInt() return self.CVar:GetFloat() end -- Do we want this like this?

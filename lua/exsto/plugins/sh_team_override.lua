@@ -36,6 +36,7 @@ if SERVER then
 			"Sets up sandbox teams to match Exsto's rank colors.\n - Allows for scoreboard and chat color names."
 		)
 			self.Enabled:SetCallback( onchange )
+			self.Enabled:SetCategory( "Sandbox" )
 		
 		self.Teams = {}
 		self.OldTeams = {}

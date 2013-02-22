@@ -22,33 +22,23 @@ FEL.ConfigFile = "exsto_mysql_settings.txt";
 FEL.TableCache = "exsto_felcache/"
 
 if SERVER then
-
--- TODO: This bugs out Exsto if Exsto did not have this variable before in storage.  Have this initialize during Exsto load
 	
-	timer.Simple( 1, function() 
-		exsto.AddVariable({
-			Pretty = "FEL Debug",
-			Dirty = "fel_debug",
-			Default = false,
-			Description = "Prints debug information to console. (Queries, etc)",
-			Possible = { true, false },
-		})
+	hook.Add( "ExInitialized", "ExFELIntegration", function()	
+		exsto.FELDebug = exsto.CreateVariable( "ExFelDebug", "FEL Debugging", false, "Enables FEL to debug all queries to the console." )
 	end )
 	
 end
 
 hook.Add( "FEL_OnQuery", "ExFELQueryDebug", function( str, threaded )
 	if CLIENT then return end
-	if !exsto.GetVar then return end
-	if !exsto.GetVar( "fel_debug" ) then return end
-	if exsto.GetVar( "fel_debug" ).Value == true then
+	if exsto and exsto.FELDebug and exsto.FELDebug:GetValue() == true then
 		if str != "SELECT 1 + 1" then
 			for _, ply in ipairs( player.GetAll() ) do
 				if ply:IsSuperAdmin() then
 					exsto.Print( exsto_CLIENT, ply, "FEL QUERY: " .. str )
 				end
 			end
-			print( "FEL QUERY: " .. str ) 
+			exsto.Debug( "FEL QUERY --> " .. str, 0 )
 		end
 	end
 end )

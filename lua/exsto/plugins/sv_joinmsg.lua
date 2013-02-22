@@ -28,15 +28,19 @@ function PLUGIN:Init()
 		"disabled", 
 		"Designates what style of IP on connect shows up.\n - 'disabled' : Does nothing.\n - 'admins-only' : Displays IP for admins only.\n - 'all' : Displays IP for everybody."
 	)
+		self.IPStyle:SetCategory( "Join Messages" )
+		self.IPStyle:SetPossible( "disabled", "admins-only", "all" )
 	
 	self.Country = exsto.CreateVariable( "ExCountryOnConnect",
 		"Display origin country on connect",
-		false,
+		0,
 		"Designates if user's countries are shown on connect."
 	)
 		self.Country:SetCallback( dispCountryOnChange )
+		self.Country:SetPossible( 0, 1 )
+		self.Country:SetCategory( "Join Messages" )
 	
-	if not GeoIP and self.Country:GetValue() == true then 
+	if not GeoIP and self.Country:GetValue() == 1 then 
 		loadGeoIP()
 	end
 end
