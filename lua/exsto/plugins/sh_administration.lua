@@ -13,7 +13,10 @@ PLUGIN:SetInfo({
 
 if SERVER then 
 
-	util.AddNetworkString( "ExRecBans" )
+	util.AddNetworkString( "ExRecBan" )
+	util.AddNetworkString( "ExRecBanRemove" )
+	util.AddNetworkString( "ExRequestBans" )
+	
 	
 	local function setRefresh( old, val )
 		if !exsto.BanDB then return false, "Ban table doesn't exist!" end
@@ -135,9 +138,7 @@ if SERVER then
 			BannedAt = os.time();
 			BannerID = owner:SteamID() or "Console";
 		} )
-		
-		self:ResendToAll()
-		
+
 		return {
 			Activator = owner,
 			Object = name,
@@ -179,8 +180,6 @@ if SERVER then
 		} )
 		
 		self:Drop( ply:UserID(), reason )
-
-		self:ResendToAll() 
 
 		return { 
 			Activator = owner, 
@@ -261,8 +260,7 @@ if SERVER then
 		end 
 		
 		exsto.BanDB:DropRow( steamid )
-		self:ResendToAll() 
-
+		
 		return { 
 			Activator = owner, 
 			Player = steamid .. " (" .. name .. ")",
@@ -373,42 +371,87 @@ if SERVER then
 		
 		return string.format( str.."%02i hour(s) %02i minute(s) %02i second(s)", h, m, s )
 	end	  
-	function PLUGIN:ResendToAll() 
-		self.RequestBans( player.GetAll() )
-	end 
+	
+	function PLUGIN:SendBan( tbl, ply )
+		local sender = exsto.CreateSender( "ExRecBan", ply )
+			sender:AddString( tbl.SteamID )
+			sender:AddString( tbl.Name )
+			sender:AddString( tbl.Reason )
+			sender:AddString( tbl.BannedBy )
+			sender:AddShort( tbl.Length )
+			sender:AddLong( tbl.BannedAt )
+			sender:AddString( tbl.BannerID )
+		sender:Send()
+	end
 
-	function PLUGIN.RequestBans( ply ) 
+	function PLUGIN:RequestBans( reader ) 
+		ply = reader:ReadSender()
 		for k,v in pairs( exsto.BanDB:GetAll() ) do 
-			local sender = exsto.CreateSender( "ExRecBans", ply )
-				sender:AddString( v.SteamID )
-				sender:AddString( v.Name )
-				sender:AddString( v.Reason )
-				sender:AddString( v.BannedBy )
-				sender:AddShort( v.Length )
-				sender:AddLong( v.BannedAt )
-				sender:AddString( v.BannerID )
-				sender:Send()
+			self:SendBan( v, ply )
 		end 
-		exsto.CreateSender( "ExSaveBans", ply ):Send()
 	end 
-	concommand.Add( "_ResendBans", PLUGIN.RequestBans ) 
+	PLUGIN:CreateReader( "ExRequestBans", PLUGIN.RequestBans )
 
 elseif CLIENT then 
 
+	local function invalidate()
+		local pnl = PLUGIN.Page.Content
+		if !pnl then PLUGIN:Error( "Oh no!  Attempted to access invalid page contents." ) return end
+		
+		pnl.List:SetDirty( true )
+		pnl.List:InvalidateLayout( true )
+		
+		pnl.List:SizeToContents()
+		
+		cat:InvalidateLayout( true )
+	end
 	
-		--[[self.List.Update = function() 
-			self.List:Clear() 
-			if type( self.Bans ) == "table" then
-				for _, data in pairs( self.Bans ) do 
-					print( data.BannedAt, data.Length )
-					local time = os.date( "%c", data.BannedAt + data.Length*60 )
-					if data.Length == 0 then time = "permanent" end 
-
-					self.List:AddLine( data.Name, data.SteamID, data.Reason, data.BannedBy, data.BannerID, time ) 
-				end 
-			end
-		end 
-		self.List:Update() ]]
+	local function addBan( tbl )
+		local pnl = PLUGIN.Page.Content
+		if !pnl then return end -- We haven't opened the page yet.  No matter!
+		
+		local time = os.date( "%c", tbl.BannedAt + tbl.Length*60 )
+		if tbl.Length == 0 then time = "permanent" end 
+		
+		pnl.List:AddLine( tbl.Name, time )
+		
+		invalidate()
+	end
+	
+	local function refreshList()
+		local pnl = PLUGIN.Page.Content
+		if !pnl then PLUGIN:Error( "Attempted to access invalid page!" ) return end
+		
+		pnl.List:Clear()
+		for id, tbl in pairs( PLUGIN.Bans ) do
+			addBan( tbl );
+		end
+		invalidate()
+	end
+	
+	local function redBanRemove( reader )
+		local id = reader:ReadString();
+		
+		PLUGIN.Bans[ id ] = nil;
+		refreshList();
+	end
+	exsto.CreateReader( "ExRecBanRemove", recBanRemove )
+		
+	local function recBanAdd( reader )
+		local tbl = {
+			SteamID = reader:ReadString();
+			Name = reader:ReadString();
+			Reason = reader:ReadString();
+			BannedBy = reader:ReadString();
+			Length = reader:ReadShort();
+			BannedAt = reader:ReadLong();
+			BannerID = reader:ReadString();
+		}
+		PLUGIN.Bans[ tbl.SteamID ] = tbl;
+		
+		addBan( tbl );
+	end
+	exsto.CreateReader( "ExRecBan", recBanAdd )
 	
 	local function banInit( pnl )
 		local cat = pnl:CreateCategory( "Bans" )
@@ -419,24 +462,28 @@ elseif CLIENT then
 			pnl.Holder:Dock( TOP )
 		
 		pnl.List = vgui.Create( "ExListView", cat )
-			pnl.List:NoHeaders()
 			pnl.List:DockMargin( 4, 0, 4, 0 )
 			pnl.List:Dock( TOP )
 			pnl.List:DisableScrollbar()
+			pnl.List:AddColumn( "Name" )
+			pnl.List:AddColumn( "Time Unbanned" )
 			
 		-- This needs to be run after a list has been filled with contents.
-		pnl.List:SetDirty( true )
-		pnl.List:InvalidateLayout( true )
-		
-		pnl.List:SizeToContents()
-		
-		cat:InvalidateLayout( true )
+		invalidate()
+	end
+	
+	local function onShowtime( pnl )
+		-- Lets get our ban data
+		pnl.Content.List:Clear()
+		exsto.CreateSender( "ExRequestBans" ):Send()
 	end
 	
 	function PLUGIN:Init()
+		self.Bans = {};
 		self.Page = exsto.Menu.CreatePage( "banlist", banInit )
 			self.Page:SetTitle( "Bans" )
 			self.Page:SetSearchable( true )
+			self.Page:OnShowtime( onShowtime )
 	end
 
 end 
