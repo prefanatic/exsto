@@ -262,6 +262,16 @@ function plugin:AddOverride( old, new, tbl )
 	table.insert( self.Overrides, { Old = old, New = new, Table = tbl, Saved = tbl[old] } )
 end
 
+function plugin:CreateReader( h, func )
+	exsto.CreateReader( h, function( reader )
+		func( self, reader )
+	end )
+end
+
+function plugin:CreateSender( h, rep )
+	return exsto.CreateSender( h, rep )
+end
+
 function plugin:SendData( hook, ply, ... )
 	self:Print( "DEPRICATED SENDING METHOD!" )
 	exsto.UMStart( hook, ply, ... )

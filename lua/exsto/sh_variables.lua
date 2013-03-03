@@ -45,6 +45,7 @@ if SERVER then
 			sender:AddShort( obj.NumMax )
 			sender:AddShort( obj.NumMin )
 			sender:AddString( obj:GetCategory() )
+			sender:AddTable( obj:GetPossible() or {} )
 		sender:Send()
 	end
 	
@@ -72,6 +73,7 @@ elseif CLIENT then
 			Maximum = reader:ReadShort(),
 			Minimum = reader:ReadShort(),
 			Category = reader:ReadString(),
+			Possible = reader:ReadTable(),
 		}
 		exsto.Debug( "Variables --> Received '" .. id .. "' from the server!", 3 )
 	end )
@@ -199,6 +201,14 @@ function var:IsBoolean()
 	return false
 end
 
+-- Helper to set booleans as numbers
+function var:SetBoolean()
+	self:SetPossible( 0, 1 ) 
+	
+	self:SetMaximum( 1 )
+	self:SetMinimum( 0 )
+end
+
 function var:GetType() return self.Type end
 
 function var:SetDataType( t )
@@ -223,6 +233,8 @@ function var:SetCallback( func )
 end
 
 function var:SetValue( val )
+	-- We need to parse out into a number if this is a boolean.  D:
+	if val == true then val = 1 elseif val == false then val = 0 end
 	RunConsoleCommand( self:GetID(), val )
 	self.Value = val
 end
@@ -241,6 +253,7 @@ function var:GetDisplay() return self.Display end
 function var:SetDisplay( disp ) self.Display = disp end
 function var:GetHelp() return self.Help end
 function var:SetHelp( h ) self.Help = h end
+function var:GetPossible() return self.Possible end
 
 -- CVar transporters
 function var:GetInt() return self.CVar:GetFloat() end -- Do we want this like this?

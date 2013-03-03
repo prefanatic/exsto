@@ -26,6 +26,8 @@ function PANEL:Init()
 	self:TextPadding( 6 )
 	self:Text( "" )
 	self:SetTextColor( Color( 0, 153, 176, 255 ) )
+	self:SetAlignX( TEXT_ALIGN_CENTER )
+	self:SetAlignY( TEXT_ALIGN_CENTER )
 end
 
 function PANEL:TextPadding( num )
@@ -38,6 +40,14 @@ end
 
 function PANEL:MaxFontSize( num )
 	self._MaxFontSize = num
+end
+
+function PANEL:SetMaxTextWide( num )
+	self._MaxTextWidth = num
+end
+
+function PANEL:GetMaxTextWide()
+	return self._MaxTextWidth
 end
 
 function PANEL:GetMaxFontSize()
@@ -67,7 +77,7 @@ end
 function PANEL:Text( txt )
 	self:SetText( "" )
 	self._Text = txt
-	self:SetFontStyle( "resize", self:GetFont() )
+	self:InvalidateLayout( true )
 end
 
 function PANEL:SetTextColor( col )
@@ -82,7 +92,8 @@ function PANEL:SetFontStyle( t, exfont )
 	if t == "resize" then
 		
 		-- Resize the font to fit our panel's size.
-		local w, h = self:GetSize()
+		local w, h = self:GetMaxTextWide(), self:GetTall()
+			w = w or self:GetWide()
 		
 		local workingSize, tw, th = self:GetMaxFontSize()
 		while true do
@@ -122,6 +133,11 @@ end
 
 function PANEL:OnClick() end
 function PANEL:OnPaint() end
+function PANEL:OnValueSet( val ) end
+
+function PANEL:HideText( val )
+	self._HideText = val
+end
 
 function PANEL:Paint()
 
@@ -138,13 +154,19 @@ function PANEL:Paint()
 		self:GetSkin().tex.Button( 0, 0, w, h );
 	end
 	
-	-- Text
-	local x = self:GetWide() / 2
-	local y = self:GetTall() / 2
-	
-	--if self._AlignY == TEXT_ALIGN_TOP then y = y + self._YMod end
-	
-	draw.SimpleText( self:GetText(), self:GetFont() .. self:GetFontSize(), x, y, self:GetTextColor(), self._AlignX, self._AlignY )
+	if !self._HideText then
+		
+		-- Text
+		local x = self:GetWide() / 2
+		local y = self:GetTall() / 2
+		
+		if self._AlignX == TEXT_ALIGN_LEFT then x = self:GetTextPadding() end
+		
+		--if self._AlignY == TEXT_ALIGN_TOP then y = y + self._YMod end
+		
+		draw.SimpleText( self:GetText(), self:GetFont() .. self:GetFontSize(), x, y, self:GetTextColor(), self._AlignX, self._AlignY )
+		
+	end
 	
 	-- And finally our OnPaint
 	self:OnPaint()

@@ -14,6 +14,8 @@ if SERVER then
 
 	function PLUGIN:Init()
 		exsto.CreateFlag( "vareditor", "Allows users to open the variable menu." )
+		
+		util.AddNetworkString( "ExChangeVar" )
 	end
 
 	function PLUGIN:CreateEnvVar( owner, dirty, value )
@@ -141,34 +143,18 @@ if SERVER then
 		Category = "Variables",
 	})
 	
-	local function SendVars( ply )
-
-		for k,v in pairs( exsto.Variables ) do
-
-			local sender = exsto.CreateSender( "ExRecVars", ply )
-				sender:AddString( v.Dirty )
-				sender:AddString( v.Pretty )
-				sender:AddVariable( v.Value )
-				sender:AddString( v.DataType )
-				sender:AddString( v.Description )
-				sender:AddBool( v.EnvVar )
-				
-				sender:AddShort( v.Possible and table.Count( v.Possible ) or 0 )
-				for _, possible in ipairs( v.Possible ) do
-					sender:AddVariable( possible )
-				end
-				sender:Send()
-		end
+	function PLUGIN:UpdateVariable( reader )
+		local id = reader:ReadString()
+		local val = reader:ReadVariable()
 		
-		exsto.CreateSender( "ExRecVarsFinal", ply ):Send()
+		-- Get our object!
+		local obj = exsto.Variables[ id ]
+		if !obj then self:Error( "Trying to access unknown variable w/ id '" .. id .. "'" ) return end
 		
+		self:Debug( "Getting data from client: Updating '" .. id .. "' with '" .. tostring( val ) .. "'" )
+		obj:SetValue( val )
 	end
-	concommand.Add( "_RequestVars", SendVars )
-	
-	local function SetVar( ply, data )
-		exsto.SetVar( data[1], data[2] )
-	end
-	exsto.ClientHook( "ExRecVarChange", SetVar )
+	PLUGIN:CreateReader( "ExChangeVar", PLUGIN.UpdateVariable )
 	
 elseif CLIENT then
 
@@ -193,7 +179,15 @@ elseif CLIENT then
 		end
 	end
 	
-	local function selectSelected( box, index, value, data )
+	local function updateVariable( id, val )
+		-- Send this information up to the big guys to change!
+		local sender = exsto.CreateSender( "ExChangeVar" )
+			sender:AddString( id )
+			sender:AddVariable( val )
+		sender:Send()
+	end
+	
+	local function selectSelected( box, index, value, var )
 		local page = PLUGIN.Page.Content
 		if !page.Objects then page.Objects = {} end
 		
@@ -205,25 +199,42 @@ elseif CLIENT then
 		
 		-- Now, we need to loop through all of our data and create objects for each of these things.  Cross your fingers.
 		local data
-		for _, id in ipairs( data ) do
+		for _, id in ipairs( var ) do
 			data = exsto.ServerVariables[ id ] -- So this is 'live' so to speak
 		
 			-- If we're a boolean
-			if data.Maximum == 1 and data.Minimum == 0 then
+			if data.Maximum == 1 and data.Minimum == 0 and #data.Possible == 2 then
 				local obj = vgui.Create( "ExBooleanChoice", page.Cat )
 					obj:Dock( TOP )
 					obj:DockMargin( 0, 4, 0, 0 )
 					obj:SetTall( 32 )
-					obj:SetText( data.Display )
+					obj:Text( data.Display )
 					obj:SetValue( data.Value )
+					obj.OnValueSet = function( o, val ) updateVariable( data.ID, val ) end
 					
 				table.insert( page.Objects, obj )
-			elseif data.Type == "string" then -- If we require a text box!
-				local obj = vgui.Create( "DTextEntry", page.Cat )
+			elseif #data.Possible > 0 then
+				local obj = vgui.Create( "ExVarMultiChoice", page.Cat )
 					obj:Dock( TOP )
 					obj:DockMargin( 0, 4, 0, 0 )
 					obj:SetTall( 32 )
-					obj:SetText( data.Value )
+					obj:SetValue( data.Value )
+					obj:Text( data.Display )
+					obj.OnValueSet = function( o, val ) updateVariable( data.ID, val ) end
+					
+					for i, possible in ipairs( data.Possible ) do
+						obj:AddChoice( possible )
+					end
+					
+				table.insert( page.Objects, obj )
+			elseif data.Type == "string" then -- If we require a text box!
+				local obj = vgui.Create( "ExTextChoice", page.Cat )
+					obj:Dock( TOP )
+					obj:DockMargin( 0, 4, 0, 0 )
+					obj:SetTall( 32 )
+					obj:SetValue( data.Value )
+					obj:Text( data.Display )
+					obj.OnValueSet = function( o, val ) updateVariable( data.ID, val ) end
 					
 				table.insert( page.Objects, obj )
 			elseif data.Type == "number" then -- Anddd WANG IT.
@@ -231,7 +242,12 @@ elseif CLIENT then
 					obj:Dock( TOP )
 					obj:DockMargin( 0, 4, 0, 0 )
 					obj:SetTall( 32 )
-					-- TODO
+					obj:Text( data.Display )
+					obj:SetMin( data.Minimum )
+					obj:SetMax( data.Maximum )
+					obj:SetValue( data.Value )
+					obj:SetDecimals( 0 )
+					obj.OnValueSet = function( o, val ) updateVariable( data.ID, val ) end
 					
 				table.insert( page.Objects, obj )
 			end

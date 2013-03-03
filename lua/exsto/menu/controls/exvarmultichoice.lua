@@ -16,37 +16,44 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- Exsto Boolean Choice
+-- Exsto Text Choice
 
 PANEL = {}
 
 function PANEL:Init()
-	self:SetValue( false )
-	
+
 	self:MaxFontSize( 20 )
 	self:SetAlignX( TEXT_ALIGN_LEFT )
 	self:SetMaxTextWide( 130 )
+	
+	self.Entry = self:Add( "DComboBox", self )
+		self.Entry:Dock( FILL )
+		self.Entry:DockMargin( 4, 4, 4, 4 )
+		self.Entry:SetVisible( false )
+		self.Entry.OnSelect = function( entry, index, val, data ) self:OnSelect( index, val, data ) end
 end
 
+function PANEL:OnSelect( index, name, data )
+	self:SetValue( name )
+end
+
+function PANEL:AddChoice( name, data )
+	self.Entry:AddChoice( name, data )
+end
+
+function PANEL:SetValue( val ) self.Entry:SetValue( val ) self:OnValueSet( self:GetValue() ) end
+function PANEL:GetValue() return self.Entry:GetValue() end
+
+-- Override ExButton's.  We now need to convert the button into the wanger.  Whoaurgoarghoa!
 function PANEL:DoClick()
-	self:SetValue( not self:GetValue() )
-end
-
-function PANEL:SetValue( val )
-	self._Value = tobool( val )
-	self:OnValueSet( self:GetValue() )
-end
-
-function PANEL:GetValue()
-	return tobool( self._Value )
+	self.Entry:SetVisible( not self.Entry:IsVisible() )
+	self:HideText( self.Entry:IsVisible() )
 end
 
 function PANEL:Paint()
 	local w, h = self:GetSize()
 	
-	if self._Value then
-		self:GetSkin().tex.Input.ComboBox.Down( 0, 0, w, h )
-	elseif self.Hovered then
+	if self.Hovered then
 		self:GetSkin().tex.Input.ComboBox.Hover( 0, 0, w, h )
 	else
 		self:GetSkin().tex.Input.ComboBox.Normal( 0, 0, w, h )
@@ -67,4 +74,4 @@ function PANEL:Paint()
 	end
 end
 
-derma.DefineControl( "ExBooleanChoice", "Exsto Boolean Choice", PANEL, "ExButton" )
+derma.DefineControl( "ExVarMultiChoice", "Exsto Multi Choice", PANEL, "ExButton" )
