@@ -1,6 +1,6 @@
 --[[
 	Exsto
-	Copyright (C) 2011  Prefanatic
+	Copyright (C) 2013  Prefanatic
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ local start = SysTime()
 exsto.Debug( "aLoader --> Initializing.", 2 );
 exsto.aLoader = {
 	Loaded = {};
+	Processing = {};
 	Errors = {};
 };
 
@@ -91,7 +92,7 @@ end
 	----------------------------------- ]]
 function exsto.aLoader.RankProcessed( id )
 	exsto.Debug( "aLoader --> Checking of rank is loaded: " .. id, 3 )
-	return exsto.Ranks[ id ] or false
+	return exsto.aLoader.Processing[ id ] or false
 end
 
 --[[ -----------------------------------
@@ -114,9 +115,9 @@ function exsto.aLoader.CheckParent( id, parent )
 	for I = 1, 10 do
 		exsto.Debug( "aLoader --> Down " .. I .. " levels, checking: " .. ( current or "nothing" ), 3 )
 		if current == "NONE" then return true end -- End if we don't need a parent.
-		if id == current then exsto.aLoader.Error( current, "self_parent" ) return false end -- End if we parent off of ourselves.
-		if !exsto.aLoader.Loaded[ current ] then exsto.aLoader.Error( current, "no_parent_loaded" ) return false end -- End if our parent doesn't exist.
-		if table.HasValue( checked, current ) then exsto.aLoader.Error( current, "endless_derive" ) return false end -- We've already checked.  This would lead us into an inf.loop.
+		if id == current then exsto.aLoader.Error( current, ALOADER_SELF_PARENT ) return false end -- End if we parent off of ourselves.
+		if !exsto.aLoader.Loaded[ current ] then exsto.aLoader.Error( current, ALOADER_INVALID_PARENT ) return false end -- End if our parent doesn't exist.
+		if table.HasValue( checked, current ) then exsto.aLoader.Error( current, ALOADER_ENDLESS ) return false end -- We've already checked.  This would lead us into an inf.loop.
 	
 		table.insert( checked, current )
 		current = exsto.aLoader.Loaded[ current ].Parent
@@ -130,32 +131,24 @@ end
 	Description: Merges flags from MERGE to CURRENT
 	Used: During SegmentRank.  Shouldnt' be called elsewhere.
 	----------------------------------- ]]
-local function handler( tbl1, tbl2 )
+function exsto.aLoader.ManageFlagInherit( current, merge )
 	exsto.Debug( "aLoader --> MergeHandler --> Begin merge.", 3 )
-	for key, value in pairs( tbl2 ) do
+	for key, value in pairs( merge ) do
 		if type( value ) == "table" then -- Check to see if we can merge.
 			exsto.Debug( "aLoader --> MergeHandler --> Value is table: " .. key, 3 )
-			if tbl1[ key ] then handler( tbl1[ key ], value )
+			if current[ key ] then exsto.aLoader.ManageFlagInherit( current[ key ], value )
 			else 
 				exsto.Debug( "aLoader --> MergeHandler --> Merging non-existant table.", 3 ) 
-				tbl1[ key ] = table.Copy( value )
+				current[ key ] = table.Copy( value )
 			end
 		else
 			exsto.Debug( "aLoader --> MergeHandler --> Checking value: " .. value, 3 )
-			if !table.HasValue( tbl1, value ) then
+			if !table.HasValue( current, value ) then
 				exsto.Debug( "aLoader --> MergeHandler --> Merging non-existant value: " .. value, 3 )
-				table.insert( tbl1, value )
+				table.insert( current, value )
 			end
 		end
 	end
-end
-
-function exsto.aLoader.ManageFlagInherit( current, merge )
-	-- We always will have Core and Plugin tables, right?  Assume as much.
-	handler( current, merge )
-	--handler( current.Core, merge.Core )
-	--handler( current.Plugins, merge.Plugins )
-
 end
 
 --[[ -----------------------------------
@@ -166,7 +159,7 @@ end
 function exsto.aLoader.SegmentRank( id, data )
 	exsto.Debug( "aLoader --> Segmenting rank: " .. id, 2 )
 	if exsto.aLoader.RankProcessed( id ) then exsto.Debug( "aLoader --> Rank already processed, skip: " .. id, 2 ) return end
-	exsto.Ranks[ id ] = data; -- Simple thing to do.
+	exsto.aLoader.Processing[ id ] = data; -- Simple thing to do.
 
 	exsto.Debug( "aLoader --> Checking if rank has parent: " .. id .. ", " .. ( data.Parent or "none" ), 3 )
 	if data.Parent and data.Parent != "NONE" then
@@ -180,14 +173,15 @@ function exsto.aLoader.SegmentRank( id, data )
 		
 		exsto.Debug( "aLoader --> Cycling up to merge flag tables from: " .. data.Parent .. " to " .. id, 3 )
 		
-		exsto.aLoader.ManageFlagInherit( exsto.Ranks[ id ].FlagsAllow, exsto.Ranks[ data.Parent ].FlagsAllow )
+		exsto.aLoader.ManageFlagInherit( exsto.aLoader.Processing[ id ].FlagsAllow, exsto.aLoader.Processing[ data.Parent ].FlagsAllow )
 	end
 end
 
-function exsto.aLoader.Error( id, msg )
+function exsto.aLoader.Error( id, reason )
 	exsto.aLoader.Errors[ id ] = exsto.aLoader.Errors[ id ] or {}
+	exsto.aLoader.Errors[ id ] = reason 
 	
-	exsto.aLoader.Errors[ id ] = { exsto.aLoader.Loaded[ id ], msg }
+	hook.Call( "ExRankError", nil, id, reason )
 end
 
 --[[ -----------------------------------
@@ -203,17 +197,54 @@ function exsto.aLoader.Process()
 end
 
 --[[ -----------------------------------
+	Function: exsto.aLoader.QualityCheck()
+	Description: Finalizes and checks to make sure ranks loaded properly.
+	Used: During initialization.  Shouldn't be called after that.
+	----------------------------------- ]]
+function exsto.aLoader.QualityCheck()
+	-- If we're missing any critical elements to our data, replace it with default-standard ones.
+	for id, data in pairs( exsto.aLoader.Processing ) do
+		if !data.Immunity then exsto.aLoader.Processing[ id ].Immunity = 10 end
+	end
+	
+	-- Check to see if we have any errors.
+	if table.Count( exsto.aLoader.Errors ) > 0 then -- We've hit an error.
+		exsto.ErrorNoHalt( "aLoader --> Error loading ranks.  Reverting back to last known configuration." )
+		
+		-- So, lets figure this out.  If we 'just' started up, we're fucked.  Throw in srv_owner.
+		if table.Count( exsto.Ranks ) >= 1 then
+			exsto.ErrorNoHalt( "aLoader --> Rank loading errored in Exsto startup.  Database corruption possible.  Maintainence rank 'srv_owner' is injected." )
+			exsto.Ranks[ "srv_owner" ] = exsto.aLoader.Processing[ "srv_owner" ];
+		else
+			-- This is an error on a reinitialize.  Just recopy in the old rank database.
+			exsto.Debug( "aLoader --> Copying in old rank backup.", 1 )
+			exsto.Ranks = table.Copy( exsto.aLoader.Backup );
+		end
+	else
+		exsto.Debug( "aLoader --> Quality check passed.", 1 )
+		exsto.Ranks = table.Copy( exsto.aLoader.Processing )
+	end
+end
+
+--[[ -----------------------------------
 	Function: exsto.aLoader.Initialize()
 	Description: Winds up aLoader to process and manage ranks.
 	Used: Any time required, it starts aLoader.
 	----------------------------------- ]]
 function exsto.aLoader.Initialize()
 	exsto.Debug( "aLoader --> Begin main core init sequence.", 2 )
+	
+	-- Backup old data if we're reinit.
+	exsto.aLoader.Backup = exsto.Ranks and table.Copy( exsto.Ranks );
+		
+	-- Create our holders
 	exsto.Ranks = {}
 	exsto.aLoader.Loaded = {}
+	exsto.aLoader.Processing = {}
+	exsto.aLoader.Errors = {}
 	
 	-- Inject our srv_owner rank.  Needs to be done before anything is loaded in case of load failure.
-	exsto.Ranks[ "srv_owner" ] = {
+	exsto.aLoader.Processing[ "srv_owner" ] = {
 		FlagsAllow = {},
 		Immunity = -1,
 		ID = "srv_owner",
@@ -227,9 +258,9 @@ function exsto.aLoader.Initialize()
 	if #exsto.RankDB:GetAll() == 0 then exsto.aLoader.CreateDefaults() end
 	exsto.aLoader.LoadRanks()
 	exsto.aLoader.Process()
+	exsto.aLoader.QualityCheck()
 
 	exsto.Debug( "aLoader --> End main core sequence.", 2 )
-	exsto.Debug( "aLoader --> Injecting srv_owner.", 2 )
 	
 	hook.Call( "ExRanksLoaded" )
 	
@@ -244,9 +275,16 @@ exsto.aLoader.Initialize()
 	Used: Any time required; called normally through commands.
 	----------------------------------- ]]
 function exsto.SetAccess( ply, user, id )
-		
-	local rank = exsto.Ranks[id]
+	local rank = exsto.Ranks[id] -- Check and see if we're working on ID's
 	
+	if !rank then
+		-- Now check if we're matching any name of a rank.
+		for _i, data in pairs( exsto.Ranks ) do
+			if string.lower( data.Name ) == id then rank = data end
+		end
+	end
+	
+	-- If we still don't have a rank.
 	if !rank then
 		local closeRank = exsto.GetClosestString( id, exsto.Ranks, "ID", ply, "Unknown rank" )
 		return
@@ -257,9 +295,9 @@ function exsto.SetAccess( ply, user, id )
 	
 	if SelfIm > RankIm then return { ply,COLOR.NORM,"You cannot set yourself a higher rank" } end
 	
-	exsto.Print( exsto_CHAT_ALL, COLOR.NAME, user:Nick(), COLOR.NORM, " has been given rank ", COLOR.NAME, rank.Name )
-	
 	user:SetRank( rank.ID )
+	
+	return { COLOR.NAME, user:Nick(), COLOR.NORM, " has been given rank ", COLOR.NAME, rank.Name }
 	
 end
 exsto.AddChatCommand( "rank", {

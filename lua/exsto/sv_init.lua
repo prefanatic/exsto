@@ -26,6 +26,7 @@
 	-- Includes!
 	exstoShared( "fel.lua" ) -- The main data-saving backend.  Has no ties with Exsto.  Can be loaded first!
 	
+	exstoShared( "sh_enums.lua" )
 	exstoShared( "sh_tables.lua" )
 	exstoShared( "sh_umsg_core.lua" )
 	exstoShared( "sh_umsg.lua" )

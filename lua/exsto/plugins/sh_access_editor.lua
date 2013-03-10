@@ -26,18 +26,22 @@ if SERVER then
 		-- Remove the data.
 		exsto.RankDB:DropRow( reader:ReadString() )
 		
-		-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
-		exsto.aLoader.Initialize()
+		timer.Simple( 0.1, function()
 		
-		-- Reload the rank editor.
-		exsto.SendRanks( player.GetAll() )
-		--exsto.CreateSender( "ExRankEditor_Reload", "all" ):Send()
+			-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
+			exsto.aLoader.Initialize()
+			
+			-- Reload the rank editor.
+			exsto.SendRanks( player.GetAll() )
+
+		end )
 		
 	end
 	exsto.CreateReader( "ExDelRankFromClient", PLUGIN.DeleteRank )
 	
 	function PLUGIN.CommitChanges( reader )
 		local id = reader:ReadString()
+		local ply = reader:ReadSender()
 
 		-- Write the data
 		PLUGIN:WriteAccess( id, reader:ReadString(), reader:ReadString(), reader:ReadColor(), reader:ReadTable() )
@@ -53,11 +57,17 @@ if SERVER then
 			-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
 			exsto.aLoader.Initialize()
 			
-			-- We sadly have to resend everything, with flags and stuff being the way they are.
-			exsto.SendRanks( player.GetAll() )
-			
-			-- Reload the rank editor.
-			hook.Call( "ExOnRankCreate", nil, id )
+			-- If everything is successful, lets reload.
+			if exsto.aLoader.Errors and table.Count( exsto.aLoader.Errors ) == 0 then
+				-- We sadly have to resend everything, with flags and stuff being the way they are.
+				exsto.SendRanks( player.GetAll() )
+				
+				-- Reload the rank editor.
+				hook.Call( "ExOnRankCreate", nil, id )
+			else
+				-- We've got some errors.  We need to send these to the client and then notify the laddy who was making this rank he sucks.
+				exsto.SendRankErrors( ply )
+			end
 			
 		end )
 	end
@@ -96,6 +106,19 @@ if SERVER then
 
 elseif CLIENT then
 
+	local function updateDerives( avoid )
+		local pnl = PLUGIN.Page.Content
+		if !pnl then return end
+		
+		pnl.Derive:Clear()
+		for ID, data in pairs( exsto.Ranks ) do
+			if ID != "srv_owner" and ( avoid and ID != avoid ) then 
+				pnl.Derive:AddChoice( data.ID .. " (" .. data.Name .. ")" )
+			end
+		end
+		pnl.Derive:AddChoice( "NONE" )
+	end
+
 	local function updateContent( rank, updating )
 		local pnl = PLUGIN.Page.Content
 		
@@ -105,9 +128,13 @@ elseif CLIENT then
 			PLUGIN.WorkingRank = rank 
 		end
 		
+		local parentName = exsto.Ranks[ rank.Parent ] and exsto.Ranks[ rank.Parent ].Name or "UNKNOWN"
+		
+		updateDerives( rank.ID )
+		
 		pnl.RankSelect:SetValue( rank.Name )
 		pnl.RankName:SetText( rank.Name )
-		pnl.Derive:SetValue( rank.Parent .. " (" .. rank.Name .. ")" )
+		pnl.Derive:SetValue( rank.Parent .. " (" .. parentName .. ")" )
 		pnl.RankColor:SetColor( rank.Color )
 		pnl.RankText:SetTextColor( rank.Color )
 		pnl.Flags:Populate( rank )
@@ -132,19 +159,17 @@ elseif CLIENT then
 		if !pnl then return end
 		
 		local derive = pnl.Derive:GetValue()
-		local option = pnl.RankSelect:GetValue()
 		
 		pnl.RankSelect:Clear()
-		pnl.Derive:Clear()
 		pnl.OverlayPanel:SetVisible( true )
 		-- Populate the RankSelect with our ranks.
 		for ID, data in pairs( exsto.Ranks ) do
 			if ID != "srv_owner" then 
-				pnl.RankSelect:AddChoice( data.ID, data ) 
-				pnl.Derive:AddChoice( data.ID .. " (" .. data.Name .. ")" )
+				pnl.RankSelect:AddChoice( data.Name, data ) 
 			end
 		end
-		pnl.Derive:AddChoice( "NONE" )
+		
+		updateDerives()
 		
 		if PLUGIN.WorkingRank then
 			updateContent( PLUGIN.WorkingRank, true )
@@ -158,9 +183,9 @@ elseif CLIENT then
 		refreshEditor()
 	end
 
-	local function errors( rank, pnl ) -- Error checking
+	-- Error checking.  We should do simple stuff here.  The majority of the error checking will take place on the server.
+	local function errors( rank, pnl )
 		-- TODO: Print notification that this occurs.
-		-- TODO: Maybe we should just upload to the server and create an error-checking process and then report back to the client?
 		if pnl.RankName:GetValue() == "" then return true end
 		return false
 	end
@@ -180,7 +205,7 @@ elseif CLIENT then
 			sender:AddString( pnl.RankName:GetValue() )
 			sender:AddString( string.Explode( " ", pnl.Derive:GetValue() )[1] )
 			sender:AddColor( pnl.RankColor:GetColor() )
-			sender:AddTable( rank.FlagsAllow ) -- TODO
+			sender:AddTable( rank.FlagsAllow )
 		sender:Send()
 		
 		-- Also, immunity.  If this is a new rank or somethin.
@@ -263,8 +288,8 @@ elseif CLIENT then
 			FlagsAllow = { "test" };
 		};
 		
-		updateContent( exsto.Ranks[ id ] );
-		
+		PLUGIN.WorkingRank = exsto.Ranks[ id ];
+		refreshEditor()		
 	end
 
 	local function deleteRank( self )
@@ -277,6 +302,11 @@ elseif CLIENT then
 		local sender = exsto.CreateSender( "ExDelRankFromClient" )
 			sender:AddString( PLUGIN.WorkingRank.ID )
 		sender:Send()
+		
+		-- Prempt.  Remove the rank clientside and refresh to save time.
+		exsto.Ranks[ PLUGIN.WorkingRank.ID ] = nil;
+		PLUGIN.WorkingRank = nil;
+		refreshEditor()
 	end
 
 	local function editorInit( pnl )
@@ -319,7 +349,7 @@ elseif CLIENT then
 			pnl.RankName:DockMargin( 0, 4, 0, 0 )
 			pnl.RankName:SetTextInset( 10, 0 )
 			pnl.RankName.OnTextChanged = function( entry )
-				--pnl.RankSelect:SetValue( entry:GetValue() )
+				pnl.RankSelect:SetValue( entry:GetValue() )
 			end
 		
 		pnl.Derive = vgui.Create( "DComboBox", pnl.Holder )

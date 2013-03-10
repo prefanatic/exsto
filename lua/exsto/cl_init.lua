@@ -25,6 +25,7 @@
 	-- Load our derma controls
 	exstoClientFolder( "menu/controls" )
 	
+	exstoClient( "sh_enums.lua" )
 	exstoClient( "menu/cl_menu_skin_main.lua" )
 	exstoClient( "menu/cl_menu_skin_quick.lua" )
 	exstoClient( "menu/cl_derma.lua" )

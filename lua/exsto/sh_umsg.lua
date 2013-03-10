@@ -85,11 +85,11 @@ if SERVER then
 	Description: Sends the rank errors to the client.
     ----------------------------------- ]]
 	function exsto.SendRankErrors( ply )
-		for short, data in pairs( exsto.aLoader.Errors ) do
+		for id, data in pairs( exsto.aLoader.Errors ) do
 			local sender = exsto.CreateSender( "ExRecRankErr", ply )
-				sender:AddString( short )
-				sender:AddString( data[2] )
-				sender:Send()
+				sender:AddString( id )
+				sender:AddShort( data )
+			sender:Send()
 		end
 	end
 
@@ -126,7 +126,7 @@ if SERVER then
 			
 			sender:AddTable( rank.FlagsAllow )
 			
-			sender:Send()
+		sender:Send()
 	end
 	
 --[[ -----------------------------------
@@ -161,66 +161,9 @@ if SERVER then
 		self:Send( name )
 	end
 	
---[[-----------------------------------
-	Category: Client --> Server Sending.
-    ----------------------------------- ]]
-	
-	local dataProcess = {}
-	local dataHooks = {}
-	local id
-	
-	local noFunc = function() end
-	
-	function exsto.BeginClientReceive( _ply, _, args )
-		id = args[1]
-		
-		if !dataHooks[ id ] then
-			dataHooks[ id ] = noFunc
-		end
-		
-		dataProcess[id] = { ply = _ply, data = "" }
-	end
-	concommand.Add( "_ExBeginSend", exsto.BeginClientReceive )
-	
-	function exsto.ClientReceive( ply, _, args )
-		id = args[1]
-		dataProcess[id].data = dataProcess[id].data .. args[2]
-	end
-	concommand.Add( "_ExSend", exsto.ClientReceive )
-	
-	function exsto.EndClientReceive( ply, _, args )
-		id = args[1]
-		local decode = von.deserialize( dataProcess[ id ].data )
-		
-		if hook.Call( "ExClientData", nil, id, dataProcess[ id ].ply, decode ) == false then return end
-		dataHooks[ id ]( dataProcess[ id ].ply, decode )
-		dataProcess[ id ] = nil
-	end
-	concommand.Add( "_ExEndSend", exsto.EndClientReceive )
-	
-	function exsto.ClientHook( id, func )
-		dataHooks[ id ] = func
-	end
-	
 end
 
 if CLIENT then
-
---[[ -----------------------------------
-	 Category: Client --> Server Sending.
-	----------------------------------- ]]
-	function exsto.SendToServer( hook, ... )
-		exsto.ErrorNoHalt( "NET --> Using deprecated method: exsto.SendToServer." )
-		RunConsoleCommand( "_ExBeginSend", hook )
-		
-		local encode = von.serialize( {...} )
-		
-		for _, splice in ipairs( split( encode, 128 ) ) do
-			RunConsoleCommand( "_ExSend", hook, splice )
-		end
-		
-		RunConsoleCommand( "_ExEndSend", hook )
-	end
 	
 --[[ -----------------------------------
 		Rank Receiving UMSGS
@@ -240,7 +183,7 @@ if CLIENT then
 
 	function exsto.ReceiveRankErrors( reader )
 		if !exsto.RankErrors then exsto.RankErrors = {} end
-		exsto.RankErrors[ reader:ReadString() ] = reader:ReadString()
+		exsto.RankErrors[ reader:ReadString() ] = reader:ReadShort()
 	end
 	exsto.CreateReader( "ExRecRankErr", exsto.ReceiveRankErrors )
 	
