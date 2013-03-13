@@ -15,6 +15,11 @@ function PLUGIN:Init()
 	for _, type in ipairs( self.Types ) do
 		file.CreateDir( "exsto_logs/" .. type )
 	end
+	
+	-- Create variables for console printing per request of Mors Quaedam
+	exsto.CreateFlag( "printlogs", "Prints logs specified by 'ExPrintLogs' to the console." )
+	self.Printing = exsto.CreateVariable( "ExPrintLogs", "Print to Console", "", "Selects the possible logs to print to the console." )
+		self.Printing:SetMultiChoice() -- TODO: Set possibles
 end
 
 function PLUGIN:ShutDown()
@@ -127,10 +132,20 @@ function PLUGIN:SaveEvent( text, type )
 	
 	for _, type in ipairs( obj ) do
 		if !file.Exists( "exsto_logs/" .. type .. "/" .. date .. ".txt", "DATA" ) then
-			file.Write( "exsto_logs/" .. type .. "/" .. date .. ".txt", "[" .. time .. "] " .. text:gsub( "\n", "" ) .. "\n" )
+			file.Write( "exsto_logs/" .. type .. "/" .. date .. ".txt", "[" .. time .. "] " .. text:gsub( "\n", "" ) .. "\n"  )
 		else
 			local data = file.Read( "exsto_logs/" .. type .. "/" .. date .. ".txt", "DATA" )
 			file.Write( "exsto_logs/" .. type .. "/" .. date .. ".txt", data .. "[" .. time .. "] " .. text:gsub( "\n", "" ) .. "\n" )
+		end
+	end
+	
+	-- Print these logs to the console.
+	local printTypes = self.Printing:GetValue()
+	for _, ply in ipairs( player.GetAll() ) do
+		if ply:IsAllowed( "printlogs" ) then -- If we're allowed to do it.
+			if table.HasValue( printTypes, "all" ) or table.HasValue( printTypes, type ) then
+				ply:Print( exsto_CLIENT, "[LOG] " .. "[" .. time .. "] " .. text:gsub( "\n", "" ) .. "\n" )
+			end
 		end
 	end
 	

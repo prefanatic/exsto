@@ -265,7 +265,7 @@ elseif CLIENT then
 
 		lst:Clear()
 		local status = "open"
-		for flag, desc in pairs( exsto.Flags ) do
+		for flag, desc in SortedPairs( exsto.Flags ) do
 			-- Do some flag status checking first.
 			if table.HasValue( exsto.GetRankFlags( rank.ID ), flag ) then status = "allowed" end
 			if table.HasValue( exsto.GetInheritedFlags( rank.ID ), flag ) then status = "locked" end

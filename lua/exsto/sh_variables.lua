@@ -25,6 +25,7 @@ local dataTypes = {
 	string = function( var ) return tostring( var:GetString() ) end,
 	boolean = function( var ) return var:GetString() == "true" end,
 	number = function( var ) return tonumber( var:GetFloat() ) end,
+	multi = function( var ) return string.Explode( ",", var:GetString() ) end,
 }
 
 -- Networking
@@ -46,6 +47,7 @@ if SERVER then
 			sender:AddShort( obj.NumMin )
 			sender:AddString( obj:GetCategory() )
 			sender:AddTable( obj:GetPossible() or {} )
+			sender:AddBoolean( obj._MultiChoice or false )
 		sender:Send()
 	end
 	
@@ -74,6 +76,7 @@ elseif CLIENT then
 			Minimum = reader:ReadShort(),
 			Category = reader:ReadString(),
 			Possible = reader:ReadTable(),
+			Multi = reader:ReadBoolean(),
 		}
 		exsto.Debug( "Variables --> Received '" .. id .. "' from the server!", 3 )
 	end )
@@ -226,6 +229,11 @@ end
 
 function var:SetPossible( ... )
 	self.Possible = {...}
+end
+
+function var:SetMultiChoice()
+	self._MultiChoice = true
+	self.Type = "multi"
 end
 
 function var:SetCallback( func )
