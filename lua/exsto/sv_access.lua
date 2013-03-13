@@ -256,7 +256,7 @@ function exsto.SetAccess( ply, user, id )
 	
 	if SelfIm > RankIm then return { ply,COLOR.NORM,"You cannot set yourself a higher rank" } end
 	
-	exsto.Print( exsto_CHAT_ALL, COLOR.NAME, user:Nick(), COLOR.NORM, " has been given rank ", COLOR.NAME, rank.Name )
+	exsto.Print( exsto_CHAT_ALL, COLOR.NAME, ply:Nick(), COLOR.NORM, " has set ", COLOR.NAME, user:Nick().."'s", COLOR.NORM, " rank to ", COLOR.NAME, rank.Name )
 	
 	user:SetRank( rank.ID )
 	
