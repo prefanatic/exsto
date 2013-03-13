@@ -207,13 +207,14 @@ function db:SetRefreshRate( time )
 end
 
 function db:CacheRefresh()
-	self:GetCacheData()
+	self:GetCacheData( true )
 	self:QOSCheck()
 	
-	print( "FEL --> " .. self.dbName .. " --> Cache refreshed." )
+	print( "FEL --> " .. self.dbName .. " --> Cache refreshing." )
 end	
 
-function db:GetCacheData()
+-- TODO: This needs to be threaded after loads.
+function db:GetCacheData( thread )
 	self.Cache._cache = {}
 	self._cacheCount = 0
 	

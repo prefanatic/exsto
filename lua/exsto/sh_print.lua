@@ -139,7 +139,7 @@ exsto_ERRORNOHALT = AddPrint(
 		--debug.Trace()
 		//PrintTable( debug.getinfo( 4, "Sln" ) )
 		ErrorNoHalt( send )
-		ErrorNoHalt( debug.traceback( 4 ) )
+		ErrorNoHalt( debug.traceback( 4 ) .. "\n" )
 	end
 )
 	

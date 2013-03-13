@@ -172,7 +172,9 @@ elseif CLIENT then
 		updateDerives()
 		
 		if PLUGIN.WorkingRank then
-			updateContent( PLUGIN.WorkingRank, true )
+			timer.Simple( 0.01, function()
+				updateContent( PLUGIN.WorkingRank, true )
+			end )
 		end
 
 	end
@@ -220,20 +222,26 @@ elseif CLIENT then
 	local function editorRankSelected( box, index, value, data )
 		if box._IgnoreSelect then box._IgnoreSelect = false return end
 		
+		box.WorkingID = index
+		
 		-- Push the rank update to server, if we did so.
 		if !PLUGIN.Updating then
 			pushUpdate()
 		end
 		
-		box.WorkingID = index
-		
-		-- Update our content.
-		updateContent( data )
+		timer.Simple( 0.01, function()
+			updateContent( data )
+		end )
 	end
 	
 	local function flagIndicator( line )
 		if !PLUGIN.WorkingRank then return end
-		draw.SimpleText( line.Info.Data.Status, "ExGenericText14", 0, 2, Color( 0, 0, 0, 255 ) )
+		surface.SetDrawColor( 255, 255, 255, 255 )
+		if line.Info.Data.Status == "allowed" then surface.SetMaterial( PLUGIN.Materials.Green ) end
+		if line.Info.Data.Status == "open" then surface.SetMaterial( PLUGIN.Materials.Red ) end
+		if line.Info.Data.Status == "locked" then surface.SetMaterial( PLUGIN.Materials.Grey ) end
+		
+		surface.DrawTexturedRect( 5, (line:GetTall() / 2 ) - 3, 8, 8 )
 	end
 	
 	local function flagHandler( lst, display, data, line )
@@ -259,8 +267,8 @@ elseif CLIENT then
 		local status = "open"
 		for flag, desc in pairs( exsto.Flags ) do
 			-- Do some flag status checking first.
-			if table.HasValue( allow, flag ) then print( rank.Name, "ELLO" ) status = "allowed" end
-			if table.HasValue( drv_allow, flag ) then status = "locked" end
+			if table.HasValue( exsto.GetRankFlags( rank.ID ), flag ) then status = "allowed" end
+			if table.HasValue( exsto.GetInheritedFlags( rank.ID ), flag ) then status = "locked" end
 			
 			lst:AddRow( { flag }, {Desc = desc, Status = status } )
 			status = "open" -- reset.  Why didn't I realize this earlier :/
@@ -406,6 +414,12 @@ elseif CLIENT then
 			self.Page:SetTitle( "Rank Editor" )
 			self.Page:SetSearchable( true )
 			self.Page:OnBackstage( pushUpdate )
+			
+		self.Materials = {
+			Green = Material( "exsto/green.png" );
+			Red = Material( "exsto/red.png" );
+			Grey = Material( "exsto/grey.png" );
+		}
 			
 		self.WorkingRank = nil
 	end

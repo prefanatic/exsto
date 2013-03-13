@@ -6,6 +6,33 @@
 end
 
 --[[ -----------------------------------
+	Function: exsto.GetInheritedFlags
+	Description: Returns the inherited flags of a rank.
+	----------------------------------- ]]
+function exsto.GetInheritedFlags( id )
+	local rank = exsto.Ranks[ id ]
+	local tbl = table.Copy( rank.Inherit )
+	
+	if rank.Parent != "NONE" then
+		table.Add( tbl, exsto.GetInheritedFlags( rank.Parent ) )
+	end
+	
+	return tbl
+end
+
+--[[ -----------------------------------
+	Function: exsto.GetRankFlags
+	Description: Returns all the flags of a rank incl. inherited
+	----------------------------------- ]]
+function exsto.GetRankFlags( id )
+	local rank = exsto.Ranks[ id ]
+	local tbl = table.Copy( rank.FlagsAllow )
+	
+	table.Add( tbl, exsto.GetInheritedFlags( id ) )
+	return tbl
+end
+
+--[[ -----------------------------------
 	Function: exsto.GetRankData
 	Description: Returns the rank information based on short or name.
 	----------------------------------- ]]

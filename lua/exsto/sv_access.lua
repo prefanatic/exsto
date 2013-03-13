@@ -51,6 +51,14 @@ exsto.UserDB = FEL.CreateDatabase( "exsto_data_users" );
 		ServerOwner = "BOOLEAN";					-- Declares if the user is the owner.
 	} )
 	
+-- Variables to designate how rank errors should be handled
+exsto.aLoader.ErrorHandle = exsto.CreateVariable( "ExRankErrorHandle", 
+	"Rank Error Handling", 
+	"auto", 
+	"Designates how Exsto shall handle errors in ranks.\n - 'auto' : Automatically tries to recover ranks by removing broken data.\n - 'restore' : Restores default ranks temporarily.\n - 'delrestore' : Restores ranks and saves them.  Backups old rank data to .txt"
+)
+exsto.aLoader.ErrorHandle:SetPossible( "auto", "restore", "delrestore" )
+	
 --[[ -----------------------------------
 	Function: exsto.aLoader.CreateDefaults()
 	Description: Pushes the default rank set from sh_tables to FEL to be saved.
@@ -134,19 +142,10 @@ end
 function exsto.aLoader.ManageFlagInherit( current, merge )
 	exsto.Debug( "aLoader --> MergeHandler --> Begin merge.", 3 )
 	for key, value in pairs( merge ) do
-		if type( value ) == "table" then -- Check to see if we can merge.
-			exsto.Debug( "aLoader --> MergeHandler --> Value is table: " .. key, 3 )
-			if current[ key ] then exsto.aLoader.ManageFlagInherit( current[ key ], value )
-			else 
-				exsto.Debug( "aLoader --> MergeHandler --> Merging non-existant table.", 3 ) 
-				current[ key ] = table.Copy( value )
-			end
-		else
-			exsto.Debug( "aLoader --> MergeHandler --> Checking value: " .. value, 3 )
-			if !table.HasValue( current, value ) then
-				exsto.Debug( "aLoader --> MergeHandler --> Merging non-existant value: " .. value, 3 )
-				table.insert( current, value )
-			end
+		exsto.Debug( "aLoader --> MergeHandler --> Checking value: " .. value, 3 )
+		if !table.HasValue( current, value ) then
+			exsto.Debug( "aLoader --> MergeHandler --> Merging non-existant value: " .. value, 3 )
+			table.insert( current, value )
 		end
 	end
 end
@@ -160,6 +159,7 @@ function exsto.aLoader.SegmentRank( id, data )
 	exsto.Debug( "aLoader --> Segmenting rank: " .. id, 2 )
 	if exsto.aLoader.RankProcessed( id ) then exsto.Debug( "aLoader --> Rank already processed, skip: " .. id, 2 ) return end
 	exsto.aLoader.Processing[ id ] = data; -- Simple thing to do.
+	exsto.aLoader.Processing[ id ].Inherit = {}
 
 	exsto.Debug( "aLoader --> Checking if rank has parent: " .. id .. ", " .. ( data.Parent or "none" ), 3 )
 	if data.Parent and data.Parent != "NONE" then
@@ -173,7 +173,7 @@ function exsto.aLoader.SegmentRank( id, data )
 		
 		exsto.Debug( "aLoader --> Cycling up to merge flag tables from: " .. data.Parent .. " to " .. id, 3 )
 		
-		exsto.aLoader.ManageFlagInherit( exsto.aLoader.Processing[ id ].FlagsAllow, exsto.aLoader.Processing[ data.Parent ].FlagsAllow )
+		exsto.aLoader.ManageFlagInherit( exsto.aLoader.Processing[ id ].Inherit, exsto.aLoader.Processing[ data.Parent ].FlagsAllow )
 	end
 end
 
@@ -202,21 +202,40 @@ end
 	Used: During initialization.  Shouldn't be called after that.
 	----------------------------------- ]]
 function exsto.aLoader.QualityCheck()
+	local mgStyle = exsto.aLoader.ErrorHandle:GetValue()
+	
 	-- If we're missing any critical elements to our data, replace it with default-standard ones.
 	for id, data in pairs( exsto.aLoader.Processing ) do
 		if !data.Immunity then exsto.aLoader.Processing[ id ].Immunity = 10 end
 	end
 	
-	-- Check to see if we have any errors.
-	if table.Count( exsto.aLoader.Errors ) > 0 then -- We've hit an error.
-		exsto.ErrorNoHalt( "aLoader --> Error loading ranks.  Reverting back to last known configuration." )
+	if table.Count( exsto.aLoader.Errors ) > 0 then
+		exsto.ErrorNoHalt( "aLoader --> Error loading ranks.  Handling." )
 		
-		-- So, lets figure this out.  If we 'just' started up, we're fucked.  Throw in srv_owner.
-		if table.Count( exsto.Ranks ) >= 1 then
-			exsto.ErrorNoHalt( "aLoader --> Rank loading errored in Exsto startup.  Database corruption possible.  Maintainence rank 'srv_owner' is injected." )
-			exsto.Ranks[ "srv_owner" ] = exsto.aLoader.Processing[ "srv_owner" ];
-		else
-			-- This is an error on a reinitialize.  Just recopy in the old rank database.
+		-- We ONLY want to run this on startup.
+		if !exsto.aLoader.Backup then -- This will tell us if we're starting up.
+			if mgStyle == "auto" then -- Try and recover.  Lets look at our errors and see what we can do.
+				exsto.Debug( "aLoader --> Automatically trying to handle rank errors.", 1 )
+				local rank;
+				for id, err in pairs( exsto.aLoader.Errors ) do
+					rank = exsto.aLoader.Processing[ id ];
+
+					-- Our parent errors.  Just set the actual parent to NONE and try loading again.
+					if err == ALOADER_SELF_PARENT or err == ALOADER_INVALID_PARENT or err == ALOADER_ENDLESS then
+						exsto.Debug( "aLoader --> Errors found in '" .. id .. "' with parent '" .. rank.Parent .."'.  Solving with derive replacement 'NONE'", 1 )
+						exsto.RankDB:AddRow( {
+							ID = id;
+							Parent = "NONE";
+						} )
+					end
+				end
+				
+				-- Throw aLoader back into initialization.
+				exsto.Debug( "aLoader --> Throwing aLoader back into process.", 1 )
+				exsto.aLoader.Initialize();
+				return
+			end
+		else -- We're reloading.  Just recopy in the old rank database.
 			exsto.Debug( "aLoader --> Copying in old rank backup.", 1 )
 			exsto.Ranks = table.Copy( exsto.aLoader.Backup );
 		end
@@ -224,6 +243,7 @@ function exsto.aLoader.QualityCheck()
 		exsto.Debug( "aLoader --> Quality check passed.", 1 )
 		exsto.Ranks = table.Copy( exsto.aLoader.Processing )
 	end
+
 end
 
 --[[ -----------------------------------
@@ -235,8 +255,10 @@ function exsto.aLoader.Initialize()
 	exsto.Debug( "aLoader --> Begin main core init sequence.", 2 )
 	
 	-- Backup old data if we're reinit.
-	exsto.aLoader.Backup = exsto.Ranks and table.Copy( exsto.Ranks );
-		
+	if exsto.Ranks and table.Count( exsto.Ranks ) >= 1 then
+		exsto.aLoader.Backup = table.Copy( exsto.Ranks )
+	end
+	
 	-- Create our holders
 	exsto.Ranks = {}
 	exsto.aLoader.Loaded = {}
@@ -246,6 +268,7 @@ function exsto.aLoader.Initialize()
 	-- Inject our srv_owner rank.  Needs to be done before anything is loaded in case of load failure.
 	exsto.aLoader.Processing[ "srv_owner" ] = {
 		FlagsAllow = {},
+		Inherit = {},
 		Immunity = -1,
 		ID = "srv_owner",
 		Color = Color( 60, 200, 124, 200 ),

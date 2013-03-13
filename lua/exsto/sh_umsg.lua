@@ -49,6 +49,7 @@ exsto.Net = {
 		"ExClientErr";
 		"ExClientPrint";
 		"ExSendVariable";
+		"ExRecRankErr";
 	},
 	NotifiedNetStrings = {}
 }
@@ -125,6 +126,7 @@ if SERVER then
 			sender:AddColor( rank.Color )
 			
 			sender:AddTable( rank.FlagsAllow )
+			sender:AddTable( rank.Inherit )
 			
 		sender:Send()
 	end
@@ -177,6 +179,7 @@ if CLIENT then
 			Immunity = reader:ReadShort(),
 			Color = reader:ReadColor(),
 			FlagsAllow = reader:ReadTable(),
+			Inherit = reader:ReadTable(),
 		}
 	end
 	exsto.CreateReader( "ExRecRank", recieve )

@@ -29,3 +29,4 @@ end
 ALOADER_SELF_PARENT = enum();  -- Parenting off themself.
 ALOADER_INVALID_PARENT = enum(); -- Non-existant parent.
 ALOADER_ENDLESS = enum(); -- Endless derive.
+ALOADER_NO_IMMUNITY = enum();
