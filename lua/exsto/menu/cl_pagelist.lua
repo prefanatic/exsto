@@ -21,15 +21,20 @@ local pl = {}
 -- Our hook into the menu!
 function exsto.InitPageList( pnl )
 	pl.Pnl = pnl
+	pnl:SetSpacing( 12 )
+	pnl:SetPadding( 25 )
+	pnl:EnableHorizontal( true )
+	pnl:EnableVerticalScrollbar( true )
 	
-	pnl.Cat = pnl:CreateCategory( "Pages" )
-
-	pnl.Holder = vgui.Create( "DIconLayout", pnl.Cat )	
-		pnl.Holder:Dock( TOP )
+--[[
+	pnl.Holder = vgui.Create( "DIconLayout", pnl )	
+		pnl.Holder:SetPos( 0, 0 )
+		pnl.Holder:SetTall( pnl:GetTall() )
+		pnl.Holder:SetWide( pnl:GetWide() ) print( pnl:GetWide() ) print( pnl:GetTall() )
 		pnl.Holder:SetLayoutDir( LEFT )
 		pnl.Holder:SetSpaceX( 12 )
 		pnl.Holder:SetSpaceY( 12 )
-		pnl.Holder:SetBorder( 25 )
+		pnl.Holder:SetBorder( 25 )]]
 end
 
 function exsto.BuildPageListIcons( obj )
@@ -38,14 +43,12 @@ function exsto.BuildPageListIcons( obj )
 	for _, obj in pairs( exsto.Menu.Pages ) do
 		if !obj._Hide then
 
-			local button = pnl.Holder:Add( "ExPageIcon" )
+			local button = vgui.Create( "ExPageIcon" )
 				button:SetIcon( "exsto/settings.png" )
 				button:SetPage( obj )
 				button:SetSize( 95, 95 )
-		
+			pnl:AddItem( button )
 		end
 	end
-	
-	pnl.Holder:InvalidateLayout( true )
-	pnl.Cat:InvalidateLayout( true )
+
 end
