@@ -16,31 +16,36 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+local pl = {}
+
 -- Our hook into the menu!
 function exsto.InitPageList( pnl )
+	pl.Pnl = pnl
+	
+	pnl.Cat = pnl:CreateCategory( "Pages" )
 
-	pnl.Scroller = vgui.Create( "DScrollPanel", pnl )
-	pnl.Holder = pnl.Scroller:Add( "DIconLayout" )	
+	pnl.Holder = vgui.Create( "DIconLayout", pnl.Cat )	
 		pnl.Holder:Dock( TOP )
 		pnl.Holder:SetLayoutDir( LEFT )
 		pnl.Holder:SetSpaceX( 12 )
 		pnl.Holder:SetSpaceY( 12 )
 		pnl.Holder:SetBorder( 25 )
-	
+end
+
+function exsto.BuildPageListIcons( obj )
+	local pnl = pl.Pnl
 	-- Loop through our pages and create icons :)
 	for _, obj in pairs( exsto.Menu.Pages ) do
 		if !obj._Hide then
-		
+
 			local button = pnl.Holder:Add( "ExPageIcon" )
-				button:SetIcon( "exsto/icon_test.png" )
+				button:SetIcon( "exsto/settings.png" )
 				button:SetPage( obj )
 				button:SetSize( 95, 95 )
 		
 		end
 	end
 	
-	pnl.Scroller:Dock( FILL )
-	pnl.Scroller:InvalidateLayout( true )
 	pnl.Holder:InvalidateLayout( true )
-
+	pnl.Cat:InvalidateLayout( true )
 end

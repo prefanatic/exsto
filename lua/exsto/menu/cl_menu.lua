@@ -116,6 +116,7 @@ function exsto.Menu.Initialize()
 	exsto.Menu.PageList = exsto.Menu.CreatePage( "pagelist", exsto.InitPageList )
 		exsto.Menu.PageList:SetTitle( "Pages" )
 		exsto.Menu.PageList:SetUnaccessable()
+		exsto.Menu.PageList:OnShowtime( exsto.BuildPageListIcons )
 	
 	-- Finally, lets create these pages that we have, if they're not already created.
 	for _, obj in ipairs( exsto.Menu.Pages ) do
