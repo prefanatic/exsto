@@ -403,7 +403,7 @@ elseif CLIENT then
 		
 		pnl.List:SizeToContents()
 		
-		cat:InvalidateLayout( true )
+		pnl.Cat:InvalidateLayout( true )
 	end
 	
 	local function addBan( tbl )
@@ -454,14 +454,14 @@ elseif CLIENT then
 	exsto.CreateReader( "ExRecBan", recBanAdd )
 	
 	local function banInit( pnl )
-		local cat = pnl:CreateCategory( "Bans" )
+		pnl.Cat = pnl:CreateCategory( "Bans" )
 		
-		pnl.Holder = vgui.Create( "DPanel", cat )
+		pnl.Holder = vgui.Create( "DPanel", pnl.Cat )
 			pnl.Holder.Paint = function() end
 			pnl.Holder:DockMargin( 4, 0, 4, 0 )
 			pnl.Holder:Dock( TOP )
 		
-		pnl.List = vgui.Create( "ExListView", cat )
+		pnl.List = vgui.Create( "ExListView", pnl.Cat )
 			pnl.List:DockMargin( 4, 0, 4, 0 )
 			pnl.List:Dock( TOP )
 			pnl.List:DisableScrollbar()

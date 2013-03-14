@@ -97,6 +97,8 @@ end
 
 function page:SetSearchable( bool ) self._Searchable = bool end
 
+function page:SetUnaccessable() self._Hide = true end
+
 function page:SetTitle( title )
 	self._Title = title
 end

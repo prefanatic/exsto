@@ -113,14 +113,16 @@ function exsto.Menu.Initialize()
 		exsto.Menu.QM.Content:SetSkin( "ExstoQuick" )
 		
 	-- Now create our page icon list.
-	--exsto.Menu.PageList = exsto.Menu.CreatePage( "pagelist", exsto.InitPageList )
-		--exsto.Menu.PageList:SetTitle( "Pages" )
-		--exsto.Menu.PageList:Build()
+	exsto.Menu.PageList = exsto.Menu.CreatePage( "pagelist", exsto.InitPageList )
+		exsto.Menu.PageList:SetTitle( "Pages" )
+		exsto.Menu.PageList:SetUnaccessable()
 	
 	-- Finally, lets create these pages that we have, if they're not already created.
 	for _, obj in ipairs( exsto.Menu.Pages ) do
 		if !obj.Content then obj:Build() end
 	end
+	
+	exsto.Menu.PageList:Build() -- We should build after the pages are created so we can throw them into the list of things we need to show.
 
 end
 
@@ -221,13 +223,15 @@ end
 ]]
 
 function exsto.Menu.NewPageClick( btn )
-	-- Always go to the new page list.  No matter what?
+	exsto.Menu.OpenPage( exsto.Menu.PageList )
 end
 
 function exsto.Menu.NewPageRightClick( btn )
 	local lst = DermaMenu()
 	for _, obj in ipairs( exsto.Menu.Pages ) do
-		lst:AddOption( obj:GetTitle(), function() exsto.Menu.OpenPage( obj ) end )
+		if !obj._Hide then
+			lst:AddOption( obj:GetTitle(), function() exsto.Menu.OpenPage( obj ) end )
+		end
 	end
 	lst:Open()
 end

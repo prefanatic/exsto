@@ -38,6 +38,7 @@
 	exstoClient( "menu/cl_menu.lua" )
 	exstoClient( "menu/cl_page.lua" )
 	exstoClient( "menu/cl_quickmenu.lua" )
+	exstoClient( "menu/cl_pagelist.lua" )
 	exstoClient( "cl_menu.lua" )
 	exstoClient( "sh_access.lua" )
 	exstoClient( "sh_plugin_metatable.lua" )

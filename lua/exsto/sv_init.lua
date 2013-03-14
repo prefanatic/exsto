@@ -50,6 +50,7 @@
 		-- Menu
 	exstoClient( "menu/cl_derma.lua" )
 	exstoClient( "menu/cl_quickmenu.lua" )
+	exstoClient( "menu/cl_pagelist.lua" )
 	exstoClient( "menu/cl_anim.lua" )
 	exstoClient( "menu/cl_menu_skin_main.lua" )
 	exstoClient( "menu/cl_menu_skin_quick.lua" )
