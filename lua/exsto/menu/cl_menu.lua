@@ -85,12 +85,12 @@ function exsto.Menu.Initialize()
 		exsto.Menu.FrameScroller.Paint = function() end
 		
 	-- Create our buttons up top
-	exsto.Menu.BackButton = exsto.CreateImageButton( 6, 4, 32, 32, "exsto/back_norm.png", exsto.Menu.Frame )
+	exsto.Menu.BackButton = exsto.CreateImageButton( 6, 4, 39, 25, "exsto/back_norm.png", exsto.Menu.Frame )
 		exsto.Menu.BackButton._Disabled = true
 		exsto.Menu.BackButton.DoClick = exsto.Menu.BackButtonClick
 		
 	-- Create the new panel button
-	exsto.Menu.NewPage = exsto.CreateImageButton( 0, 4, 32, 32, "exsto/menu_highlight.png", exsto.Menu.Frame )
+	exsto.Menu.NewPage = exsto.CreateImageButton( 0, 4, 39, 25, "exsto/menu_highlight.png", exsto.Menu.Frame )
 		exsto.Menu.NewPage:MoveRightOf( exsto.Menu.BackButton, 6 )
 		exsto.Menu.NewPage.DoClick = exsto.Menu.NewPageClick
 		exsto.Menu.NewPage.DoRightClick = exsto.Menu.NewPageRightClick
@@ -117,7 +117,7 @@ function exsto.Menu.Initialize()
 		exsto.Menu.PageList:SetTitle( "Pages" )
 		exsto.Menu.PageList:SetUnaccessable()
 		exsto.Menu.PageList:OnShowtime( exsto.BuildPageListIcons )
-		exsto.Menu.PageList:SetPanelStyle( "DPanelList" )
+		--exsto.Menu.PageList:SetPanelStyle( "DPanel" )
 	
 	-- Finally, lets create these pages that we have, if they're not already created.
 	for _, obj in ipairs( exsto.Menu.Pages ) do

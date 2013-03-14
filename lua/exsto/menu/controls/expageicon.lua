@@ -22,12 +22,11 @@ function PANEL:Init()
 	self.Colors = {
 		Hover = Color( 65, 139, 223, 255 );
 		Sad = Color( 218, 218, 218, 255 );
-		IconSad = Color( 255, 255, 255, 255 );
+		IconSad = Color( 113, 113, 113, 255 );
 		IconHover = Color( 255, 255, 255, 255 );
 		White = Color( 255, 255, 255, 255 );
 	};
 	self.Background = Material( "exsto/grey_bg.png" )
-	self.BackgroundHover = Material( "exsto/blue_bg.png" )
 	
 	self:Text( "" )
 end
@@ -40,12 +39,12 @@ end
 function PANEL:Paint()
 
 	-- Background
-	surface.SetMaterial( self.Background )
-	surface.SetDrawColor( self.Colors.White );
+	surface.SetDrawColor( self.Colors.Sad );
 	if self.Hovered then
-		surface.SetMaterial( self.BackgroundHover )
+		surface.SetDrawColor( self.Colors.Hover );
 	end
 
+	surface.SetMaterial( self.Background )
 	surface.DrawTexturedRect( 0, 0, self:GetWide(), self:GetTall() );
 	
 	-- Icon
@@ -55,7 +54,7 @@ function PANEL:Paint()
 	end
 	
 	surface.SetMaterial( self._Mat )
-	surface.DrawTexturedRect( 0, 0, 64, 64 )
+	surface.DrawTexturedRect( ( self:GetWide() / 2 ) - 32, ( self:GetTall() / 2 ) - 32, 64, 64 )
 	
 end	
 

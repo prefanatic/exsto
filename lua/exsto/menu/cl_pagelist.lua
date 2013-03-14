@@ -21,24 +21,29 @@ local pl = {}
 -- Our hook into the menu!
 function exsto.InitPageList( pnl )
 	pl.Pnl = pnl
-	pnl:SetSpacing( 12 )
-	pnl:SetPadding( 25 )
-	pnl:EnableHorizontal( true )
-	pnl:EnableVerticalScrollbar( true )
 	
---[[
-	pnl.Holder = vgui.Create( "DIconLayout", pnl )	
-		pnl.Holder:SetPos( 0, 0 )
-		pnl.Holder:SetTall( pnl:GetTall() )
-		pnl.Holder:SetWide( pnl:GetWide() ) print( pnl:GetWide() ) print( pnl:GetTall() )
-		pnl.Holder:SetLayoutDir( LEFT )
-		pnl.Holder:SetSpaceX( 12 )
-		pnl.Holder:SetSpaceY( 12 )
-		pnl.Holder:SetBorder( 25 )]]
+	--pnl.Paint = function() end 
+	
+	local shadow = Material( "exsto/gradient.png" )
+	
+	pnl.Holder = vgui.Create( "DPanelList", pnl )
+		pnl.Holder:Dock( FILL )
+		pnl.Holder:DockMargin( 4, 4, 4, 4 )
+		pnl.Holder:SetSpacing( 12 )
+		pnl.Holder:SetPadding( 25 )
+		pnl.Holder:EnableHorizontal( true )
+		pnl.Holder:EnableVerticalScrollbar( true )
+		--[[pnl.Holder.PaintOver = function( p )
+			surface.SetMaterial( shadow )
+			surface.SetDrawColor( 255, 255, 255, 255 )
+			surface.DrawTexturedRect( 0, 0, p:GetWide(), 9 )
+		end]]
 end
 
 function exsto.BuildPageListIcons( obj )
 	local pnl = pl.Pnl
+	
+	pnl.Holder:Clear()
 	-- Loop through our pages and create icons :)
 	for _, obj in pairs( exsto.Menu.Pages ) do
 		if !obj._Hide then
@@ -47,8 +52,10 @@ function exsto.BuildPageListIcons( obj )
 				button:SetIcon( "exsto/settings.png" )
 				button:SetPage( obj )
 				button:SetSize( 95, 95 )
-			pnl:AddItem( button )
+			pnl.Holder:AddItem( button )
 		end
 	end
+	
+	pnl.Holder:InvalidateLayout( true )
 
 end
