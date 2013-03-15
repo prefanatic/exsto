@@ -50,6 +50,16 @@ for I = 14, 128 do
 	fontTbl.size = I;
 	surface.CreateFont( "ExGenericTextMidBold" .. I, fontTbl );
 end
+fontTbl.weight = 700
+for I = 14, 128 do
+	fontTbl.size = I;
+	surface.CreateFont( "ExGenericText" .. I, fontTbl );
+end
+fontTbl.weight = 400
+for I = 14, 128 do
+	fontTbl.size = I;
+	surface.CreateFont( "ExGenericTextNoBold" .. I, fontTbl );
+end
 
 --[[ -----------------------------------
 	Function: exsto.Menu.Initialize
@@ -230,9 +240,29 @@ end
 
 function exsto.Menu.NewPageRightClick( btn )
 	local lst = DermaMenu()
+	local c = Color( 113, 113, 113, 255 )
 	for _, obj in ipairs( exsto.Menu.Pages ) do
-		if !obj._Hide then
-			lst:AddOption( obj:GetTitle(), function() exsto.Menu.OpenPage( obj ) end )
+		if !obj._Hide then				
+			if obj._Child then
+				local sub = lst:AddSubMenu( obj:GetTitle() )
+				local option = sub:AddOption( obj:GetTitle(), function() exsto.Menu.OpenPage( obj ) end )
+					option:SetImage( obj:GetIcon() )
+					option.m_Image:SetSize( 16, 16 )
+					option.m_Image:SetImageColor( c ) 
+					
+				for _, child in ipairs( obj._Child ) do
+					local option = sub:AddOption( child:GetTitle(), function() exsto.Menu.OpenPage( child ) end )
+					option:SetImage( child:GetIcon() )
+					option.m_Image:SetSize( 16, 16 )
+					option.m_Image:SetImageColor( c ) 
+				end
+				
+			else
+				local option = lst:AddOption( obj:GetTitle(), function() exsto.Menu.OpenPage( obj ) end )
+				option:SetImage( obj:GetIcon() )
+				option.m_Image:SetSize( 16, 16 )
+				option.m_Image:SetImageColor( c ) 
+			end
 		end
 	end
 	lst:Open()

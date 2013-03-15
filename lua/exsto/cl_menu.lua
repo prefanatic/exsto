@@ -48,21 +48,6 @@ surface.CreateFont( "exstoTutorialContent", { font = "Arial", size = 40, weight 
 surface.CreateFont( "ExLoadingText", { font = "Arial", size = 16, weight = 700 } )
 surface.CreateFont( "ExRankText", { font = "Arial", size = 18, weight = 550 } )
 
-local fontTbl = {
-	font = "Arial",
-	size = 0,
-	weight = 700,
-}
-for I = 14, 128 do
-	fontTbl.size = I;
-	surface.CreateFont( "ExGenericText" .. I, fontTbl );
-end
-fontTbl.weight = 400
-for I = 14, 128 do
-	fontTbl.size = I;
-	surface.CreateFont( "ExGenericTextNoBold" .. I, fontTbl );
-end
-
 
 --[[ -----------------------------------
 	Function: exsto.Menu

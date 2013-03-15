@@ -49,7 +49,7 @@ function exsto.BuildPageListIcons( obj )
 		if !obj._Hide then
 
 			local button = vgui.Create( "ExPageIcon" )
-				button:SetIcon( "exsto/settings.png" )
+				button:SetIcon( obj:GetIcon() )
 				button:SetPage( obj )
 				button:SetSize( 95, 95 )
 			pnl.Holder:AddItem( button )

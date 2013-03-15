@@ -412,8 +412,11 @@ elseif CLIENT then
 	function PLUGIN:Init()
 		self.Page = exsto.Menu.CreatePage( "rankeditor", editorInit )
 			self.Page:SetTitle( "Rank Editor" )
-			self.Page:SetSearchable( true )
 			self.Page:OnBackstage( pushUpdate )
+			
+		self.ImmunityPage = exsto.Menu.CreatePage( "immunity", immunityInit )
+			self.ImmunityPage:SetTitle( "Immunity" )
+			self.ImmunityPage:SetChildOf( self.Page )
 			
 		self.Materials = {
 			Green = Material( "exsto/green.png" );

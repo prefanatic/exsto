@@ -39,6 +39,7 @@ function exsto.Menu.CreatePage( id, func )
 	obj:SetBuildCallback( func )
 	obj:SetFrameSize( 267, 430 )
 	obj:SetPanelStyle( "ExPanelScroller" )
+	obj:SetIcon( "exsto/settings.png" )
 	table.insert( exsto.Menu.Pages, obj )
 	
 	return obj
@@ -99,6 +100,15 @@ function page:SetSearchable( bool ) self._Searchable = bool end
 
 function page:SetUnaccessable() self._Hide = true end
 
+function page:SetChildOf( obj )
+	self._Parent = self._Parent or {}
+	obj._Child = obj._Child or {}
+
+	self:SetUnaccessable()
+	table.insert( self._Parent, obj )
+	table.insert( obj._Child, self )
+end
+
 function page:SetTitle( title )
 	self._Title = title
 end
@@ -106,6 +116,8 @@ end
 function page:SetIcon( icon )
 	self._Icon = icon
 end
+
+function page:GetIcon() return self._Icon end
 
 function page:SetFrameSize( w, h )
 	self._SizeW = w

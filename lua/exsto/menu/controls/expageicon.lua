@@ -25,6 +25,7 @@ function PANEL:Init()
 		IconSad = Color( 113, 113, 113, 255 );
 		IconHover = Color( 255, 255, 255, 255 );
 		White = Color( 255, 255, 255, 255 );
+		Text = Color( 255, 255, 255, 255 );
 	};
 	self.Background = Material( "exsto/grey_bg.png" )
 	
@@ -55,6 +56,14 @@ function PANEL:Paint()
 	
 	surface.SetMaterial( self._Mat )
 	surface.DrawTexturedRect( ( self:GetWide() / 2 ) - 32, ( self:GetTall() / 2 ) - 32, 64, 64 )
+	
+	-- Name
+	if self.Hovered then
+		self.Colors.Text = self.Colors.Sad;
+	else
+		self.Colors.Text = self.Colors.Hover;
+	end
+	draw.SimpleText( self._Page:GetTitle(), "ExGenericText14", self:GetWide() / 2, self:GetTall() - 14, self.Colors.Text, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 	
 end	
 
