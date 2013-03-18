@@ -95,12 +95,12 @@ function exsto.Menu.Initialize()
 		exsto.Menu.FrameScroller.Paint = function() end
 		
 	-- Create our buttons up top
-	exsto.Menu.BackButton = exsto.CreateImageButton( 6, 4, 26, 26, "exsto/back_norm.png", exsto.Menu.Frame )
+	exsto.Menu.BackButton = exsto.CreateImageButton( 6, 4, 64, 32, "exsto/back_norm.png", exsto.Menu.Frame )
 		exsto.Menu.BackButton._Disabled = true
 		exsto.Menu.BackButton.DoClick = exsto.Menu.BackButtonClick
 		
 	-- Create the new panel button
-	exsto.Menu.NewPage = exsto.CreateImageButton( 0, 4, 26, 26, "exsto/menu_highlight.png", exsto.Menu.Frame )
+	exsto.Menu.NewPage = exsto.CreateImageButton( 0, 4, 64, 32, "exsto/menu_highlight.png", exsto.Menu.Frame )
 		exsto.Menu.NewPage:MoveRightOf( exsto.Menu.BackButton, 6 )
 		exsto.Menu.NewPage.DoClick = exsto.Menu.NewPageClick
 		exsto.Menu.NewPage.DoRightClick = exsto.Menu.NewPageRightClick
@@ -129,6 +129,11 @@ function exsto.Menu.Initialize()
 		exsto.Menu.PageList:OnShowtime( exsto.BuildPageListIcons )
 		--exsto.Menu.PageList:SetPanelStyle( "DPanel" )
 
+	exsto.Menu.BuildPages()
+
+end
+
+function exsto.Menu.BuildPages()
 	if exsto.Menu.LastRank != LocalPlayer():GetRank() then
 		-- Finally, lets create these pages that we have, if they're not already created.
 		for _, obj in ipairs( exsto.Menu.Pages ) do
@@ -137,10 +142,9 @@ function exsto.Menu.Initialize()
 			end
 		end
 		exsto.Menu.LastRank = LocalPlayer():GetRank()
+		
+		exsto.Menu.PageList:Build()
 	end
-	
-	exsto.Menu.PageList:Build() -- We should build after the pages are created so we can throw them into the list of things we need to show.
-
 end
 
 --[[
@@ -351,6 +355,8 @@ function exsto.Menu.Open()
 	
 	if !exsto.Menu.QM then
 		exsto.Menu.Initialize() 
+	else
+		exsto.Menu.BuildPages()
 	end
 	
 	exsto.Menu.Frame:MakePopup()

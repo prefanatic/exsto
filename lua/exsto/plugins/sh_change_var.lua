@@ -275,6 +275,7 @@ elseif CLIENT then
 			self.Page:SetTitle( "Settings" )
 			self.Page:SetSearchable( true )
 			self.Page:OnShowtime( onShowtime )
+			self.Page:SetIcon( "exsto/settings.png" )
 	end
 	
 end

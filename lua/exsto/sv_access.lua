@@ -60,8 +60,8 @@ exsto.aLoader.ErrorHandle = exsto.CreateVariable( "ExRankErrorHandle",
 exsto.aLoader.ErrorHandle:SetPossible( "auto", "restore", "delrestore" )
 
 -- Hardcoded flags
-exsto.CreateFlag( "quickmenu", "Allows access to the quickmenu." )
-exsto.CreateFlag( "pagelist", "Allows access to the listing of pages in the menu." )
+--exsto.CreateFlag( "quickmenu", "Allows access to the quickmenu." )
+--exsto.CreateFlag( "pagelist", "Allows access to the listing of pages in the menu." )
 	
 --[[ -----------------------------------
 	Function: exsto.aLoader.CreateDefaults()

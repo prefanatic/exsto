@@ -46,7 +46,7 @@ function exsto.BuildPageListIcons( obj )
 	pnl.Holder:Clear()
 	-- Loop through our pages and create icons :)
 	for _, obj in pairs( exsto.Menu.Pages ) do
-		if !obj._Hide then
+		if !obj._Hide and LocalPlayer():IsAllowed( obj:GetID() ) then
 
 			local button = vgui.Create( "ExPageIcon" )
 				button:SetIcon( obj:GetIcon() )

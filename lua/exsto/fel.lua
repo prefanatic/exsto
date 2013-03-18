@@ -213,18 +213,18 @@ function db:CacheRefresh()
 	print( "FEL --> " .. self.dbName .. " --> Cache refreshing." )
 end	
 
--- TODO: This needs to be threaded after loads.
-function db:GetCacheData( thread )
-	self.Cache._cache = {}
-	self._cacheCount = 0
-	
-	local cacheData = self:Query( "SELECT COUNT(*) FROM " .. self.dbName, false )
+local function pass2( self, data )
+	self.Cache._cache = data or {}
+end
+
+local function pass( self, cacheData )
 	if cacheData[1] and cacheData[1]["COUNT(*)"] then
 		self._cacheCount = tonumber( cacheData[1]["COUNT(*)"] )
 	end
 
 	if self._cacheCount < 1024 or !self._cacheCount then
-		self.Cache._cache = self:Query( "SELECT * FROM " .. self.dbName, false ) or {}
+		local data = self:Query( "SELECT * FROM " .. self.dbName, thread, function( q, data ) pass2( self, data ) end ) or {}
+		if !threaded then self.Cache._cache = data end
 		return
 	end
 	
@@ -233,10 +233,19 @@ function db:GetCacheData( thread )
 	print( "FEL --> " .. self.dbName .. " --> Contains more than 1024 entries!  Grabbing " .. neededPackets .. " packets." )
 	
 	for I = 0, neededPackets - 1 do
-		table.Add( tmp, self:Query( "SELECT * FROM " .. self.dbName .. " LIMIT " .. I * 1000 .. ",1000", false ) )
+		table.Add( tmp, self:Query( "SELECT * FROM " .. self.dbName .. " LIMIT " .. I * 1000 .. ",1000", thread ) )
 	end
 	
 	self.Cache._cache = table.Copy( tmp )
+end
+
+-- TODO: This needs to be threaded after loads.
+function db:GetCacheData( thread )
+	self.Cache._cache = {}
+	self._cacheCount = 0
+	
+	local data = self:Query( "SELECT COUNT(*) FROM " .. self.dbName, thread, function( q, data ) pass( self, data ) end )
+	if !thread then pass( self, data ) end
 end
 
 function db:CheckIntegrity()
@@ -392,7 +401,7 @@ function db:OnQueryError( err, query )
 	end		
 end
 
-function db:Query( str, threaded )
+function db:Query( str, threaded, callback )
 	hook.Call( "FEL_OnQuery", nil, str, threaded )
 	
 	if self._mysqlSuccess == true and self._forcedLocal != true then -- We are MySQL baby
@@ -403,6 +412,10 @@ function db:Query( str, threaded )
 		if threaded == false then -- If we request not to be threaded.
 			self._mysqlQuery:wait()
 			return self._mysqlQuery:getData()
+		else
+			if callback then
+				self._mysqlQuery.onSuccess = callback
+			end
 		end
 	else
 		local result = sql.Query( str .. ";" )

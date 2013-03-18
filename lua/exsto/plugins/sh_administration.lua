@@ -455,12 +455,7 @@ elseif CLIENT then
 	
 	local function banInit( pnl )
 		pnl.Cat = pnl:CreateCategory( "Bans" )
-		
-		pnl.Holder = vgui.Create( "DPanel", pnl.Cat )
-			pnl.Holder.Paint = function() end
-			pnl.Holder:DockMargin( 4, 0, 4, 0 )
-			pnl.Holder:Dock( TOP )
-		
+
 		pnl.List = vgui.Create( "ExListView", pnl.Cat )
 			pnl.List:DockMargin( 4, 0, 4, 0 )
 			pnl.List:Dock( TOP )
@@ -478,12 +473,20 @@ elseif CLIENT then
 		exsto.CreateSender( "ExRequestBans" ):Send()
 	end
 	
+	local function banDetailsInit( pnl )
+	
+	end
+	
 	function PLUGIN:Init()
 		self.Bans = {};
 		self.Page = exsto.Menu.CreatePage( "banlist", banInit )
 			self.Page:SetTitle( "Bans" )
 			self.Page:SetSearchable( true )
 			self.Page:OnShowtime( onShowtime )
+		self.Details = exsto.Menu.CreatePage( "banlistdetails", banDetailsInit )
+			self.Details:SetTitle( "Details" )
+			self.Details:SetUnaccessable()
+			
 	end
 
 end 
