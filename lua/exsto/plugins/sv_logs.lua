@@ -31,7 +31,7 @@ function PLUGIN:ExInitialized()
 end
 
 function PLUGIN:CanTool( ply, tr, tool )
-	self:SaveEvent( self:Player( ply ) .. " has attempted to use tool (" .. tool .. ") on " .. IsValid( tr.Entity ) or "Unknown", "player" )
+	self:SaveEvent( self:Player( ply ) .. " has attempted to use tool (" .. tostring( tool ) .. ") on " .. IsValid( tr.Entity ) or "Unknown", "player" )
 end
 
 function PLUGIN:PlayerSpawnProp( ply, mdl )
