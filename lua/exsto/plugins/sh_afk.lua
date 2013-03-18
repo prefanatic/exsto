@@ -21,24 +21,24 @@ if SERVER then
 		return true
 	end
 	
-	PLUGIN:AddVariable({
-		Pretty = "AFK Time",
-		Dirty = "afktime",
-		Default = 5,
-		Description = "Sets the minutes until a player is marked AFK.",
-		OnChange = OnAFKTimeChange,
-	})
-	PLUGIN:AddVariable({
-		Pretty = "AFK Action",
-		Dirty = "afkaction",
-		Default = "message",
-		Description = "Action to be taken when a player is afk.",
-		Possible = {"message","kick","off"},
-	})
 	exsto.CreateFlag("afkkkickignore","Makes the group immune to the AFK Plugin's auto-kicker")
 	
 	function PLUGIN:Init()
-		afkTime = exsto.GetVar("afktime").Value * 60
+		self.AFKTime = exsto.CreateVariable( "ExAFKDelay",
+			"Mark Delay",
+			5,
+			"Time in minutes until a player is marked AFK."
+		)
+		self.AFKTime:SetCategory( "AFK" )
+		self.AFKTime:SetCallback( OnAFKTimeChange )
+		
+		self.AFKAction = exsto.CreateVariable( "ExAFKAction",
+			"Action",
+			"message",
+			"Action to be taken when a player goes AFK.\n - 'message' : State the player is AFK.\n - 'kick' : Kick the player.\n - 'off' : As stated."
+		)
+		self.AFKAction:SetCategory( "AFK" )
+		self.AFKAction:SetPossible( "message", "kick", "off" )
 	end
 	
 	function PLUGIN:ExInitSpawn(ply)
@@ -51,7 +51,7 @@ if SERVER then
 		local time = CurTime()
 		if (time - lastThink) > 1 then
 			for _, ply in ipairs(player.GetAll()) do
-				if ply.lastMoved and (time - ply.lastMoved) > afkTime then
+				if ply.lastMoved and (time - ply.lastMoved) > self.AFKTime:GetValue()*60 then
 					CheckAFK(ply)
 				end
 			end
@@ -68,7 +68,7 @@ if SERVER then
 	function ReceiveAFKInfo(msg)
 		local ply = msg:ReadEntity()
 		local timeMoved = msg:ReadShort()
-		local time = afkTime-CurTime()+timeMoved
+		local time = (PLUGIN.AFKTime:GetValue()*60)-CurTime()+timeMoved
 		local mode = exsto.GetVar("afkaction").Value
 		
 		if time < 0 then

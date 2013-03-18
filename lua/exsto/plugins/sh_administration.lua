@@ -413,7 +413,8 @@ elseif CLIENT then
 		local time = os.date( "%c", tbl.BannedAt + tbl.Length*60 )
 		if tbl.Length == 0 then time = "permanent" end 
 		
-		pnl.List:AddLine( tbl.Name, time )
+		local line = pnl.List:AddLine( tbl.Name, time )
+			line.Data = tbl
 		
 		invalidate()
 	end
@@ -427,6 +428,8 @@ elseif CLIENT then
 			addBan( tbl );
 		end
 		invalidate()
+		
+		PrintTable( PLUGIN.Bans )
 	end
 	
 	local function redBanRemove( reader )
@@ -453,6 +456,13 @@ elseif CLIENT then
 	end
 	exsto.CreateReader( "ExRecBan", recBanAdd )
 	
+	local function onRowSelected( lst, id, line )
+		PLUGIN.WorkingBan = line.Data
+		exsto.Menu.EnableBackButton()
+		
+		exsto.Menu.OpenPage( PLUGIN.Details )
+	end
+	
 	local function banInit( pnl )
 		pnl.Cat = pnl:CreateCategory( "Bans" )
 
@@ -462,6 +472,8 @@ elseif CLIENT then
 			pnl.List:DisableScrollbar()
 			pnl.List:AddColumn( "Name" )
 			pnl.List:AddColumn( "Time Unbanned" )
+			
+			pnl.List.OnRowSelected = onRowSelected
 			
 		-- This needs to be run after a list has been filled with contents.
 		invalidate()
@@ -474,7 +486,29 @@ elseif CLIENT then
 	end
 	
 	local function banDetailsInit( pnl )
+		pnl.Cat = pnl:CreateCategory( "Details" )
+		
+		--pnl.PlayerInfo = vgui.Create( "ExPlayerView", pnl.Cat )
+			--pnl.PlayerInfo:Dock( TOP )
+			
+		pnl.Unban = vgui.Create( "ExButton", pnl.Cat )
+			pnl.Unban:Text( "Unban Player" )
+			pnl.Unban:MaxFontSize( 24 )
+			pnl.Unban:Dock( TOP )
+			
+	end
 	
+	local function backFunction( obj )
+		exsto.Menu.OpenPage( PLUGIN.Page )
+		exsto.Menu.DisableBackButton()
+		
+		PLUGIN.WorkingBan = nil
+	end
+	
+	local function detailOnShowtime( obj )
+		if !PLUGIN.WorkingBan then obj:Error( "Unable to load details." ) end
+		
+		--obj.Content.PlayerInfo:SetBanTable( PLUGIN.WorkingBan )
 	end
 	
 	function PLUGIN:Init()
@@ -486,6 +520,8 @@ elseif CLIENT then
 		self.Details = exsto.Menu.CreatePage( "banlistdetails", banDetailsInit )
 			self.Details:SetTitle( "Details" )
 			self.Details:SetUnaccessable()
+			self.Details:SetBackFunction( backFunction )
+			self.Details:OnShowtime( detailOnShowtime )
 			
 	end
 

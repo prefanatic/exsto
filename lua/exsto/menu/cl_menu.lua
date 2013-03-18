@@ -313,12 +313,15 @@ end
 ]]
 
 function exsto.Menu.HoldFocus( pnl )
+	if !exsto.Menu.Frame then return end
+	
 	exsto.Menu.HoldingFocus = pnl
 	exsto.Menu.Frame:SetKeyboardInputEnabled( true )
 	exsto.Menu.OpenLock = true
 end
 
 function exsto.Menu.LoseFocus( pnl )
+	if !exsto.Menu.Frame then return end
 	if exsto.Menu.HoldingFocus != pnl then return end -- This isn't ours to mess with!
 	
 	exsto.Menu.Frame:SetKeyboardInputEnabled( false )
