@@ -12,13 +12,14 @@ PLUGIN:SetInfo({
 
 if SERVER then
 
-	PLUGIN:AddVariable({
-		Pretty = "Admin Only Noclip",
-		Dirty = "admin_noclip",
-		Default = false,
-		Description = "Makes it so only admins can noclip",
-		Possible = { true, false }
-	})
+	function PLUGIN:Init()
+		self.AdminOnly = exsto.CreateVariable( "ExNoclipAdmin",
+			"Admin Only",
+			false,
+			"Makes it so only admins can noclip"
+		)
+		self.AdminOnly:SetCategory( "Noclip" )
+	end
 	
 	exsto.CreateFlag( "cannoclip", "Allows users to noclip." )
 
@@ -65,7 +66,7 @@ function PLUGIN:PlayerNoClip( ply )
 	
 	if SERVER then
 
-		if exsto.GetVar( "admin_noclip" ).Value and !ply:IsAdmin() then
+		if self.AdminOnly:GetValue() and !ply:IsAdmin() then
 			return false
 		end
 		

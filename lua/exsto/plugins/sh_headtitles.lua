@@ -21,13 +21,15 @@ if SERVER then
 			SteamID = "VARCHAR(50):primary:not_null";
 			Title = "TEXT";
 		} )
-	
-	PLUGIN:AddVariable({
-		Pretty = "Title Limit",
-		Dirty = "title_limit",
-		Default = 50,
-		Description = "The limit to the number of letters in a player head title.",
-	})
+		
+	function PLUGIN:Init()
+		self.Limit = exsto.CreateVariable( "ExTitleLimit",
+			"Limit",
+			50,
+			"The limit of letters in a players title."
+		)
+		self.Limit:SetCategory( "Titles" )
+	end	
 
 	function PLUGIN:ExInitSpawn( ply, sid )
 		-- Load their data.
@@ -42,7 +44,7 @@ if SERVER then
 	end
 	
 	function PLUGIN:SetPlayerTitle( caller, ply, title )
-		if title:len() > exsto.GetVar( "title_limit" ).Value then
+		if title:len() > self.Limit:GetValue() then
 			return { caller, COLOR.NORM, "You cannot set your title to contain more than ", COLOR.NAME, tostring( exsto.GetVar( "title_limit" ).Value ) .. "nipples?", COLOR.NORM, " characters!" }
 		end
 		
@@ -68,7 +70,7 @@ if SERVER then
 	})
 
 	function PLUGIN:SetTitle( caller, title )
-		if title:len() > exsto.GetVar( "title_limit" ).Value then
+		if title:len() > self.Limit:GetValue() then
 			return { caller, COLOR.NORM, "You cannot set your title to contain more than ", COLOR.NAME, exsto.GetVar( "title_limit" ).Value, COLOR.NORM, "characters!" }
 		end
 		

@@ -69,7 +69,7 @@ if SERVER then
 		local ply = msg:ReadEntity()
 		local timeMoved = msg:ReadShort()
 		local time = (PLUGIN.AFKTime:GetValue()*60)-CurTime()+timeMoved
-		local mode = exsto.GetVar("afkaction").Value
+		local mode = PLUGIN.AFKAction:GetValue()
 		
 		if time < 0 then
 			if !ply.isAFK then

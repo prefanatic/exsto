@@ -13,9 +13,39 @@ if SERVER then
 
 	util.AddNetworkString( "ExChatPlug_RankColors" )
 	util.AddNetworkString( "ExChatPlug_AdminBlink" )
+	
+	local OnVarChange2 = function( val )
+		for k,v in pairs( player.GetAll() ) do
+			PLUGIN:SetRankColors( v, val )
+		end
+		return true
+	end
+	
+	local OnVarChange1 = function( old, val )
+		for k,v in pairs( player.GetAll() ) do
+			PLUGIN:SetAdminBlink( v, val )
+		end
+		return true
+	end
 
 	function PLUGIN:Init()
 		resource.AddFile( "sound/name_said.wav" )
+		
+		self.NativeColors = exsto.CreateVariable( "ExNativeColors",
+			"Native Colors",
+			false,
+			"Enable Exsto to override team colors w/ rank colors."
+		)
+		self.NativeColors:SetCategory( "Chat" )
+		self.NativeColors:SetCallback( OnVarChange2 )
+		
+		self.Blink = exsto.CreateVariable( "ExChatBlink",
+			"Admin Blink",
+			false,
+			"Enable Exsto to blink superadmin chat messages."
+		)
+		self.Blink:SetCallback( OnVarChange1 )
+		self.Blink:SetCategory( "Chat" )
 	end
 	
 	function PLUGIN:ToggleAnims( owner )
@@ -41,36 +71,6 @@ if SERVER then
 		end
 	end
 	
-	local OnVarChange = function( val )
-		for k,v in pairs( player.GetAll() ) do
-			PLUGIN:SetRankColors( v, val )
-		end
-		return true
-	end
-	PLUGIN:AddVariable({
-		Pretty = "Override Team Colors with Exsto Colors",
-		Dirty = "native_exsto_colors",
-		Default = false,
-		Description = "Enable to have Exsto over-ride team colors with rank colors.",
-		OnChange = OnVarChange,
-		Possible = { true, false }
-	})
-	
-	local OnVarChange = function( val )
-		for k,v in pairs( player.GetAll() ) do
-			PLUGIN:SetAdminBlink( v, val )
-		end
-		return true
-	end
-	PLUGIN:AddVariable({
-		Pretty = "Chat Superadmin Blink",
-		Dirty = "chat_super_blink",
-		Default = false,
-		Description = "Enable to have Exsto blink superadmin chat messages.",
-		OnChange = OnVarChange,
-		Possible = { true, false }
-	})
-	
 	function PLUGIN:SetAdminBlink( ply, val )
 		local sender = exsto.CreateSender( "ExChatPlug_AdminBlink", ply )
 			sender:AddBool( val )
@@ -84,8 +84,8 @@ if SERVER then
 	end
 	
 	function PLUGIN:ExClientPluginsReady( ply )
-		self:SetAdminBlink( ply, exsto.GetVar( "chat_super_blink" ).Value )
-		self:SetRankColors( ply, exsto.GetVar( "native_exsto_colors" ).Value )
+		self:SetAdminBlink( ply, self.Blink:GetValue() )
+		self:SetRankColors( ply, self.NativeColors:GetValue() )
 	end
 	
 elseif CLIENT then

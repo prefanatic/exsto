@@ -72,15 +72,18 @@ function Grammar(Message)
      
 	return Message
 end
-PLUGIN:AddVariable({
-	Pretty = "Grammar correction",
-	Dirty = "grammar",
-	Default = false,
-	Description = "Forces the Grammar plugin on.",
-})
+
+function PLUGIN:Init()
+	self.Correct = exsto.CreateVariable( "ExGrammarCorrect",
+		"Correct",
+		false,
+		"Enables grammar correction."
+	)
+	self.Correct:SetCategory( "Grammar" )
+end
 
 function PLUGIN:PlayerSay(ply,text,team,dead)
-	local Active = exsto.GetVar("grammar").Value or ply.Grammar == true
+	local Active = self.Correct:GetValue() or ply.Grammar == true
 	local match = 0
 	if Active and text and type(text) == "string" && text != "" then --Nothing seems to work, so I'll try EVERYTHING. =3
         for i,com in pairs(exsto.Commands) do

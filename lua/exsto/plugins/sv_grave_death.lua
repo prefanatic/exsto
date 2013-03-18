@@ -10,22 +10,22 @@ PLUGIN:SetInfo({
 	Owner = "Prefanatic",
 } )
 
-PLUGIN:AddVariable({
-	Pretty = "Grave Style",
-	Dirty = "grave_type",
-	Default = "leaveonspawn",
-	Description = "How the grave leaves after falling.",
-	Possible = { "fade", "sink", "leaveonspawn" },
-})
-
-PLUGIN:AddVariable({
-	Pretty = "Grave Sink Rate",
-	Dirty = "grave_sinkrate",
-	Default = 5,
-	Description = "How long until the grave sinks with the sink variable.",
-})
-
 function PLUGIN:Init()
+
+	self.Style = exsto.CreateVariable( "ExGraveStyle",
+		"Style",
+		"leaveonspawn",
+		"How the grave leaves after falling.\n - 'fade' : Fades on leave.\n - 'sink' : Sinks into the ground.\n - 'leaveonspawn' : Stays until the user spawns."
+	)
+	self.Style:SetCategory( "Graves" )
+	self.Style:SetPossible( "fade", "sink", "leaveonspawn" )
+	
+	self.SinkRate = exsto.CreateVariable( "ExGraveSinkRate",
+		"Sink Rate",
+		5,
+		"How long until the grave sinks, if 'sink' is set."
+	)
+	self.SinkRate:SetCategory( "Graves" )
 	
 	self.RandomDeathMessages = { "He couldn't load the death messages file." }
 
@@ -81,7 +81,7 @@ end
 
 local function Sink( ent )
 
-	if ent.FallenTime + tonumber( exsto.GetVar( "grave_sinkrate" ).Value ) < CurTime() then
+	if ent.FallenTime + tonumber( PLUGIN.SinkRate:GetValue() ) < CurTime() then
 		
 		local pos = ent:GetPos()
 		local to = ent.HitPos.z - ( ent.Height )
@@ -208,9 +208,9 @@ function PLUGIN:PlayerDeath( victim, _, killer )
 				
 			elseif ent.Fallen then
 
-				if exsto.GetVar( "grave_type" ).Value == "fade" then Fade( ent ) end
-				if exsto.GetVar( "grave_type" ).Value == "sink" then Sink( ent ) end
-				if exsto.GetVar( "grave_type" ).Value == "leaveonspawn" then BuildWormsMessage( ent, victim ) end
+				if self.Style:GetValue() == "fade" then Fade( ent ) end
+				if self.Style:GetValue() == "sink" then Sink( ent ) end
+				if self.Style:GetValue() == "leaveonspawn" then BuildWormsMessage( ent, victim ) end
 				
 			end
 			
