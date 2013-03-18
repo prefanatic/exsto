@@ -11,7 +11,7 @@ end
 	----------------------------------- ]]
 function exsto.GetInheritedFlags( id )
 	local rank = exsto.Ranks[ id ]
-	local tbl = table.Copy( rank.Inherit )
+	local tbl = table.Copy( rank.Inherit ) or {}
 	
 	if rank.Parent != "NONE" then
 		table.Add( tbl, exsto.GetInheritedFlags( rank.Parent ) )

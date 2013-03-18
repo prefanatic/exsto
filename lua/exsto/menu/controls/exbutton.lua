@@ -92,7 +92,7 @@ function PANEL:SetFontStyle( t, exfont )
 	if t == "resize" then
 		
 		-- Resize the font to fit our panel's size.
-		local w, h = self:GetMaxTextWide(), self:GetTall()
+		local w, h = self:GetMaxTextWide(), ( self:GetTall() - 14 )
 			w = w or self:GetWide()
 		
 		local workingSize, tw, th = self:GetMaxFontSize()
@@ -102,8 +102,10 @@ function PANEL:SetFontStyle( t, exfont )
 			
 			-- Work with text padding
 			tw = tw + ( self:GetTextPadding() * 2 )
+			th = th + ( self:GetTextPadding() * 2 )
 			
 			if ( tw < w ) or workingSize == 14 then break end -- If we are smaller than our size.
+			if ( th < h ) or workingSize == 14 then break end
 			
 			-- Otherwise, lets go down to the next font size
 			workingSize = workingSize - 1

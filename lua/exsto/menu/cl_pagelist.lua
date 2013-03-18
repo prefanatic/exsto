@@ -52,6 +52,21 @@ function exsto.BuildPageListIcons( obj )
 				button:SetIcon( obj:GetIcon() )
 				button:SetPage( obj )
 				button:SetSize( 95, 95 )
+				
+				if obj._Child then 
+					button:SetSize( ( 95 * 2 ) + 12, 95 ) 
+					
+					button.DoRightClick = function()
+						local lst = DermaMenu()
+						for _, child in ipairs( obj._Child ) do
+							local option = lst:AddOption( child:GetTitle(), function() exsto.Menu.OpenPage( child ) end )
+								option:SetImage( child:GetIcon() )
+								option.m_Image:SetSize( 16, 16 )
+								option.m_Image:SetImageColor( Color( 113, 113, 113, 255 ) ) 
+						end
+					end
+
+				end
 			pnl.Holder:AddItem( button )
 		end
 	end

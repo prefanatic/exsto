@@ -95,12 +95,12 @@ function exsto.Menu.Initialize()
 		exsto.Menu.FrameScroller.Paint = function() end
 		
 	-- Create our buttons up top
-	exsto.Menu.BackButton = exsto.CreateImageButton( 6, 4, 39, 25, "exsto/back_norm.png", exsto.Menu.Frame )
+	exsto.Menu.BackButton = exsto.CreateImageButton( 6, 4, 26, 26, "exsto/back_norm.png", exsto.Menu.Frame )
 		exsto.Menu.BackButton._Disabled = true
 		exsto.Menu.BackButton.DoClick = exsto.Menu.BackButtonClick
 		
 	-- Create the new panel button
-	exsto.Menu.NewPage = exsto.CreateImageButton( 0, 4, 39, 25, "exsto/menu_highlight.png", exsto.Menu.Frame )
+	exsto.Menu.NewPage = exsto.CreateImageButton( 0, 4, 26, 26, "exsto/menu_highlight.png", exsto.Menu.Frame )
 		exsto.Menu.NewPage:MoveRightOf( exsto.Menu.BackButton, 6 )
 		exsto.Menu.NewPage.DoClick = exsto.Menu.NewPageClick
 		exsto.Menu.NewPage.DoRightClick = exsto.Menu.NewPageRightClick
@@ -128,10 +128,15 @@ function exsto.Menu.Initialize()
 		exsto.Menu.PageList:SetUnaccessable()
 		exsto.Menu.PageList:OnShowtime( exsto.BuildPageListIcons )
 		--exsto.Menu.PageList:SetPanelStyle( "DPanel" )
-	
-	-- Finally, lets create these pages that we have, if they're not already created.
-	for _, obj in ipairs( exsto.Menu.Pages ) do
-		if !obj.Content then obj:Build() end
+
+	if exsto.Menu.LastRank != LocalPlayer():GetRank() then
+		-- Finally, lets create these pages that we have, if they're not already created.
+		for _, obj in ipairs( exsto.Menu.Pages ) do
+			if obj:GetID() != "pagelist" and obj:GetID() != "quickmenu" then
+				obj:Build()
+			end
+		end
+		exsto.Menu.LastRank = LocalPlayer():GetRank()
 	end
 	
 	exsto.Menu.PageList:Build() -- We should build after the pages are created so we can throw them into the list of things we need to show.
@@ -277,6 +282,8 @@ function exsto.Menu.GetPages()
 end
 
 function exsto.Menu.OpenPage( obj ) -- I don't know if there is anything that we need to do.
+	if !LocalPlayer():IsAllowed( obj:GetID() ) then obj:Debug( "Denied access." ) return end
+	
 	-- Slide our old page to the right, new comes in the left.
 	if exsto.Menu.ActivePage and exsto.Menu.ActivePage:IsValid() then
 		exsto.Menu.ActivePage:Backstage()

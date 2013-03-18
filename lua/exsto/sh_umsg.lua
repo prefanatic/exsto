@@ -50,6 +50,7 @@ exsto.Net = {
 		"ExClientPrint";
 		"ExSendVariable";
 		"ExRecRankErr";
+		"ExCreateFlag";
 	},
 	NotifiedNetStrings = {}
 }
@@ -142,6 +143,19 @@ if SERVER then
 		end
 		exsto.CreateSender( "ExRecievedRanks", ply ):Send()
 	end
+	
+--[[ -----------------------------------
+	Function: createFlagFromClient
+	Description: Creates a flag from the client.
+     ----------------------------------- ]]	
+	local function createFlagFromClient( reader )
+		local ply = reader:ReadSender()
+		local flag = reader:ReadString()
+		
+		exsto.Debug( "Flags --> Creating '" .. flag .. "' from client '" .. ply:Nick() .. "'", 1 )
+		exsto.CreateFlag( flag, reader:ReadString() )
+	end
+	exsto.CreateReader( "ExCreateFlag", createFlagFromClient )
 	
 --[[ -----------------------------------
 	Function: meta:Send

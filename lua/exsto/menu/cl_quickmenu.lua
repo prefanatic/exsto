@@ -358,7 +358,7 @@ function qm.CreateCommandWindow( pnl )
 				
 			local comboObj
 			for id, comdata in SortedPairsByMemberValue( exsto.Commands, "DisplayName", false ) do
-				if comdata.QuickMenu and string.find( comdata.DisplayName, search or "" ) then
+				if comdata.QuickMenu and string.find( comdata.DisplayName, search or "" ) and LocalPlayer():IsAllowed( id ) then
 					comboObj = pnl.CommandList:AddLine( comdata.DisplayName )
 						comboObj.Columns[1]:SetFont( "ExGenericTextMidBold16" )
 						comboObj.Type = "COMMAND"

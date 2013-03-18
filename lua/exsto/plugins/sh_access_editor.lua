@@ -12,6 +12,7 @@ if SERVER then
 	util.AddNetworkString( "ExPushRankToSrv" )
 	util.AddNetworkString( "ExRecImmuneChange" )
 	util.AddNetworkString( "ExDelRankFromClient" )
+	util.AddNetworkString( "ExUpImmunity" )
 	
 	function PLUGIN:Init()
 		exsto.CreateFlag( "rankeditor", "Allows users to edit ranks in the menu." )
@@ -72,6 +73,18 @@ if SERVER then
 		end )
 	end
 	exsto.CreateReader( "ExPushRankToSrv", PLUGIN.CommitChanges )
+	
+	function PLUGIN:UpdateImmunity( reader )
+		local id = reader:ReadString()
+		local im = reader:ReadShort()
+		
+		self:Debug( "Updating immunity for '" .. id .. "' to '" .. im .. "'" )
+		exsto.RankDB:AddRow( {
+			ID = id;
+			Immunity = im;
+		} )
+	end
+	PLUGIN:CreateReader( "ExUpImmunity", PLUGIN.UpdateImmunity )
 
 	function PLUGIN.WriteImmunityData( reader )
 		exsto.RankDB:AddRow( {
@@ -408,6 +421,49 @@ elseif CLIENT then
 			
 		refreshEditor()
 	end
+	
+	local function updateImm( obj )
+		local pnl = obj.Content
+		
+		pnl.List:Clear()
+		for id, rank in SortedPairsByMemberValue( exsto.Ranks, "Immunity", false ) do
+			if id != "srv_owner" then
+				print( rank.Immunity, id )
+				local btn = pnl.List:Add( "ExButton" )
+					btn:Text( rank.Name )
+					btn.ID = id
+					btn:Dock( TOP )
+					btn:DockMargin( 0, 0, 0, 4 )
+					btn:SetTall( 47 )
+					btn:MaxFontSize( 44 )
+			end
+		end
+		pnl.List:InvalidateLayout( true )
+		pnl.Cat:InvalidateLayout( true )
+	end
+	
+	local function immunityInit( pnl )
+		pnl.Cat = pnl:CreateCategory( "Immunity" )
+		
+		pnl.List = vgui.Create( "DIconLayout", pnl.Cat )
+			pnl.List:Dock( TOP )
+			pnl.List:DockMargin( 4, 0, 4, 4 )
+			pnl.List:SetSpaceY( 20 )
+			pnl.List:MakeDroppable( "ImmunityDrop", false )
+			pnl.List.OnModified = function()
+				local imm = 1
+				for _, obj in ipairs( pnl.List:GetChildren() ) do
+					local sender = exsto.CreateSender( "ExUpImmunity" )
+						sender:AddString( obj.ID )
+						sender:AddShort( imm )
+					sender:Send()
+					
+					print( imm, obj.ID )
+					
+					imm = imm + 1
+				end
+			end
+	end
 
 	function PLUGIN:Init()
 		self.Page = exsto.Menu.CreatePage( "rankeditor", editorInit )
@@ -417,6 +473,7 @@ elseif CLIENT then
 		self.ImmunityPage = exsto.Menu.CreatePage( "immunity", immunityInit )
 			self.ImmunityPage:SetTitle( "Immunity" )
 			self.ImmunityPage:SetChildOf( self.Page )
+			self.ImmunityPage:OnShowtime( updateImm )
 			
 		self.Materials = {
 			Green = Material( "exsto/green.png" );
