@@ -76,6 +76,14 @@ function FEL.Init()
 end
 FEL.Init()
 
+function FEL.Print( msg )
+	print( "FEL --> " .. msg )
+end
+
+function FEL.Debug( msg )
+	print( "[FELDebug] " .. msg )
+end
+
 local db = {
 	dbName;
 	Cache = {};
@@ -111,6 +119,14 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	end
 	
 	return obj
+end
+
+function db:Print( msg )
+	FEL.Print( self.dbName .. " --> " .. msg )
+end
+
+function db:Debug( msg )
+	FEL.Debug( self.dbName .. " --> " .. msg )
 end
 
 function db:OnMySQLConnect()
@@ -213,16 +229,28 @@ function db:CacheRefresh()
 	print( "FEL --> " .. self.dbName .. " --> Cache refreshing." )
 end	
 
+local function pass3( self, data, tbl, index, max )
+	table.Add( tbl, data )
+	
+	if index == max then
+		self.Cache._cache = table.Copy( tbl )
+	end
+end
+
 local function pass2( self, data )
 	self.Cache._cache = data or {}
 end
 
 local function pass( self, cacheData )
+	self:Debug( "First cache pass." )
+	
 	if cacheData[1] and cacheData[1]["COUNT(*)"] then
 		self._cacheCount = tonumber( cacheData[1]["COUNT(*)"] )
 	end
 
 	if self._cacheCount < 1024 or !self._cacheCount then
+		self:Debug( "Need to grab multiple packets.  Number of entries: " .. tostring( self._cacheCount ) )
+		
 		local data = self:Query( "SELECT * FROM " .. self.dbName, thread, function( q, data ) pass2( self, data ) end ) or {}
 		if !threaded then self.Cache._cache = data end
 		return
@@ -230,19 +258,22 @@ local function pass( self, cacheData )
 	
 	local tmp = {}
 	local neededPackets = math.ceil( self._cacheCount / 1000 )
-	print( "FEL --> " .. self.dbName .. " --> Contains more than 1024 entries!  Grabbing " .. neededPackets .. " packets." )
 	
 	for I = 0, neededPackets - 1 do
-		table.Add( tmp, self:Query( "SELECT * FROM " .. self.dbName .. " LIMIT " .. I * 1000 .. ",1000", thread ) )
+		self:Debug( "Grabbing packet '" .. tostring( I ) .. "' out of '" .. tostring( neededPackets - 1 ) .. "'" )
+		
+		local data = self:Query( "SELECT * FROM " .. self.dbName .. " LIMIT " .. I * 1000 .. ",1000", thread, function( q, data ) pass3( self, data, tmp, I, neededPackets - 1 ) end )
+		if !threaded then pass3( self, data, tmp, I, neededPackets - 1 ) end
 	end
 	
-	self.Cache._cache = table.Copy( tmp )
 end
 
 -- TODO: This needs to be threaded after loads.
 function db:GetCacheData( thread )
 	self.Cache._cache = {}
 	self._cacheCount = 0
+	
+	self:Debug( "Grabbing cache data.  Threaded: " .. tostring( thread ) )
 	
 	local data = self:Query( "SELECT COUNT(*) FROM " .. self.dbName, thread, function( q, data ) pass( self, data ) end )
 	if !thread then pass( self, data ) end
@@ -424,6 +455,9 @@ function db:Query( str, threaded, callback )
 			-- An error, holy buggers!
 			self:OnQueryError( sql.LastError() )
 		else
+			if callback then -- Call it.
+				callback( str, result )
+			end
 			return result
 		end
 	end
