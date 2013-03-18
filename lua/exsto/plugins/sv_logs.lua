@@ -30,8 +30,17 @@ function PLUGIN:ExInitialized()
 	self:SaveEvent( "Exsto has finished loading.", "server" )
 end
 
+function PLUGIN:FormatEntity( ent )
+	if ent:GetClass() == "worldspawn" then
+		return game.GetMap()
+	elseif ent:GetClass() == "prop_physics" then
+		return ent:GetModel()
+	end
+	return ent:GetClass()
+end
+
 function PLUGIN:CanTool( ply, tr, tool )
-	self:SaveEvent( self:Player( ply ) .. " has attempted to use tool (" .. tostring( tool ) .. ") on " .. IsValid( tr.Entity ) or "Unknown", "player" )
+	self:SaveEvent( self:Player( ply ) .. " has attempted to use tool (" .. tostring( tool ) .. ") on " .. ( tr.Entity and self:FormatEntity( tr.Entity ) ) or "Unknown", "player" )
 end
 
 function PLUGIN:PlayerSpawnProp( ply, mdl )

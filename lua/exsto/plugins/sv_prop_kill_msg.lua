@@ -9,13 +9,14 @@ PLUGIN:SetInfo({
 	Owner = "Hobo",
 })
 
-PLUGIN:AddVariable({
-	Pretty = "Prop kill messages",
-	Dirty = "propkillmsg",
-	Default = true,
-	Description = "If propkill messages are shown in admin's consoles or not (Only with FPP or SPP).",
-	Possible = {"true","false"},
-})
+function PLUGIN:Init()
+	self.Enable = exsto.CreateVariable( "ExPropKillMessage",
+		"Kill Message",
+		true,
+		"If propkill messages are shown in admin's consoles or not (Only with FPP or SPP)."
+	)
+	self.Enable:SetCategory( "Props" )
+end
 
 function PLUGIN:AdminPrint(msg)
 	for i,ply in pairs (player.GetAll()) do
@@ -25,7 +26,7 @@ end
 
 function PLUGIN:PlayerDeath(victim,inflictor,killer)
 	inflictor = inflictor or ""
-	if exsto.GetVar("propkillmsg").Value then
+	if self.Enable:GetValue() then
 		if killer:GetClass() != "player" and victim != killer then
 			if FPP or SPP then
 				local Msg = "[Propkill] "..victim:Nick().." was killed by "..killer:GetClass().." owned by "
