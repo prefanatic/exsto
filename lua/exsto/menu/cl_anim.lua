@@ -23,6 +23,115 @@ exsto.Animations = {
 	Math = "smooth";
 }
 
+local function constructMeta( obj )
+	
+	-- Backup old functions
+	obj._Old = {
+		GetPos = obj.GetPos;
+		SetPos = obj.SetPos;
+	}
+	
+	-- Create new ones!
+	local x, y = obj:GetPos()
+	obj.__ANIMDATA = {
+		CurX = x;
+		CurY = y;
+		ProgX = x;
+		ProgY = y;
+	}
+	
+	obj.GetPos = function( o )
+		return o:GetAnimationData().CurX, o:GetAnimationData().CurY
+	end
+	
+	obj.GetSeriousPos = function( o )
+		return o:GetAnimationData().ProgX, o:GetAnimationData().ProgY 
+	end
+	
+	obj.SetPos = function( o, x, y )
+		o:GetAnimationData().ProgX = x or 0;
+		o:GetAnimationData().ProgY = y or 0;
+	end
+	
+	obj.ForcePos = function( o, x, y )
+		o:SetPos( x, y )
+		o:SetAnimationPos( x, y )
+	end		
+	
+	obj.ForceAnimationRefresh = function( o )
+		o.__ANIMFORCE = true
+	end
+	
+	obj.GetAnimationTable = function( o )
+		return exsto.Animations.Handle[ o.__ANIMID ]
+	end
+	
+	obj.GetAnimationData = function( o )
+		return o:GetAnimationTable().__ANIMDATA
+	end
+	
+	obj.GetAnimationDelta = function( o, a, b )
+		return RealFrameTime() * ( ( b - a ) / o:GetAnimationMul()  ) * 40
+	end
+	
+	obj.SetAnimationMul = function( o, mul )
+		o.__ANIMMUL = mul
+	end
+	
+	obj.GetAnimationMul = function( o )
+		return o.__ANIMMUL
+	end
+	
+	obj.SetAnimationPos = function( o, x, y )
+		o:GetAnimationData().CurX = x or 0;
+		o:GetAnimationData().CurY = y or 0;
+		o._Old.SetPos( o, x, y )
+	end
+	
+end
+
+function exsto.Animations.Create( obj )
+
+	-- Insert him into our handle.
+	local id = table.insert( exsto.Animations.Handle, obj )
+	obj.__ANIMID = id;
+	
+	-- Construct meta helpers.
+	constructMeta( obj )
+	
+	obj:SetAnimationMul( 2 )
+	
+end
+
+function exsto.Animations.Think()
+	
+	-- Loop through our handled objects.
+	for _, obj in ipairs( exsto.Animations.Handle ) do
+		-- Make sure they're valid first.
+		if obj and obj:IsValid() then
+		
+			-- Position Animations
+			local x, y = obj:GetPos()
+			local progX, progY = obj:GetAnimationData().ProgX, obj:GetAnimationData().ProgY
+			
+			if x != progX or y != progY or obj.__ANIMFORCE then
+				obj.__ANIMFORCE = false
+				
+				obj:SetAnimationPos( x + obj:GetAnimationDelta( x, progX ), y + obj:GetAnimationDelta( y, progY ) )
+			end
+		
+		else
+			-- Remove invalid.
+			exsto.ErrorNoHalt( "Animations --> Invalid object caught in animation table.  Removing." )
+			
+			obj:Remove()
+			exsto.Animations.Handle[ _ ] = nil
+		end
+	end
+	
+end
+hook.Add( "Think", "ExAnimationThink", exsto.Animations.Think )
+
 local function storeOldFunctions( obj )
 	local getPos = obj.GetPos
 	local setPos = obj.SetPos

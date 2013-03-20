@@ -16,15 +16,6 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
---[[
-	Exsto's Main Menu
-	-- Designed for https://dl.dropbox.com/u/3913710/Prefan/exsto3.png
-	-- Has multiple ways to get in, default page will be "quickmenu"
-	-- Entire background is going to be a DPanel.  Center content will span a header down from top of the screen.
-	-- Search bar will be on bottom, opens an omnibox with search results.
-	-- Page will have a full screen access, from left to right, disregarding space from above.
-]]
-
 exsto.Menu = {
 	Pages = {};
 	ActivePage = nil;
@@ -82,28 +73,43 @@ function exsto.Menu.Initialize()
 			--btn:GetParent():Close()
 			exsto.Menu.Close()
 		end
+	exsto.Animations.Create( exsto.Menu.Frame )
 		
 	-- Our amazing logo.
 	-- TODO: Lets have this be our close button :0
 	exsto.Menu.Logo = vgui.Create( "DImage", exsto.Menu.Frame )
-		exsto.Menu.Logo:SetPos( exsto.Menu.Frame:GetWide() - 129, 1 )
+		exsto.Menu.Logo:SetPos( exsto.Menu.Frame:GetWide() - 129, -10 )
 		exsto.Menu.Logo:SetSize( 128, 32 )
 		exsto.Menu.Logo:SetImage( "exsto/exlogo_qmenu.png" )
 		
 	-- Create our scroller.
-	exsto.Menu.FrameScroller = exsto.CreatePanel( 1, 28, exsto.Menu.Frame:GetWide() - 2, exsto.Menu.Frame:GetTall() - 29, nil, exsto.Menu.Frame )
+	exsto.Menu.FrameScroller = exsto.CreatePanel( 1, 32, exsto.Menu.Frame:GetWide() - 2, exsto.Menu.Frame:GetTall() - 32, nil, exsto.Menu.Frame )
 		exsto.Menu.FrameScroller.Paint = function() end
+
+	local function paint( btn )
+		surface.SetMaterial( btn.Mat )
+		surface.SetDrawColor( 255, 255, 255, 255 )
+		surface.DrawTexturedRect( 0, 0, 64, 32 )
+	end
 		
 	-- Create our buttons up top
-	exsto.Menu.BackButton = exsto.CreateImageButton( 6, 4, 64, 32, "exsto/back_norm.png", exsto.Menu.Frame )
+	exsto.Menu.BackButton = vgui.Create( "ExButton", exsto.Menu.Frame )
+		exsto.Menu.BackButton:SetSize( 39, 24 )
+		exsto.Menu.BackButton:SetPos( 6, 4 )
 		exsto.Menu.BackButton._Disabled = true
 		exsto.Menu.BackButton.DoClick = exsto.Menu.BackButtonClick
+		exsto.Menu.BackButton.Paint = paint
+		exsto.Menu.BackButton.Mat = Material( "exsto/back_norm.png" )
 		
 	-- Create the new panel button
-	exsto.Menu.NewPage = exsto.CreateImageButton( 0, 4, 64, 32, "exsto/menu_highlight.png", exsto.Menu.Frame )
+	exsto.Menu.NewPage = vgui.Create( "ExButton", exsto.Menu.Frame )
+		exsto.Menu.NewPage:SetSize( 39, 24 )
+		exsto.Menu.NewPage:SetPos( 0, 4 )
 		exsto.Menu.NewPage:MoveRightOf( exsto.Menu.BackButton, 6 )
 		exsto.Menu.NewPage.DoClick = exsto.Menu.NewPageClick
 		exsto.Menu.NewPage.DoRightClick = exsto.Menu.NewPageRightClick
+		exsto.Menu.NewPage.Paint = paint
+		exsto.Menu.NewPage.Mat = Material( "exsto/menu_highlight.png" )
 		
 	-- Search!
 	-- Create search box
@@ -111,7 +117,7 @@ function exsto.Menu.Initialize()
 		exsto.Menu.Search.OnTextChanged = exsto.Menu.SearchOnTextChanged
 		exsto.Menu.Search.OnEnter = exsto.Menu.SearchOnEnter
 		exsto.Menu.Search.DoClick = exsto.Menu.SearchDoClick
-	exsto.Animations.CreateAnimation( exsto.Menu.Search )
+	exsto.Animations.Create( exsto.Menu.Search )
 		
 	-- Create the default quick menu.
 	exsto.Menu.QM = exsto.Menu.CreatePage( "quickmenu", exsto.InitQuickMenu )
@@ -231,12 +237,12 @@ end
 
 function exsto.Menu.DisableBackButton()
 	exsto.Menu.BackButton._Disabled = true
-	exsto.Menu.BackButton:SetImage( "exsto/back_norm.png" )
+	exsto.Menu.BackButton.Mat = Material( "exsto/back_norm.png" )
 end
 
 function exsto.Menu.EnableBackButton()
 	exsto.Menu.BackButton._Disabled = false
-	exsto.Menu.BackButton:SetImage( "exsto/back_highlight.png" )
+	exsto.Menu.BackButton.Mat = Material( "exsto/back_highlight.png" )
 end
 
 --[[
@@ -372,6 +378,7 @@ function exsto.Menu.Open()
 	-- Set our window pos.
 	local qmpos = posInfo[ "menu" ]
 	if qmpos then
+		exsto.Menu.Frame:ForcePos( qmpos.x, qmpos.y + 100 )
 		exsto.Menu.Frame:SetPos( qmpos.x, qmpos.y )
 	end
 	
@@ -384,30 +391,6 @@ function exsto.Menu.Open()
 	exsto.Menu._Opened = true
 end
 
-local temp, qx, qy, qw, qh = false
-local function shit()
-	if !exsto.Menu then return end
-	-- Handling clicking outside the search box.
-	if exsto.Menu.OpenLock == true and input.IsMouseDown( MOUSE_LEFT ) then
-		local x, y = gui.MousePos()
-
-		qx, qy = exsto.Menu.QM:GetPos()
-		qw, qh = exsto.Menu.QM:GetSize()
-
-		if ( x < qx or y < qy ) or ( x > ( qx + qw ) or y > ( qy + qh ) ) and !exsto.Menu._BindPressed then
-			exsto.Menu.OpenLock = false
-		end
-	end
-	
-	if exsto.Menu.OpenLock == false and temp == true then
-		exsto.Menu.Close()
-		temp = false
-	elseif exsto.Menu.OpenLock == true and temp == false then
-		temp = true
-	end
-end
---hook.Add( "Think", "WHYDOWEHAVETODOTHIS", shit )
-
 function exsto.Menu.Close()
 	if exsto.Menu.OpenLock == true then return end -- We're locked open.  Wait until this thing becomes false
 	local posInfo = {}
@@ -416,7 +399,7 @@ function exsto.Menu.Close()
 	local mx, my = gui.MousePos()
 	posInfo[ "__MOUSE" ] = {x=mx, y=my}
 	
-	local qmx, qmy = exsto.Menu.Frame:GetPos()
+	local qmx, qmy = exsto.Menu.Frame:GetSeriousPos()
 		posInfo[ "menu" ] = {x = qmx, y = qmy}
 		
 	-- Save the position info

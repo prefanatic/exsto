@@ -147,9 +147,7 @@ function page:Showtime( noAnim ) -- Wake him up!
 	-- Come in from the left!
 	
 	-- Set up our position for animations.
-	self.Content.OldFuncs.SetPos( self.Content, -self:GetParent():GetWide() - 2, 0 )
-	self.Content.Anims[ 1 ].Current = -self:GetParent():GetWide() - 2
-	self.Content.Anims[ 1 ].Last = -self:GetParent():GetWide() - 2
+	self.Content:ForcePos( -self:GetParent():GetWide() - 2, 0 )
 	
 	if not noAnim then
 		self:SetPos( 0, 0 )
@@ -194,7 +192,7 @@ function page:SetPanelStyle( stl )
 end
 
 function page:CreateContentHolder()
-	local h = exsto.Menu.FrameScroller:GetTall()
+	local h = exsto.Menu.FrameScroller:GetTall() - 4
 	if self._Searchable then h = h - 32 end
 	
 	self.Content = vgui.Create( self._PanelStyle, exsto.Menu.FrameScroller )
@@ -202,7 +200,7 @@ function page:CreateContentHolder()
 		self.Content:SetSize( exsto.Menu.FrameScroller:GetWide(), h )
 		self.Content:SetSkin( "Exsto" )
 
-	exsto.Animations.CreateAnimation( self.Content )
+	exsto.Animations.Create( self.Content )
 end
 
 function page:SetBuildCallback( func )
