@@ -1,0 +1,3 @@
+#!/bin/sh
++echo `git describe --tags --long` > data/exversion.txt
++git add data/exversion.txt
