@@ -30,6 +30,8 @@ local function PrintLoading( srvVer )
 |   |___ |   _   | _____| |  |   |  |       |
 |_______||__| |__||_______|  |___|  |_______|
   Coded by Prefanatic.  Designed by Revanne
+  Version - ]] .. tostring( exsto.VERSION ) .. [[
+  
 ]] )
 end
 
@@ -40,7 +42,7 @@ local function LoadVariables( srvVer )
 	exsto.StartTime = SysTime()
 	exsto.Debug = function() end -- To prevent nil functions if something tries debugging before the print system handles it.
 	
-	exsto.VERSION = 100
+	exsto.VERSION = file.Read( "exversion.txt", "DATA" ) or "unknown"
 end
 
 -- Helpers
