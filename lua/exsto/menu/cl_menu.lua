@@ -68,9 +68,6 @@ function exsto.Menu.Initialize()
 		exsto.Menu.Frame.btnMinim:SetVisible( false )
 		exsto.Menu.Frame.btnMaxim:SetVisible( false )
 		exsto.Menu.Frame.btnClose.DoClick = function( btn )
-			-- Remove ourself from the open pages.
-			--exsto.Menu.OpenPages[ self:GetID() ] = nil;
-			--btn:GetParent():Close()
 			exsto.Menu.Close()
 		end
 	exsto.Animations.Create( exsto.Menu.Frame )
@@ -78,7 +75,7 @@ function exsto.Menu.Initialize()
 	-- Our amazing logo.
 	-- TODO: Lets have this be our close button :0
 	exsto.Menu.Logo = vgui.Create( "DImage", exsto.Menu.Frame )
-		exsto.Menu.Logo:SetPos( exsto.Menu.Frame:GetWide() - 129, -10 )
+		exsto.Menu.Logo:SetPos( exsto.Menu.Frame:GetWide() - 129, 1 )
 		exsto.Menu.Logo:SetSize( 128, 32 )
 		exsto.Menu.Logo:SetImage( "exsto/exlogo_qmenu.png" )
 		

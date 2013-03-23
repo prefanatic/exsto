@@ -268,3 +268,6 @@ function var:GetInt() return self.CVar:GetFloat() end -- Do we want this like th
 function var:GetFloat() return self.CVar:GetFloat() end
 function var:GetString() return self.CVar:GetString() end
 function var:GetBool() return self.CVar:GetBool() end	
+
+-- Call out a hook saying we're ready for variable creation.
+hook.Call( "ExVariableInit" )

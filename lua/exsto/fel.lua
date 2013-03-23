@@ -26,6 +26,7 @@ FEL = {}
 		password = "password";
 		database = "database";
 		mysql_enabled = "false";
+		debug_level = "0";
 	}
 	FEL.ConfigFile = "fel_settings.txt";
 	FEL.TableCache = "fel_tablecache/"
@@ -74,15 +75,18 @@ function FEL.Init()
 		end
 	end
 end
-FEL.Init()
 
 function FEL.Print( msg )
 	print( "FEL --> " .. msg )
 end
 
-function FEL.Debug( msg )
-	print( "[FELDebug] " .. msg )
+function FEL.Debug( msg, level )
+	if tonumber( FEL.Config.debug_level ) >= level then
+		print( "[FELDebug] " .. msg )
+	end
 end
+
+FEL.Init()
 
 local db = {
 	dbName;
@@ -108,7 +112,7 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	obj.cacheResetRate = 0
 	
 	if forceLocal then
-		print( "FEL --> " .. obj.dbName .. " --> Forcing SQL localization: fix-me." )
+		obj:Print( "Fix-me: Forcing SQLite databases not through variables." )
 	end
 	
 	table.insert( FEL.Databases, obj )
@@ -121,16 +125,25 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	return obj
 end
 
+function db:Disable( msg )
+	self._Disabled = true
+	self._DisabledMsg = msg or ""
+end
+
+function db:Error( msg )
+	exsto.ErrorNoHalt( "[" .. self.dbName .. "-Error]" .. msg )
+end
+
 function db:Print( msg )
 	FEL.Print( self.dbName .. " --> " .. msg )
 end
 
-function db:Debug( msg )
-	FEL.Debug( self.dbName .. " --> " .. msg )
+function db:Debug( msg, level )
+	FEL.Debug( self.dbName .. " --> " .. msg, level )
 end
 
 function db:OnMySQLConnect()
-	print( "FEL --> " .. self.dbName .. " --> MySQL connect success!  Server Version: " .. self._mysqlDB:serverVersion() )
+	self:Print( "MySQL connected!" )
 	self._mysqlSuccess = true
 	
 	if self._AttemptingMySQLReconnect then -- Grab us back into motion.
@@ -141,11 +154,11 @@ function db:OnMySQLConnect()
 end
 
 function db:OnMySQLConnectFail( err )
-	ErrorNoHalt( "FEL --> " .. self.dbName .. " --> Connect Failure: " .. tostring( err ) .. "\n" )
+	self:Error( "MySQL Error: " .. tostring( err ) )
 	self._mysqlSuccess = false
 	
 	if self._AttemptingMySQLReconnect and self._AttemptingMySQLReconnect > 3 then -- Three times.
-		ErrorNoHalt( "FEL --> " .. self.dbName .. " --> Unable to connect to MySQL!  Forcing SQLite.\n" )
+		self:Error( "Unable to reconnect to MYSQL.  Forcing SQLite." )
 		self._forcedLocal = true
 		self._AttemptingMySQLReconnect = nil
 		return
@@ -155,7 +168,7 @@ function db:OnMySQLConnectFail( err )
 end
 
 function db:ReconnectMySQL( lastquery )
-	print( "FEL --> " .. self.dbName .. " --> Attempting to regain lost connection over MySQL server." )
+	self:Error( "Attempting to reconnect to MySQL." )
 	
 	self._mysqlSuccess = false
 	self._PreMySQLQueryErr = self._PreMySQLQueryErr or lastquery 
@@ -166,6 +179,7 @@ end
 function db:InitMySQL()
 	if self._mysqlDB then self._mysqlDB = nil end
 	
+	self:Debug( "Creating MySQL object.", 2 )
 	self._mysqlDB = mysqloo.connect( FEL.Config.host, FEL.Config.username, FEL.Config.password, FEL.Config.database )
 	self._mysqlDB:connect()
 	self._mysqlDB.onConnected = function( mysqldb ) self:OnMySQLConnect() end
@@ -176,6 +190,7 @@ end
 function db:ConstructColumns( columnData )
 	local formatted = {}
 	
+	self:Debug( "Creating column data.", 3 )
 	for columnName, data in pairs( columnData ) do
 		local split = string.Explode( ":", data )
 		local clean = ""
@@ -194,7 +209,8 @@ function db:ConstructColumns( columnData )
 	end
 	
 	if !formatted._PrimaryKey then
-		error( "FEL --> Issue with constructing columns for '" .. self.dbName .. "' - No primary key was created!\n" )
+		self:Error( "Unable to construct columns.  No primary key was created." )
+		self:Disable( "No primary key was designated under column construction." )
 	end
 
 	self.Columns = formatted	
@@ -208,7 +224,9 @@ function db:ConstructColumns( columnData )
 	}
 	
 	-- Commit and create our table!
+	self:Debug( "Running table construction query.", 2 )
 	self:Query( self:ConstructQuery( "create" ), false )
+	
 	self:GetCacheData()
 	self:CheckIntegrity()	
 	self:QOSCheck()	
@@ -219,14 +237,14 @@ function db:SetRefreshRate( time )
 	if !time then return end
 	
 	self.cacheResetRate = time
-	print( "FEL --> " .. self.dbName .. " --> Setting cache refresh rate at " .. time .. " seconds." )
+	self:Debug( "Setting cache refresh rate at '" .. time .. "' seconds.", 1 )
 end
 
 function db:CacheRefresh()
 	self:GetCacheData( true )
 	self:QOSCheck()
 	
-	print( "FEL --> " .. self.dbName .. " --> Cache refreshing." )
+	self:Debug( "Refreshing Cache.", 1 )
 end	
 
 local function pass3( self, data, tbl, index, max )
@@ -242,14 +260,14 @@ local function pass2( self, data )
 end
 
 local function pass( self, cacheData )
-	self:Debug( "First cache pass." )
+	self:Debug( "Processing entry count.", 2 )
 	
 	if cacheData[1] and cacheData[1]["COUNT(*)"] then
 		self._cacheCount = tonumber( cacheData[1]["COUNT(*)"] )
 	end
 
 	if self._cacheCount < 1024 or !self._cacheCount then
-		self:Debug( "Need to grab multiple packets.  Number of entries: " .. tostring( self._cacheCount ) )
+		self:Debug( "Need to grab multiple packets.  Number of entries: " .. tostring( self._cacheCount ), 3 )
 		
 		local data = self:Query( "SELECT * FROM " .. self.dbName, thread, function( q, data ) pass2( self, data ) end ) or {}
 		if !threaded then self.Cache._cache = data end
@@ -260,7 +278,7 @@ local function pass( self, cacheData )
 	local neededPackets = math.ceil( self._cacheCount / 1000 )
 	
 	for I = 0, neededPackets - 1 do
-		self:Debug( "Grabbing packet '" .. tostring( I ) .. "' out of '" .. tostring( neededPackets - 1 ) .. "'" )
+		self:Debug( "Grabbing packet '" .. tostring( I ) .. "' out of '" .. tostring( neededPackets - 1 ) .. "'", 3 )
 		
 		local data = self:Query( "SELECT * FROM " .. self.dbName .. " LIMIT " .. I * 1000 .. ",1000", thread, function( q, data ) pass3( self, data, tmp, I, neededPackets - 1 ) end )
 		if !threaded then pass3( self, data, tmp, I, neededPackets - 1 ) end
@@ -273,7 +291,7 @@ function db:GetCacheData( thread )
 	self.Cache._cache = {}
 	self._cacheCount = 0
 	
-	self:Debug( "Grabbing cache data.  Threaded: " .. tostring( thread ) )
+	self:Debug( "Threaded: " .. tostring( thread ), 3 )
 	
 	local data = self:Query( "SELECT COUNT(*) FROM " .. self.dbName, thread, function( q, data ) pass( self, data ) end )
 	if !thread then pass( self, data ) end
@@ -300,6 +318,8 @@ function db:CheckIntegrity()
 		file.Write( FEL.TableCache .. self.dbName .. "_cache.txt", von.serialize( self.Columns ) )
 		return
 	end
+	
+	self:Debug( "Running cache--database quality check.  Parsing for changes.", 1 )
 	
 	-- Create a table of our current columns
 	local currentColumns = {}
@@ -332,6 +352,13 @@ function db:CheckIntegrity()
 	
 	-- Commit brother!
 	if table.Count( changedData ) > 0 then
+	
+		self:Debug( "Databases changes found.  Dropping and reconstructing.", 1 )
+		self:Debug( "List of removals:" )
+		
+		for _, d in ipairs( changedData ) do
+			self:Debug( " --     " .. d.t .. " : " .. tostring( d.column ) )
+		end
 
 		-- Screw this.  Drop and update.
 		
@@ -340,14 +367,12 @@ function db:CheckIntegrity()
 		self:Query( self:ConstructQuery( "create" ), false )
 		self:Think( true )
 		
-		print( "FEL --> " .. self.dbName .. " --> Updating SQL content!" )
-		
 		file.Write( FEL.TableCache .. self.dbName .. "_cache.txt", von.serialize( self.Columns ) )
 	end
 end	
 
 function db:PurgeCache()
-	print( "FEL --> " .. self.dbName .. " --> Clearing cache!" )
+	self:Print( "Clearing cache.", 1 )
 	
 	-- We need to push any data we have that needs to be saved.
 	self:Think( true )
@@ -424,7 +449,7 @@ function db:ConstructQuery( style, data )
 end
 
 function db:OnQueryError( err, query )
-	ErrorNoHalt( "FEL --> " .. self.dbName .. " --> Error: " .. err .. "\n" )
+	self:Error( "SQL Error: " .. err )
 	
 	-- Check and make sure the MySQL server hasn't gone away.  :(
 	if string.find( err:lower(), "has gone away" ) and !self._AttemptingMySQLReconnect then
@@ -433,7 +458,13 @@ function db:OnQueryError( err, query )
 end
 
 function db:Query( str, threaded, callback )
+	if self._Disabled then
+		self:Print( "Disabled! " .. self._DisabledMsg )
+		return
+	end
 	hook.Call( "FEL_OnQuery", nil, str, threaded )
+	
+	self:Debug( "Query (mysql :" .. tostring( self._mysqlSuccess ) .. ", threaded: " .. tostring( threaded ) .. ") - " .. str, 3 )
 	
 	if self._mysqlSuccess == true and self._forcedLocal != true then -- We are MySQL baby
 		self._mysqlQuery = self._mysqlDB:query( str )
@@ -464,6 +495,7 @@ function db:Query( str, threaded, callback )
 end
 
 function db:Think( force )
+	if self._Disabled then return end
 	if ( CurTime() > self._lastThink + self.thinkDelay ) or force then
 		if FEL.Config.mysql_enabled == "true" and self._mysqlSuccess != true and self._mysqlSuccess != false and self._forcedLocal != true then -- Wait.  Just queue up;
 			self._lastThink = CurTime()
@@ -507,7 +539,7 @@ function db:GetColumnType( column )
 	local colQuery = self.Columns[ column ]
 	
 	if !colQuery then
-		error( "FEL --> Attempted to access unknown column '" .. column .. "' in table '" .. self.dbName .. "'" )
+		self:Error( "Unknown column '" .. column .. " accessed." )
 	end
 	
 	for t, nT in pairs( FEL.KnownDataTypes ) do
@@ -522,8 +554,7 @@ function db:DataInconsistancies( data )
 		local dt = self:GetColumnType( column )
 
 		if type( value ):lower() != dt:lower() then 
-			ErrorNoHalt( "FEL --> " .. self.dbName .. " --> Supplied value '" .. tostring( value ) .. "' is not consistent with table set '" .. dt .. "'" )
-			ErrorNoHalt( "FEL --> " .. self.dbName .. " --> Error occurred accessing column " .. tostring( column ) )
+			self:Error( "Supplied value '" .. tostring( value ) .. "' is not consistent with '" .. dt .. "' under column '" .. column .. "'" )
 			return
 		end
 	end

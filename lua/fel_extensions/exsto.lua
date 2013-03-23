@@ -23,10 +23,22 @@ FEL.TableCache = "exsto_felcache/"
 
 if SERVER then
 	
-	hook.Add( "ExInitialized", "ExFELIntegration", function()	
-		exsto.FELDebug = exsto.CreateVariable( "ExFelDebug", "FEL Debugging", false, "Enables FEL to debug all queries to the console." )
+	hook.Add( "ExVariableInit", "ExFELIntegration", function()	
+		exsto.FELDebug = exsto.CreateVariable( "ExFelDebug", "FEL Debugging", 0, "Enables FEL to debug all queries to the console." )
+		exsto.FELDebug:SetMinimum( 0 )
+		exsto.FELDebug:SetMaximum( 3 )
 	end )
 	
+end
+
+function FEL.Print( msg )
+	exsto.Print( exsto_CONSOLE, msg )
+end
+
+function FEL.Debug( msg, level )
+	if exsto.FELDebug:GetValue() >= level then
+		exsto.Debug( msg, 0 )
+	end
 end
 
 hook.Add( "FEL_OnQuery", "ExFELQueryDebug", function( str, threaded )
@@ -35,10 +47,10 @@ hook.Add( "FEL_OnQuery", "ExFELQueryDebug", function( str, threaded )
 		if str != "SELECT 1 + 1" then
 			for _, ply in ipairs( player.GetAll() ) do
 				if ply:IsSuperAdmin() then
-					exsto.Print( exsto_CLIENT, ply, "FEL QUERY: " .. str )
+					--exsto.Print( exsto_CLIENT, ply, "FEL QUERY: " .. str )
 				end
 			end
-			exsto.Debug( "FEL QUERY --> " .. str, 0 )
+			--exsto.Debug( "FEL QUERY --> " .. str, 0 )
 		end
 	end
 end )
