@@ -122,7 +122,7 @@ function exsto.Animations.Think()
 		
 		else
 			-- Remove invalid.
-			exsto.ErrorNoHalt( "Animations --> Invalid object caught in animation table.  Removing." )
+			exsto.Debug( "Animations --> Invalid object caught in animation table.  Removing.", 1 )
 			
 			obj:Remove()
 			exsto.Animations.Handle[ _ ] = nil

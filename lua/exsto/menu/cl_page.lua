@@ -166,8 +166,8 @@ end
 function page:Build()
 	self:Debug( "Building page." )
 	if self.Content and self.Content:IsValid() then -- We already exist.  Most likely rebuilding due to a rank change.  Unload and delete old content.
-		self:Debug( "Page already exists: removing and rebuilding." )
-		self.Content:Remove()
+		self:Debug( "Page already exists.  Cancel build." )
+		return
 	end
 	
 	self:CreateContentHolder()
