@@ -385,6 +385,15 @@ function qm.CreateCommandWindow( pnl )
 				comboPnl:SetDataHeight( 30 )
 				comboPnl.PaintOver = pntShadow
 				comboPnl.Index = I
+				
+			-- Hardcode: If we're working on the ranks, completely reconstruct the ExtraOptionals w/ our ranks.
+			if data.ID == "rank" then
+				local tmp = {}
+				for id, rank in pairs( exsto.Ranks ) do
+					table.insert( tmp, { Display = rank.Name, Data = id } )
+				end
+				data.ExtraOptionals[ "Rank" ] = tmp;
+			end
 
 			for _, fillData in ipairs( data.ExtraOptionals[ argName ] ) do
 				comboObj = comboPnl:AddLine( fillData.Display )

@@ -262,7 +262,7 @@ end
 local function pass( self, cacheData )
 	self:Debug( "Processing entry count.", 2 )
 	
-	if cacheData[1] and cacheData[1]["COUNT(*)"] then
+	if cacheData and cacheData[1] and cacheData[1]["COUNT(*)"] then
 		self._cacheCount = tonumber( cacheData[1]["COUNT(*)"] )
 	end
 

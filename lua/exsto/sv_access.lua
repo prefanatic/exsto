@@ -338,6 +338,7 @@ exsto.AddChatCommand( "rank", {
 	Category = "Administration",
 	DisallowOwner = true,
 })
+exsto.SetQuickmenuSlot( "rank", "Rank", { } )
 
 --[[ -----------------------------------
 	Function: exsto.SetAccessID()
