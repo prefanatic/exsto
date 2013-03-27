@@ -21,6 +21,16 @@
 PANEL = {}
 
 function PANEL:Init()
+
+	if !json then
+		local succ, err = pcall( require, "json" )
+		if !succ then
+			exsto.ErrorNoHalt( "Unable to load JSON module for Steam information!" )
+			return
+		end
+	end
+
+	self.APICaller = "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=329C15985BA8A0501B3C2FECB4155354&steamids=%f"
 	
 	self:DockPadding( 2, 2, 2, 2 )
 	
@@ -41,6 +51,15 @@ function PANEL:Init()
 		self.Rank:SetText( "%RANK" )
 		self.Rank:Dock( TOP )
 
+end
+
+function PANEL:GrabInformation( sid )
+	exsto.Debug( "Fetching player statistics for '" .. sid .. "'", 1 )
+	print( string.format( self.APICaller, sid ) ) 
+	http.Fetch( string.format( self.APICaller, sid ), function( contents )
+		exsto.Debug( "Retreived player statistics for '" .. sid .. "'", 1 )
+		self.PlayerInfo = json.decode( contents )
+	end )
 end
 
 function PANEL:SetBanTable( tbl )

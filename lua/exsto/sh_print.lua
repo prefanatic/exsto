@@ -194,20 +194,16 @@ exsto_CLIENT_ALL_LOGO = AddPrint(
 exsto_DEBUG = AddPrint(
 	function( msg, level )
 		if !level then level = 1 end
-		if SERVER then
-			if !exsto.DebugLevel and exsto.CreateVariable then -- Create our debug level!
-				exsto.DebugLevel = 0 -- To prevent a stack overflow.
-				exsto.DebugLevel = exsto.CreateVariable( "ExDebugLevel", "Exsto Debug Level", 0, "Sets the level of debug Exsto will print, from 0 to 3." )
-					exsto.DebugLevel:SetMinimum( 0 )
-					exsto.DebugLevel:SetMaximum( 3 )
-					exsto.DebugLevel:SetCategory( "Debug" )
-			end
-			
-			if exsto.DebugLevel and exsto.DebugLevel != 0 and ( exsto.DebugLevel:GetValue() >= level ) then
-				MsgC( COLOR.DEBUG, exsto.DebugStart .. msg .. "\n" )
-			end
-		elseif CLIENT then
-			-- TODO: Clientside debugging.  Probably from the variable the server has!
+		if !exsto.DebugLevel and exsto.CreateVariable then -- Create our debug level!
+			exsto.DebugLevel = 0 -- To prevent a stack overflow.
+			exsto.DebugLevel = exsto.CreateVariable( "ExDebugLevel", "Exsto Debug Level", 0, "Sets the level of debug Exsto will print, from 0 to 3." )
+				exsto.DebugLevel:SetMinimum( 0 )
+				exsto.DebugLevel:SetMaximum( 3 )
+				exsto.DebugLevel:SetCategory( "Debug" )
+		end
+		
+		if exsto.DebugLevel and exsto.DebugLevel != 0 and ( exsto.DebugLevel:GetValue() >= level ) then
+			MsgC( COLOR.DEBUG, exsto.DebugStart .. msg .. "\n" )
 		end
 	end
 )

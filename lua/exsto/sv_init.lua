@@ -45,6 +45,7 @@
 	
 		-- Modules
 	AddCSLuaFile( "includes/modules/von.lua" )
+	AddCSLuaFile( "includes/modules/json.lua" )
 	exstoClient( "fel.lua" )
 	
 		-- Menu

@@ -185,9 +185,7 @@ elseif CLIENT then
 		updateDerives()
 		
 		if PLUGIN.WorkingRank then
-			timer.Simple( 0.01, function()
-				updateContent( PLUGIN.WorkingRank, true )
-			end )
+			updateContent( PLUGIN.WorkingRank, true )
 		end
 
 	end
@@ -242,9 +240,7 @@ elseif CLIENT then
 			pushUpdate()
 		end
 		
-		timer.Simple( 0.01, function()
-			updateContent( data )
-		end )
+		updateContent( data )
 	end
 	
 	local function flagIndicator( line )
@@ -349,6 +345,7 @@ elseif CLIENT then
 			pnl.RankSelect:SetValue( "Select a rank" )
 			pnl.RankSelect:Dock( FILL )
 			pnl.RankSelect.OnSelect = editorRankSelected
+			pnl.RankSelect:SetToolTip( "Select a rank." )
 
 		pnl.DeleteRank = vgui.Create( "DImageButton", pnl.Header )
 			pnl.DeleteRank:SetImage( "exsto/trash_disabled.png" )
@@ -356,6 +353,7 @@ elseif CLIENT then
 			pnl.DeleteRank:DockMargin( 2, 0, 0, 0 )
 			pnl.DeleteRank:Dock( RIGHT )
 			pnl.DeleteRank.DoClick = deleteRank
+			pnl.DeleteRank:SetToolTip( "Delete a rank." )
 			
 		pnl.CreateRank = vgui.Create( "DImageButton", pnl.Header )
 			pnl.CreateRank:SetImage( "exsto/add.png" )
@@ -363,12 +361,14 @@ elseif CLIENT then
 			pnl.CreateRank:DockMargin( 3, 0, 2, 0 )
 			pnl.CreateRank:Dock( RIGHT )
 			pnl.CreateRank.DoClick = createNewRank
+			pnl.CreateRank:SetToolTip( "Create a rank." )
 			
 		pnl.RankName = vgui.Create( "DTextEntry", pnl.Holder )
 			pnl.RankName:Dock( TOP )
 			pnl.RankName:SetTall( 31 )
 			pnl.RankName:DockMargin( 0, 4, 0, 0 )
 			pnl.RankName:SetTextInset( 10, 0 )
+			pnl.RankName:SetToolTip( "Rank name." )
 			pnl.RankName.OnTextChanged = function( entry )
 				pnl.RankSelect:SetValue( entry:GetValue() )
 			end
@@ -377,6 +377,7 @@ elseif CLIENT then
 			pnl.Derive:SetTall( 32 )
 			pnl.Derive:Dock( TOP )
 			pnl.Derive:DockMargin( 0, 4, 0, 0 )
+			pnl.Derive:SetToolTip( "Set parent." )
 			
 		pnl.ColorHolder = vgui.Create( "DPanel", pnl.Holder )
 			pnl.ColorHolder:SetTall( 76 )
@@ -408,7 +409,6 @@ elseif CLIENT then
 			pnl.Flags.LineSelected = flagHandler
 			pnl.Flags.Populate = flagPopulate
 			
-		local x, y = pnl.RankName:GetPos()
 		pnl.OverlayPanel = vgui.Create( "DPanel", pnl.Holder )
 			pnl.OverlayPanel:SetSize( pnl:GetWide(), pnl:GetTall() - 10 )
 			pnl.OverlayPanel:MoveBelow( pnl.Header, 1 )

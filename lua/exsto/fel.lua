@@ -354,10 +354,10 @@ function db:CheckIntegrity()
 	if table.Count( changedData ) > 0 then
 	
 		self:Debug( "Databases changes found.  Dropping and reconstructing.", 1 )
-		self:Debug( "List of removals:" )
+		self:Debug( "List of removals:", 2 )
 		
 		for _, d in ipairs( changedData ) do
-			self:Debug( " --     " .. d.t .. " : " .. tostring( d.column ) )
+			self:Debug( " --     " .. d.t .. " : " .. tostring( d.c ), 2 )
 		end
 
 		-- Screw this.  Drop and update.

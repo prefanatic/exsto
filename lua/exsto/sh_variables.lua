@@ -163,7 +163,7 @@ function exsto.CreateVariable( id, display, default, help )
 		end
 		
 		-- Send this information down to the client!
-		exsto.SendVariable( obj, player.GetAll() )
+		if SERVER then exsto.SendVariable( obj, player.GetAll() ) end
 		hook.Call( "ExVariableChanged", nil, obj, obj:GetValue() )
 		
 		if !obj.Callback then return end
@@ -178,7 +178,7 @@ function exsto.CreateVariable( id, display, default, help )
 	exsto.Variables[ obj:GetID() ] = obj;
 	
 	-- If we make one, we need to send it!
-	exsto.SendVariable( obj, player.GetAll() )
+	if SERVER then exsto.SendVariable( obj, player.GetAll() ) end
 	
 	return obj
 end
@@ -248,7 +248,10 @@ function var:SetValue( val )
 end
 
 function var:GetValue()
-	-- TODO: Correct parsing of values.
+	if CLIENT and exsto.ServerVariables and exsto.ServerVariables[ var:GetID() ] then
+		local svVar = exsto.ServerVariables[ var:GetID() ]
+		return svVar.Value
+	end
 	
 	return dataTypes[ self.Type ]( self ) or self:GetString()
 end
