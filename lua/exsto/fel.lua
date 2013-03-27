@@ -504,7 +504,7 @@ function db:Think( force )
 		
 		if #self.Cache._changed > 0 then -- Hoho we have some changes!
 			for _, rowData in ipairs( self.Cache._changed ) do
-				self:Query( self:ConstructQuery( "changed", rowData ) )
+				self:Query( self:ConstructQuery( "changed", rowData ), true )
 			end
 			
 			self.Cache._changed = {}
@@ -512,14 +512,14 @@ function db:Think( force )
 		
 		if #self.Cache._new > 0 then
 			for _, rowData in ipairs( self.Cache._new ) do
-				self:Query( self:ConstructQuery( "new", rowData ) )
+				self:Query( self:ConstructQuery( "new", rowData ), true )
 			end
 			
 			self.Cache._new = {}
 		end
 		
 		-- Heartbeat please.
-		if FEL.Config.mysql_enabled == "true" and self._forcedLocal != true then self:Query( "SELECT 1 + 1" ) end
+		if FEL.Config.mysql_enabled == "true" and self._forcedLocal != true then self:Query( "SELECT 1 + 1", true ) end
 		
 		self._lastThink = CurTime()
 	end
@@ -647,7 +647,7 @@ function db:DropRow( key )
 			table.remove( self.Cache._cache, _ )
 			
 			key = type( key ) == "string" and self:Escape( key ) or key
-			self:Query( string.format( self.Queries.Delete, self.dbName, self.Columns._PrimaryKey, key ) )
+			self:Query( string.format( self.Queries.Delete, self.dbName, self.Columns._PrimaryKey, key ), true )
 			break
 		end
 	end

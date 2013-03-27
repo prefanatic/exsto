@@ -9,7 +9,7 @@ PLUGIN:SetInfo({
 } )
 
 function PLUGIN:Init()
-	self.Types = { "all", "commands", "player", "errors", "chat", "spawns" }
+	self.Types = { "all", "commands", "player", "errors", "chat", "spawns", "debug" }
 	
 	file.CreateDir( "exsto_logs" )
 	for _, type in ipairs( self.Types ) do
@@ -20,6 +20,9 @@ function PLUGIN:Init()
 	exsto.CreateFlag( "printlogs", "Prints logs specified by 'ExPrintLogs' to the console." )
 	self.Printing = exsto.CreateVariable( "ExPrintLogs", "Print to Console", "", "Selects the possible logs to print to the console." )
 		self.Printing:SetMultiChoice() -- TODO: Set possibles
+		
+	self.SaveDebug = exsto.CreateVariable( "ExSaveDebugLogs", "Save Debug", 0, "Saves debugging information as a log." )
+		self.SaveDebug:SetBoolean()
 end
 
 function PLUGIN:ShutDown()
@@ -81,6 +84,8 @@ function PLUGIN:ExPrintCalled( enum, data )
 			end
 			--construct .. "[" .. trace.source .. ", N:" .. trace.name .. ", " .. trace.linedefined .. "-" .. trace.currentline .. "-" .. trace.lastlinedefined .. "]"
 		self:SaveEvent( construct, "errors" )
+	elseif enum == exsto_DEBUG and self.SaveDebug:GetValue() == 1 then
+		self:SaveEvent( table.concat( data, " " ), "debug" )
 	end
 end
 
