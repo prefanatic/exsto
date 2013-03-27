@@ -227,7 +227,7 @@ function db:ConstructColumns( columnData )
 	self:Debug( "Running table construction query.", 2 )
 	self:Query( self:ConstructQuery( "create" ), false )
 	
-	self:GetCacheData()
+	self:GetCacheData( false )
 	self:CheckIntegrity()	
 	self:QOSCheck()	
 end
@@ -259,7 +259,7 @@ local function pass2( self, data )
 	self.Cache._cache = data or {}
 end
 
-local function pass( self, cacheData )
+local function pass( self, cacheData, thread )
 	self:Debug( "Processing entry count.", 2 )
 	
 	if cacheData and cacheData[1] and cacheData[1]["COUNT(*)"] then
@@ -293,8 +293,8 @@ function db:GetCacheData( thread )
 	
 	self:Debug( "Threaded: " .. tostring( thread ), 3 )
 	
-	local data = self:Query( "SELECT COUNT(*) FROM " .. self.dbName, thread, function( q, data ) pass( self, data ) end )
-	if !thread then pass( self, data ) end
+	local data = self:Query( "SELECT COUNT(*) FROM " .. self.dbName, thread, function( q, data ) pass( self, data, thread ) end )
+	if !thread then pass( self, data, thread ) end
 end
 
 function db:CheckIntegrity()

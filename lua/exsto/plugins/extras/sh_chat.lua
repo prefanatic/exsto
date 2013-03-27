@@ -13,6 +13,7 @@ if SERVER then
 
 	util.AddNetworkString( "ExChatPlug_RankColors" )
 	util.AddNetworkString( "ExChatPlug_AdminBlink" )
+	util.AddNetworkString( "ExChatPlug_ToggleAnims" )
 	
 	local OnVarChange2 = function( val )
 		for k,v in pairs( player.GetAll() ) do
