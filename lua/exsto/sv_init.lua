@@ -187,48 +187,45 @@ timer.Create( "Exsto_TagCheck", 1, 0, function()
 	end
 end )
 
--- Ping up to our server that we've init.
-local hostname = GetConVar( "hostname" ):GetString()
+local succ, err = pcall( require, "json" );
+if !succ then
+	exsto.Debug( "Failed to load json.  Oh well.  No ping!", 1 )
+	return
+end
 
--- Fetch the IP.
-http.Fetch( "http://api.hostip.info/get_json.php", function( contents )
-	exsto.Debug( "Retreived host info.  Decoding.", 2 )
-	
-	local succ, err = pcall( require, "json" );
-	if !succ then
-		exsto.Debug( "Failed to load json.  Oh well.  No ping!", 1 )
-		return
-	end
+timer.Create( "ExPing", 60, 0, function()
+	if !json then return end
 
-	local decode = json.decode( contents )
-	local ip = decode.ip
-	
-	if contents and decode and ip then
-		-- lol.
-		http.Fetch( "http://www.exstomod.co.uk/ping.php?p=1&h=" .. hostname .. "&ip=" .. ip .. "&l=" .. os.time(), function( contents )
-			if contents:find( "Checking" ) then
-				exsto.Debug( "Server ping success!  Updated Hostname = " .. hostname .. ", IP = " .. ip .. ", LastSeen = " .. os.time(), 1 )
-			else
-				exsto.Debug( "Server ping failure!  Callback: " .. contents, 1 )
-			end
-		end )
-	else
-		exsto.Debug( "Server ping failure!  Callback: " .. contents, 1 )
-	end
-end )				
+	-- Ping up to our server that we've init.
+	local hostname = GetConVar( "hostname" ):GetString()
+
+	-- Fetch the IP.
+	http.Fetch( "http://api.hostip.info/get_json.php", function( contents )
+		exsto.Debug( "Retreived host info.  Decoding.", 2 )
+		
+		local decode = json.decode( contents )
+		local ip = decode.ip
+		
+		if contents and decode and ip then
+			-- lol.
+			http.Fetch( "http://www.exstomod.co.uk/ping.php?p=1&h=" .. hostname .. "&ip=" .. ip, function( contents )
+				if contents:find( "Checking" ) then
+					exsto.Debug( "Server ping success!  Updated Hostname = " .. hostname .. ", IP = " .. ip .. ", LastSeen = " .. os.time(), 1 )
+				else
+					exsto.Debug( "Server ping failure!  Callback: " .. contents, 1 )
+				end
+			end )
+		else
+			exsto.Debug( "Server ping failure!  Callback: " .. contents, 1 )
+		end
+	end )			
+
+end )	
 
 -- Init some items.
 	exsto.LoadPlugins()
 	exsto.InitPlugins()
 
 	exsto.LoadFlags()
-	--exsto.CreateFlagIndex()
-	
-	-- After everything is done; update the owner with his flags :)
-	--[[if exsto.Ranks[ "srv_owner" ] then
-		exsto.Ranks[ "srv_owner" ].AllFlags = exsto.FlagIndex
-	end]]
-	
-	local seconds = SysTime() - exsto.StartTime
 	MsgC( Color( 146, 232, 136, 255 ), "Exsto load finished.\n"	)
 	hook.Call( "ExInitialized" )
