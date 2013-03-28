@@ -464,7 +464,7 @@ function db:Query( str, threaded, callback )
 	end
 	hook.Call( "FEL_OnQuery", nil, str, threaded )
 	
-	self:Debug( "Query (mysql :" .. tostring( self._mysqlSuccess ) .. ", threaded: " .. tostring( threaded ) .. ") - " .. str, 3 )
+	self:Debug( "Query (mysql: " .. tostring( self._mysqlSuccess ) .. ", threaded: " .. tostring( threaded ) .. ") - " .. str, 3 )
 	
 	if self._mysqlSuccess == true and self._forcedLocal != true then -- We are MySQL baby
 		self._mysqlQuery = self._mysqlDB:query( str )
