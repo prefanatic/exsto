@@ -20,6 +20,7 @@
 
 FEL.ConfigFile = "exsto_mysql_settings.txt";
 FEL.TableCache = "exsto_felcache/"
+FEL.BackupDirectory = "exsto_db_backups/";
 
 if SERVER then
 	

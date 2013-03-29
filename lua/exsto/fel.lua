@@ -30,6 +30,7 @@ FEL = {}
 	}
 	FEL.ConfigFile = "fel_settings.txt";
 	FEL.TableCache = "fel_tablecache/"
+	FEL.BackupDirectory = "fel_backups/";
 	FEL.KnownDataTypes = { -- Strings == 2, Integer == 1
 		CHAR = "string";
 		VARCHAR = "string";
@@ -74,6 +75,15 @@ function FEL.Init()
 			FEL.Config.mysql_enabled = "false"
 		end
 	end
+	
+	if !von then
+		local s, err = pcall( require, "von" )
+		if !s then
+			ErrorNoHalt( "FEL --> Unable to load 'von'.  Unable to backup databases." )
+		end
+	end
+	
+	file.CreateDir( FEL.BackupDirectory )
 end
 
 function FEL.Print( msg )
@@ -108,8 +118,10 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	obj._LastKey = nil
 	obj._lastThink = CurTime()
 	obj._lastRefreshCheck = CurTime()
+	obj._lastBackup = CurTime()
 	obj._forcedLocal = forceLocal
 	obj.cacheResetRate = 0
+	obj.backupRate = 0
 	
 	if forceLocal then
 		obj:Print( "Fix-me: Forcing SQLite databases not through variables." )
@@ -528,6 +540,11 @@ function db:Think( force )
 		self:CacheRefresh()
 		self._lastRefreshCheck = CurTime()
 	end
+	
+	if ( CurTime() > self._lastBackup + self.backupRate ) and self.backupRate != 0 then
+		self:Backup()
+		self._lastBackup = CurTime()
+	end
 end
 
 function db:Escape( str )
@@ -670,6 +687,40 @@ function db:DropTable( threaded )
 	self:Query( "DROP TABLE " .. self.dbName, threaded )
 end
 
+-- Sets automatic backups as an interval of t
+function db:SetAutoBackup( t )
+	self.backupRate = t * 60
+end
+
+function db:Backup()
+	-- Read our cache.  Use ReadAll instead of GetAll because we aren't changing this data.
+	local data = self:ReadAll()
+	
+	local date = os.date( "%m-%d-%y" )
+	local loc = FEL.BackupDirectory .. self.dbName .. ".txt"
+	
+	-- We don't need it human readable?  Save as von encoded.
+	file.Write( loc, von.serialize( data ) )
+	
+	self:Debug( "Backed up database to: " .. loc, 1 )
+end
+	
+function db:Restore( data )
+	-- We should be receiving von serialized data.  Deserialize.
+	data = von.deserialize( data )
+	if !data then
+		self:Debug( "Received non von-serialized data.  Silently backing out.", 1 )
+		return false
+	end
+	
+	self:Debug( "Restoring database.", 1 )
+	
+	self:DropTable( false )
+	self.Cache._new = data;
+	self:Query( self:ConstructQuery( "create" ), false )
+	self:Think( true )
+end
+	
 --[[ -----------------------------------
 	Function: FEL.GetDatabase
 	Description: Returns the database object.
