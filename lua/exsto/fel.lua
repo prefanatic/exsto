@@ -142,6 +142,8 @@ function db:Disable( msg )
 	self._DisabledMsg = msg or ""
 end
 
+function db:GetName() return self.dbName end
+
 function db:Error( msg )
 	exsto.ErrorNoHalt( "[" .. self.dbName .. "-Error]" .. msg )
 end
@@ -719,6 +721,10 @@ function db:Restore( data )
 	self.Cache._new = data;
 	self:Query( self:ConstructQuery( "create" ), false )
 	self:Think( true )
+end
+
+function FEL.GetDatabases()
+	return FEL.Databases
 end
 	
 --[[ -----------------------------------

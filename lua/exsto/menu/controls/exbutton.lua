@@ -22,12 +22,16 @@ PANEL = {}
 
 function PANEL:Init()
 	self:Font( "ExGenericText" )
-	self:MaxFontSize( 128 )
+	self:MaxFontSize( 28 )
 	self:TextPadding( 6 )
 	self:Text( "" )
 	self:SetTextColor( Color( 0, 153, 176, 255 ) )
 	self:SetAlignX( TEXT_ALIGN_CENTER )
 	self:SetAlignY( TEXT_ALIGN_CENTER )
+end
+
+function PANEL:SetQuickMenu()
+	self._QuickMenu = true
 end
 
 function PANEL:TextPadding( num )
@@ -146,14 +150,24 @@ function PANEL:Paint()
 	local w, h = self:GetSize()
 
 	-- Background
-	if ( self.Depressed || self:IsSelected() || self:GetToggle() ) then
-		self:GetSkin().tex.Button_Down( 0, 0, w, h );	
-	elseif ( self:GetDisabled() ) then
-		self:GetSkin().tex.Button_Dead( 0, 0, w, h );	
-	elseif self.Hovered then
-		self:GetSkin().tex.Button_Hovered( 0, 0, w, h );	
+	if self._QuickMenu then
+		if ( self.Depressed || self:IsSelected() || self:GetToggle() ) then
+			self:GetSkin().tex.Input.ComboBox.Down( 0, 0, w, h )
+		elseif self.Hovered then
+			self:GetSkin().tex.Input.ComboBox.Hover( 0, 0, w, h )
+		else
+			self:GetSkin().tex.Input.ComboBox.Normal( 0, 0, w, h )
+		end
 	else
-		self:GetSkin().tex.Button( 0, 0, w, h );
+		if ( self.Depressed || self:IsSelected() || self:GetToggle() ) then
+			self:GetSkin().tex.Button_Down( 0, 0, w, h );	
+		elseif ( self:GetDisabled() ) then
+			self:GetSkin().tex.Button_Dead( 0, 0, w, h );	
+		elseif self.Hovered then
+			self:GetSkin().tex.Button_Hovered( 0, 0, w, h );	
+		else
+			self:GetSkin().tex.Button( 0, 0, w, h );
+		end
 	end
 	
 	if !self._HideText then
