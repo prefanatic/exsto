@@ -27,30 +27,75 @@ local function constructMeta( obj )
 	
 	-- Backup old functions
 	obj._Old = {
+		GetSize = obj.GetSize;
+		SetSize = obj.SetSize;
 		GetPos = obj.GetPos;
 		SetPos = obj.SetPos;
+		Close = obj.Close;
+		IsVisible = obj.IsVisible;
+		SetVisible = obj.SetVisible;
 	}
 	
-	-- Create new ones!
-	local x, y = obj:GetPos()
-	obj.__ANIMDATA = {
-		CurX = x;
-		CurY = y;
-		ProgX = x;
-		ProgY = y;
-	}
+	-- Sizing
+	
+	obj.GetSize = function( o )
+		return o:GetAnimSizeCurW(), o:GetAnimSizeCurH()
+	end
+	
+	obj.GetSeriousSize = function( o )
+		return o:GetAnimSizeProgW(), o:GetAnimSizeProgH()
+	end
+	
+	obj.SetSize = function( o, w, h )
+		o:SetAnimSizeProgW( w or 0 );
+		o:SetAnimSizeProgH( h or 0 );
+	end
+	
+	obj.ForceSize = function( o, w, h )
+		o:SetSize( w, h )
+		o:SetAnimationSize( w, h )
+	end		
+	
+	obj.SetAnimationSizeW = function( o, w )
+		o:SetAnimSizeCurW( w or 0 );
+		o._Old.SetSize( o, w, o:GetAnimSizeCurH() )
+	end
+	
+	obj.SetAnimationSizeH = function( o, h )
+		o:SetAnimSizeCurH( h or 0 );
+		o._Old.SetSize( o, o:GetAnimSizeCurW(), h )
+	end
+	
+	obj.SetAnimationSize = function( o, w, h )
+		o:SetAnimationSizeW( w )
+		o:SetAnimationSizeH( w )
+	end
+	
+	obj.GetAnimSizeProgW = function( o ) return o:GetAnimationData()[2][1][2] end
+	obj.SetAnimSizeProgW = function( o, w ) o:GetAnimationData()[2][1][2] = w end
+	
+	obj.GetAnimSizeProgH = function( o ) return o:GetAnimationData()[2][2][2] end
+	obj.SetAnimSizeProgH = function( o, h ) o:GetAnimationData()[2][2][2] = h end
+	
+	obj.GetAnimSizeCurW = function( o ) return o:GetAnimationData()[2][1][1] end
+	obj.SetAnimSizeCurW = function( o, w ) o:GetAnimationData()[2][1][1] = w end
+	
+	obj.GetAnimSizeCurH = function( o ) return o:GetAnimationData()[2][2][1] end
+	obj.SetAnimSizeCurH = function( o, h ) o:GetAnimationData()[2][2][1] = h end
+	
+	-- Positioning
 	
 	obj.GetPos = function( o )
-		return o:GetAnimationData().CurX, o:GetAnimationData().CurY
+		return o:GetAnimPosCurX(), o:GetAnimPosCurY()
 	end
 	
 	obj.GetSeriousPos = function( o )
-		return o:GetAnimationData().ProgX, o:GetAnimationData().ProgY 
+		return o:GetAnimPosProgX(), o:GetAnimPosProgY()
 	end
 	
 	obj.SetPos = function( o, x, y )
-		o:GetAnimationData().ProgX = x or 0;
-		o:GetAnimationData().ProgY = y or 0;
+		o:SetAnimPosProgX( x or 0 );
+		o:SetAnimPosProgY( y or 0 );
 	end
 	
 	obj.ForcePos = function( o, x, y )
@@ -58,12 +103,86 @@ local function constructMeta( obj )
 		o:SetAnimationPos( x, y )
 	end		
 	
+	obj.SetAnimationPosX = function( o, x )
+		o:SetAnimPosCurX( x or 0 );
+		o._Old.SetPos( o, x, o:GetAnimPosCurY() )
+	end
+	
+	obj.SetAnimationPosY = function( o, y )
+		o:SetAnimPosCurY( y or 0 );
+		o._Old.SetPos( o, o:GetAnimPosCurX(), y )
+	end
+	
+	obj.SetAnimationPos = function( o, x, y )
+		o:SetAnimationPosX( x )
+		o:SetAnimationPosY( y )
+	end
+	
+	obj.GetAnimPosProgX = function( o ) return o:GetAnimationData()[1][1][2] end
+	obj.SetAnimPosProgX = function( o, x ) o:GetAnimationData()[1][1][2] = x end
+	
+	obj.GetAnimPosProgY = function( o ) return o:GetAnimationData()[1][2][2] end
+	obj.SetAnimPosProgY = function( o, y ) o:GetAnimationData()[1][2][2] = y end
+	
+	obj.GetAnimPosCurX = function( o ) return o:GetAnimationData()[1][1][1] end
+	obj.SetAnimPosCurX = function( o, x ) o:GetAnimationData()[1][1][1] = x end
+	
+	obj.GetAnimPosCurY = function( o ) return o:GetAnimationData()[1][2][1] end
+	obj.SetAnimPosCurY = function( o, y ) o:GetAnimationData()[1][2][1] = y end
+	
+	
+	--[[ Alpha
+	
+	obj.GetAlpha = function( o )
+		return o:GetAnimationData().CurAlpha
+	end
+	
+	obj.SetAlpha = function( o, val )
+		o:GetAnimationData().ProgAlpha = val
+	end
+	
+	obj.SetAnimationAlpha = function( o, a )
+		o:GetAnimationData().CurX = a or 0;
+		o._Old.SetAlpha( o, a )
+	end
+	
+	-- Closing
+	
+	obj.SetAnimationClose = function( o, enum )
+		o._AnimClose = enum
+	end
+	
+	obj.GetAnimationClose = function( o )
+		return o._AnimClose
+	end
+	
+	obj.SetVisible = function( o, val )
+		o:GetAnimationData().ProgAlpha = ( val and 255 ) or 0;
+	end
+	
+	obj.IsVisible = function( o )
+		return o:GetAnimationData().ProgAlpha > 0
+	end
+	
+	obj.Close = function( o )
+		if o:GetAnimationClose() == ANIM_BLIND_UP then
+			print( "SDFSDF" )
+			o:SetTall( 0 )
+		end
+	end]]
+	
+	-- Misc
+	
 	obj.ForceAnimationRefresh = function( o )
 		o.__ANIMFORCE = true
 	end
 	
 	obj.GetAnimationTable = function( o )
 		return exsto.Animations.Handle[ o.__ANIMID ]
+	end
+	
+	obj.SetAnimationSupport = function( o, tbl )
+		o.__ANIMDATA = tbl
 	end
 	
 	obj.GetAnimationData = function( o )
@@ -81,13 +200,7 @@ local function constructMeta( obj )
 	obj.GetAnimationMul = function( o )
 		return o.__ANIMMUL
 	end
-	
-	obj.SetAnimationPos = function( o, x, y )
-		o:GetAnimationData().CurX = x or 0;
-		o:GetAnimationData().CurY = y or 0;
-		o._Old.SetPos( o, x, y )
-	end
-	
+
 end
 
 function exsto.Animations.Create( obj )
@@ -96,8 +209,39 @@ function exsto.Animations.Create( obj )
 	local id = table.insert( exsto.Animations.Handle, obj )
 	obj.__ANIMID = id;
 	
+	-- Create our animation support table.
+	local x, y = obj:GetPos()
+	local w, h = obj:GetSize()
+	local a = obj:GetAlpha()
+	
 	-- Construct meta helpers.
 	constructMeta( obj )
+	
+	obj:SetAnimationSupport( {
+		
+		-- Position
+		{
+			{ x, x, OnUpdate = function( val ) obj:SetAnimationPosX( val ) end };
+			{ y, y, OnUpdate = function( val ) obj:SetAnimationPosY( val ) end };
+			OnComplete = function() end;
+		};
+		
+		-- Size
+		{
+			{ w, w, OnUpdate = function( val ) obj:SetAnimationSizeW( val ) end };
+			{ h, h, OnUpdate = function( val ) obj:SetAnimationSizeH( val ) end };
+			OnComplete = function() end;
+		};
+		
+		-- Alpha
+		--[[{
+			{ a, a, OnUpdate = function( val ) obj:SetAnimationAlpha( val ) end };
+			OnComplete = function() end;
+		};]]
+	} )
+	
+	PrintTable( obj:GetAnimationData() )
+	print( #obj:GetAnimationData()[1] )
 	
 	obj:SetAnimationMul( 2 )
 	
@@ -110,21 +254,24 @@ function exsto.Animations.Think()
 	-- Loop through our handled objects.
 	for _, obj in ipairs( exsto.Animations.Handle ) do
 		-- Make sure they're valid first.
-		if obj and obj:IsValid() then
+		if obj and obj:IsValid() and obj:GetAnimationData() then
 		
 			-- If we can't see it, fuck it.  Lowers our clientside processing power.  Thanks DBug!
 			if !obj:IsVisible() then return end
-		
-			-- Position Animations
-			local x, y = obj:GetPos()
-			local progX, progY = obj:GetAnimationData().ProgX, obj:GetAnimationData().ProgY 
 			
-			if x != progX or y != progY or obj.__ANIMFORCE then
-				obj.__ANIMFORCE = false
+			-- Loop through our supported animation styles.
+			for _, content in ipairs( obj:GetAnimationData() ) do
 				
-				obj:SetAnimationPos( x + obj:GetAnimationDelta( x, progX ), y + obj:GetAnimationDelta( y, progY ) )
+				-- Go through the values that need changing.
+				for I = 1, #content do
+					if ( math.abs( content[ I ][ 1 ] / content[ I ][ 2 ] ) != 1 ) or ( math.abs( content[ I ][ 1 ] / content[ I ][ 2 ] ) != 0 )  then
+						--print( "%%%% ", _, I, content[ I ][ 1 ], content[ I ][ 2 ], math.abs( content[ I ][ 1 ] / content[ I ][ 2 ] ) )
+						-- The first index of this will ALWAYS be the current, and the last will ALWAYS be the final.
+						content[ I ].OnUpdate( content[ I ][ 1 ] + obj:GetAnimationDelta( content[ I ][ 1 ], content[ I ][ 2 ] ) )
+					end
+				end
 			end
-		
+
 		else
 			-- Remove invalid.
 			exsto.Debug( "Animations --> Invalid object caught in animation table.  Removing.", 1 )

@@ -168,9 +168,6 @@ function page:Alert( question, callback )
 		self.AlertPanel = vgui.Create( "DPanel", self.Content )
 			self.AlertPanel:Dock( TOP )
 			self.AlertPanel:SetTall( 0 )
-			self.AlertPanel.Close = function( p )
-				p:SetTall( 0 )
-			end
 			
 		self.AlertPanel.Text = vgui.Create( "DLabel", self.AlertPanel )
 			self.AlertPanel:Dock( FILL )
@@ -178,17 +175,20 @@ function page:Alert( question, callback )
 		self.AlertPanel.OK = vgui.Create( "ExButton", self.AlertPanel )
 			self.AlertPanel.OK:Dock( BOTTOM )
 		
-		exsto.Animations.CreateAnimation( self.AlertPanel )
+		exsto.Animations.Create( self.AlertPanel )
+		self.AlertPanel:SetAnimationClose( ANIM_BLIND_UP )
 	end
 	
 	self.AlertPanel:SetTall( self.Content:GetTall() - 20 )
 	self.AlertPanel.Text:SetText( question )
-	self.AlertPanel.OK.OnClick = function() 
-		self.AlertPanel:Close() 
+	self.AlertPanel.OK.DoClick = function() 
+		self.AlertPanel:SetVisible( false )
 		if callback then
 			callback() 
 		end
 	end
+	
+	self.AlertPanel:SetVisible( true )
 end
 
 function page:Build()

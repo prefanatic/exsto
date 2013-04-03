@@ -30,3 +30,9 @@ ALOADER_SELF_PARENT = enum();  -- Parenting off themself.
 ALOADER_INVALID_PARENT = enum(); -- Non-existant parent.
 ALOADER_ENDLESS = enum(); -- Endless derive.
 ALOADER_NO_IMMUNITY = enum();
+
+--[[ -----------------------------------
+	Animations
+	----------------------------------- ]]
+ANIM_BLIND_UP = enum();
+ANIM_POP_UP = enum();
