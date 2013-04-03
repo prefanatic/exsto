@@ -80,6 +80,10 @@ elseif CLIENT then
 		}
 		exsto.Debug( "Variables --> Received '" .. id .. "' from the server!", 3 )
 	end )
+	
+	function exsto.GetServerValue( id )
+		return exsto.ServerVariables[ id ] and exsto.ServerVariables[ id ].Value or nil
+	end
 
 end
 

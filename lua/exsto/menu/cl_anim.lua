@@ -103,6 +103,8 @@ function exsto.Animations.Create( obj )
 	
 end
 
+-- TODO: DBug states this holds 10% of computational power.  Most likely due to the fact that it CONSTANTLY sets the object's position no matter what.
+-- As in, the delta makes it only approach the position it needs to go to, not reach it.
 function exsto.Animations.Think()
 	
 	-- Loop through our handled objects.
@@ -110,9 +112,12 @@ function exsto.Animations.Think()
 		-- Make sure they're valid first.
 		if obj and obj:IsValid() then
 		
+			-- If we can't see it, fuck it.  Lowers our clientside processing power.  Thanks DBug!
+			if !obj:IsVisible() then return end
+		
 			-- Position Animations
 			local x, y = obj:GetPos()
-			local progX, progY = obj:GetAnimationData().ProgX, obj:GetAnimationData().ProgY
+			local progX, progY = obj:GetAnimationData().ProgX, obj:GetAnimationData().ProgY 
 			
 			if x != progX or y != progY or obj.__ANIMFORCE then
 				obj.__ANIMFORCE = false

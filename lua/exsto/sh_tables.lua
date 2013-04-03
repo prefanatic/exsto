@@ -56,6 +56,82 @@ COLOR = {}
 	COLOR.EXSTO = Color( 146, 232, 136, 255 )
 	COLOR.NAME = Color( 255, 105, 105, 255 )
 	
+-- Complementary color generator.  Adapted from easyrgb.com
+function exsto.GenerateComplementaryColor( col )
+	local h, s, l = exsto.ConvertRGBtoHSL( col ) -- Grab the HSL
+	
+	h = h + 0.5 -- Complement
+	if h > 1 then h = h - 1 end
+	
+	return exsto.ConvertHSLtoRGB( h, s, l ) -- Reconvert into RGB
+end
+
+local function hue2RGB( t1, t2, h )
+	if h < 0 then h = h + 1 end
+	if h > 1 then h = h - 1 end
+	if ( 6 * h ) < 1 then return t1 + ( t2 - t1 ) * 6 * h end
+	if ( 2 * h ) < 1 then return t2 end
+	if ( 3 * h ) < 2 then return t1 + ( t2 - t1 ) * ( ( 2 / 3 ) - h ) * 6 end
+	return t1
+end
+
+function exsto.ConvertHSLtoRGB( h, s, l )
+	local r, g, b
+	if s == 0 then
+		r = l * 255
+		g = l * 255
+		b = l * 255
+	else
+		local t1, t2
+		if l < 0.5 then t2 = l * ( 1 + s )
+		else t2 = ( l + s ) - ( s * l )
+		end
+		
+		t1 = 2 * l - t2
+		
+		r = 255 * hue2RGB( t1, t2, h + ( 1 / 3 ) )
+		g = 255 * hue2RGB( t1, t2, h )
+		b = 255 * hue2RGB( t1, t2, h - ( 1 / 3 ) )
+	end
+	
+	return Color( r, g, b, 255 )
+end
+
+function exsto.ConvertRGBtoHSL( col )
+	local h, s
+	local r, g, b = col.r / 255, col.g / 255, col.b / 255
+	local max, min = math.max( r, g, b ), math.min( r, g, b )
+	local delta = max - min
+	
+	local l = ( max + min ) / 2
+	
+	if delta == 0 then
+		h, s = 0, 0 -- This is gray!
+	else
+		if l < 0.5 then
+			s = max / ( max + min )
+		else
+			s = max / ( 2 - max - min )
+		end
+		
+		local dR = ( ( ( max - r ) / 6 ) + ( delta / 2 ) ) / delta
+		local dG = ( ( ( max - g ) / 6 ) + ( delta / 2 ) ) / delta
+		local dB = ( ( ( max - b ) / 6 ) + ( delta / 2 ) ) / delta
+		
+		if r == max then h = dB - dG
+		elseif g == max then h = ( 1 / 3 ) + dR - dB
+		elseif b == max then h = ( 2 / 3 ) + dG - dR
+		end
+		
+		if h < 0 then h = h + 1 end
+		if h > 1 then h = h - 1 end
+	end
+	
+	print( h, s, l )
+	
+	return h, s, l
+end
+
 -- Color to Text support
 CTEXT ={}
 

@@ -108,6 +108,9 @@ if CLIENT then
 			pnl.Restore:Dock( TOP )
 			pnl.Restore:SetQuickMenu()
 			pnl.Restore:SetTall( 32 )
+			pnl.Restore.DoClick = function()
+				pnl:GetObject():Alert( "Test Alert!" )
+			end
 			
 		pnl.Backup = vgui.Create( "ExButton", pnl.Cat )
 			pnl.Backup:Text( "Backup" )

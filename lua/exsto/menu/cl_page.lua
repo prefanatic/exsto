@@ -163,6 +163,34 @@ function page:Showtime( noAnim ) -- Wake him up!
 
 end
 
+function page:Alert( question, callback )
+	if !self.AlertPanel then
+		self.AlertPanel = vgui.Create( "DPanel", self.Content )
+			self.AlertPanel:Dock( TOP )
+			self.AlertPanel:SetTall( 0 )
+			self.AlertPanel.Close = function( p )
+				p:SetTall( 0 )
+			end
+			
+		self.AlertPanel.Text = vgui.Create( "DLabel", self.AlertPanel )
+			self.AlertPanel:Dock( FILL )
+			
+		self.AlertPanel.OK = vgui.Create( "ExButton", self.AlertPanel )
+			self.AlertPanel.OK:Dock( BOTTOM )
+		
+		exsto.Animations.CreateAnimation( self.AlertPanel )
+	end
+	
+	self.AlertPanel:SetTall( self.Content:GetTall() - 20 )
+	self.AlertPanel.Text:SetText( question )
+	self.AlertPanel.OK.OnClick = function() 
+		self.AlertPanel:Close() 
+		if callback then
+			callback() 
+		end
+	end
+end
+
 function page:Build()
 	self:Debug( "Building page." )
 	if self.Content and self.Content:IsValid() then -- We already exist.  Most likely rebuilding due to a rank change.  Unload and delete old content.
@@ -199,6 +227,7 @@ function page:CreateContentHolder()
 		self.Content:SetPos( -exsto.Menu.FrameScroller:GetWide() - 2, 0 )
 		self.Content:SetSize( exsto.Menu.FrameScroller:GetWide(), h )
 		self.Content:SetSkin( "Exsto" )
+		self.Content.GetObject = function() return self end
 
 	exsto.Animations.Create( self.Content )
 end

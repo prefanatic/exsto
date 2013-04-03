@@ -180,12 +180,13 @@ function exsto.dbGetPlayerByID( id )
 	return nil
 end
 
+--[[
 timer.Create( "Exsto_TagCheck", 1, 0, function()
 	if not GetConVar( "sv_tags" ) then CreateConVar( "sv_tags", "" ) end -- Why do we have to do this now?
 	if !string.find( GetConVar( "sv_tags" ):GetString(), "Exsto" ) then
 		RunConsoleCommand( "sv_tags", GetConVar( "sv_tags" ):GetString() .. ",Exsto" )
 	end
-end )
+end ) ]]
 
 local succ, err = pcall( require, "json" );
 if !succ then
