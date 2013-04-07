@@ -32,15 +32,17 @@ if SERVER then
 	
 end
 
-function FEL.Print( msg )
-	exsto.Print( exsto_CONSOLE, msg )
-end
-
-function FEL.Debug( msg, level )
-	if exsto.FELDebug:GetValue() >= level then
-		exsto.Debug( msg, 0 )
+hook.Add( "ExPrintingInit", "ExFELIntegration", function()
+	function FEL.Print( msg )
+		exsto.Print( exsto_CONSOLE, msg )
 	end
-end
+
+	function FEL.Debug( msg, level )
+		if exsto.FELDebug:GetValue() >= level then
+			exsto.Debug( msg, 0 )
+		end
+	end
+end )
 
 hook.Add( "FEL_OnQuery", "ExFELQueryDebug", function( str, threaded )
 	if CLIENT then return end

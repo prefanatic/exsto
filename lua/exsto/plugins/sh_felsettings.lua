@@ -109,7 +109,7 @@ if CLIENT then
 			pnl.Restore:SetQuickMenu()
 			pnl.Restore:SetTall( 32 )
 			pnl.Restore.DoClick = function()
-				pnl:GetObject():Alert( "Test Alert!" )
+				pnl:GetObject():Alert( "Test Alert!", function() pnl:GetObject():Alert( "This is a secondary alert that should be much longer than the other one!" ) end )
 			end
 			
 		pnl.Backup = vgui.Create( "ExButton", pnl.Cat )
@@ -155,6 +155,14 @@ if CLIENT then
 		PLUGIN.WorkingDB = "%DATABASE"
 	end
 	
+	local function backBackupFunction( obj )
+		exsto.Menu.OpenPage( PLUGIN.DetailsPage )
+	end
+	
+	local function backupInit( pnl )
+		pnl.Cat = pnl:CreateCategory( "Backup" )
+	end
+	
 	function PLUGIN:Init()
 		self.MainPage = exsto.Menu.CreatePage( "felsettings", pageInit )
 			self.MainPage:SetTitle( "Databases" )
@@ -165,6 +173,12 @@ if CLIENT then
 			self.DetailsPage:SetUnaccessable()
 			self.DetailsPage:OnShowtime( showtimeDetails )
 			self.DetailsPage:SetBackFunction( backFunction )
+			
+		self.BackupPage = exsto.Menu.CreatePage( "felbackup", backupInit )
+			self.BackupPage:SetTitle( "Backup" )
+			self.BackupPage:SetUnaccessable()
+			self.BackupPage:SetBackFunction( backBackupFunction )
+			
 	end
 	
 end

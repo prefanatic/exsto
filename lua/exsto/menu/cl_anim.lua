@@ -29,6 +29,8 @@ local function constructMeta( obj )
 	obj._Old = {
 		GetSize = obj.GetSize;
 		SetSize = obj.SetSize;
+		SetTall = obj.SetTall;
+		SetWide = obj.SetWide;
 		GetPos = obj.GetPos;
 		SetPos = obj.SetPos;
 		Close = obj.Close;
@@ -51,6 +53,11 @@ local function constructMeta( obj )
 		o:SetAnimSizeProgH( h or 0 );
 	end
 	
+	obj.SetTall = function( o, h )
+		--print( "Setting tall ", h )
+		o:SetAnimSizeProgH( h or 0 );
+	end
+	
 	obj.ForceSize = function( o, w, h )
 		o:SetSize( w, h )
 		o:SetAnimationSize( w, h )
@@ -58,17 +65,18 @@ local function constructMeta( obj )
 	
 	obj.SetAnimationSizeW = function( o, w )
 		o:SetAnimSizeCurW( w or 0 );
-		o._Old.SetSize( o, w, o:GetAnimSizeCurH() )
+		o._Old.SetWide( o, w )
 	end
 	
 	obj.SetAnimationSizeH = function( o, h )
 		o:SetAnimSizeCurH( h or 0 );
-		o._Old.SetSize( o, o:GetAnimSizeCurW(), h )
+		--print( "updating animation size", h )
+		o._Old.SetTall( o, h )
 	end
 	
 	obj.SetAnimationSize = function( o, w, h )
 		o:SetAnimationSizeW( w )
-		o:SetAnimationSizeH( w )
+		o:SetAnimationSizeH( h )
 	end
 	
 	obj.GetAnimSizeProgW = function( o ) return o:GetAnimationData()[2][1][2] end
@@ -131,18 +139,18 @@ local function constructMeta( obj )
 	obj.SetAnimPosCurY = function( o, y ) o:GetAnimationData()[1][2][1] = y end
 	
 	
-	--[[ Alpha
+	--Alpha
 	
 	obj.GetAlpha = function( o )
-		return o:GetAnimationData().CurAlpha
+		return o:GetAnimationData()[3][1][1]
 	end
 	
 	obj.SetAlpha = function( o, val )
-		o:GetAnimationData().ProgAlpha = val
+		o:GetAnimationData()[3][1][2] = val
 	end
 	
 	obj.SetAnimationAlpha = function( o, a )
-		o:GetAnimationData().CurX = a or 0;
+		o:GetAnimationData()[3][1][1] = a or 0;
 		o._Old.SetAlpha( o, a )
 	end
 	
@@ -150,12 +158,20 @@ local function constructMeta( obj )
 	
 	obj.SetAnimationClose = function( o, enum )
 		o._AnimClose = enum
+		
+		if enum == ANIM_BLIND_UP then
+			o:GetAnimationData()[2].OnComplete = function( val )
+				--print( "ANIMATION COMPLETE", val )
+				--o:SetVisible( false )
+			end
+		end
 	end
 	
 	obj.GetAnimationClose = function( o )
 		return o._AnimClose
 	end
 	
+	--[[
 	obj.SetVisible = function( o, val )
 		o:GetAnimationData().ProgAlpha = ( val and 255 ) or 0;
 	end
@@ -164,13 +180,13 @@ local function constructMeta( obj )
 		return o:GetAnimationData().ProgAlpha > 0
 	end
 	
+	]]
+	
 	obj.Close = function( o )
 		if o:GetAnimationClose() == ANIM_BLIND_UP then
-			print( "SDFSDF" )
 			o:SetTall( 0 )
 		end
-	end]]
-	
+	end
 	-- Misc
 	
 	obj.ForceAnimationRefresh = function( o )
@@ -223,14 +239,14 @@ function exsto.Animations.Create( obj )
 		{
 			{ x, x, OnUpdate = function( val ) obj:SetAnimationPosX( val ) end };
 			{ y, y, OnUpdate = function( val ) obj:SetAnimationPosY( val ) end };
-			OnComplete = function() end;
+			OnComplete = function()  end;
 		};
 		
 		-- Size
 		{
-			{ w, w, OnUpdate = function( val ) obj:SetAnimationSizeW( val ) end };
-			{ h, h, OnUpdate = function( val ) obj:SetAnimationSizeH( val ) end };
-			OnComplete = function() end;
+			{ w, w, OnUpdate = function( val )  obj:SetAnimationSizeW( val ) end };
+			{ h, h, OnUpdate = function( val )  obj:SetAnimationSizeH( val ) end };
+			OnComplete = function()  end;
 		};
 		
 		-- Alpha
@@ -239,9 +255,6 @@ function exsto.Animations.Create( obj )
 			OnComplete = function() end;
 		};]]
 	} )
-	
-	PrintTable( obj:GetAnimationData() )
-	print( #obj:GetAnimationData()[1] )
 	
 	obj:SetAnimationMul( 2 )
 	
@@ -263,11 +276,16 @@ function exsto.Animations.Think()
 			for _, content in ipairs( obj:GetAnimationData() ) do
 				
 				-- Go through the values that need changing.
-				for I = 1, #content do
-					if ( math.abs( content[ I ][ 1 ] / content[ I ][ 2 ] ) != 1 ) or ( math.abs( content[ I ][ 1 ] / content[ I ][ 2 ] ) != 0 )  then
-						--print( "%%%% ", _, I, content[ I ][ 1 ], content[ I ][ 2 ], math.abs( content[ I ][ 1 ] / content[ I ][ 2 ] ) )
-						-- The first index of this will ALWAYS be the current, and the last will ALWAYS be the final.
-						content[ I ].OnUpdate( content[ I ][ 1 ] + obj:GetAnimationDelta( content[ I ][ 1 ], content[ I ][ 2 ] ) )
+				for _, segment in ipairs( content ) do
+					if ( ( math.abs( segment[ 1 ] / segment[ 2 ] ) == ( 1 or 0 ) ) or ( math.floor( segment[ 1 ] + 0.5 ) == math.floor( segment[ 2 ] + 0.5 ) ) ) and !content._COMPLETED then
+						content.OnComplete( segment[ 1 ] )
+						content._COMPLETED = true
+					elseif math.floor( segment[ 1 ] + 0.5 ) != math.floor( segment[ 2 ] + 0.5 ) then
+						content._COMPLETED = false
+						
+						--print( "modifying segment", segment[ 1 ], segment[ 2 ] )
+
+						segment.OnUpdate( segment[ 1 ] + obj:GetAnimationDelta( segment[ 1 ], segment[ 2 ] ) )
 					end
 				end
 			end

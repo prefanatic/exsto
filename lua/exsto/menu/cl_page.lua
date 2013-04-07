@@ -165,30 +165,45 @@ end
 
 function page:Alert( question, callback )
 	if !self.AlertPanel then
-		self.AlertPanel = vgui.Create( "DPanel", self.Content )
-			self.AlertPanel:Dock( TOP )
-			self.AlertPanel:SetTall( 0 )
+		self.AlertPanel = vgui.Create( "DPanelList", self.Content )
+			self.AlertPanel:SetPos( 0, self.Content:GetTall() + 1 )
+			self.AlertPanel:SetSize( self.Content:GetWide(), self.Content:GetTall() )
+			self.AlertPanel.Paint = function( pnl )
+				surface.SetDrawColor( 255, 255, 255, 75 )
+				surface.DrawRect( 0, 0, pnl:GetWide(), pnl:GetTall() )
+			end
 			
-		self.AlertPanel.Text = vgui.Create( "DLabel", self.AlertPanel )
-			self.AlertPanel:Dock( FILL )
+		self.AlertPanel.Text = vgui.Create( "ExText", self.AlertPanel )
+			self.AlertPanel:AddItem( self.AlertPanel.Text )
 			
 		self.AlertPanel.OK = vgui.Create( "ExButton", self.AlertPanel )
-			self.AlertPanel.OK:Dock( BOTTOM )
+			self.AlertPanel.OK:SetText( "Yes, I am sure" )
+			self.AlertPanel:AddItem( self.AlertPanel.OK )
+			
+		self.AlertPanel.Cancel = vgui.Create( "ExButton", self.AlertPanel )
+			self.AlertPanel.Cancel:SetText( "Cancel" )
+			self.AlertPanel:AddItem( self.AlertPanel.Cancel )
 		
 		exsto.Animations.Create( self.AlertPanel )
-		self.AlertPanel:SetAnimationClose( ANIM_BLIND_UP )
 	end
 	
-	self.AlertPanel:SetTall( self.Content:GetTall() - 20 )
+	self.AlertPanel:SetPos( 0, 0 )
 	self.AlertPanel.Text:SetText( question )
+	self.AlertPanel.Text:SizeToContents()
 	self.AlertPanel.OK.DoClick = function() 
-		self.AlertPanel:SetVisible( false )
+		self.AlertPanel:SetPos( 0, self.AlertPanel:GetTall() + 21 )
 		if callback then
 			callback() 
 		end
 	end
+	self.AlertPanel.Cancel.DoClick = function()
+		self.AlertPanel:SetPos( 0, self.AlertPanel:GetTall() + 21 )
+	end
+	
+	self.AlertPanel:InvalidateLayout( true )
 	
 	self.AlertPanel:SetVisible( true )
+	--self.AlertPanel:SetAnimationClose( ANIM_BLIND_DWN )
 end
 
 function page:Build()

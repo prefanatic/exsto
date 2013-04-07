@@ -117,7 +117,7 @@ exsto_ERROR = AddPrint(
 			end
 		end
 		
-		debug.Trace()
+		--debug.Trace()
 		Error( send )
 	end
 )
@@ -139,7 +139,7 @@ exsto_ERRORNOHALT = AddPrint(
 		--debug.Trace()
 		//PrintTable( debug.getinfo( 4, "Sln" ) )
 		ErrorNoHalt( send )
-		ErrorNoHalt( debug.traceback( 4 ) .. "\n" )
+		--ErrorNoHalt( debug.traceback( 4 ) .. "\n" )
 	end
 )
 	
@@ -275,6 +275,8 @@ end
 function exsto.Debug( msg, level )
 	exsto.Print( exsto_DEBUG, msg, level or 1 )
 end
+
+hook.Call( "ExPrintingInit" )
 
 if CLIENT then
 

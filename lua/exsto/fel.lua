@@ -21,12 +21,12 @@
 FEL = {}
 	FEL.Databases = {}
 	FEL.DefaultConfig = {
-		host = "localhost";
-		username = "username";
-		password = "password";
-		database = "database";
-		mysql_enabled = "false";
-		debug_level = "0";
+		mysql_user = "name";
+		mysql_pass = "pass";
+		mysql_database = "main_db";
+		mysql_host = "localhost";
+		debug_level = 0;
+		mysql_databases = {};
 	}
 	FEL.ConfigFile = "fel_settings.txt";
 	FEL.TableCache = "fel_tablecache/"
@@ -52,39 +52,104 @@ FEL = {}
 	}
 	
 function FEL.Init()
+
+	if !von then
+		local s, err = pcall( require, "von" )
+		if !s then
+			ErrorNoHalt( "FEL --> Unable to load 'von'.  FEL cannot operate without this!" )
+		end
+	end
+	
 	-- Load our extensions.
 	for _, f in ipairs( file.Find( "fel_extensions/*.lua", "LUA" ) ) do
 		include( "fel_extensions/" .. f )
 		AddCSLuaFile( "fel_extensions/" .. f )
 	end
 	
-	if !file.Exists( FEL.ConfigFile, "DATA" ) then
-		file.Write( FEL.ConfigFile, util.TableToKeyValues( FEL.DefaultConfig ) )
-		FEL.Config = FEL.DefaultConfig
-	else
-		FEL.Config = util.KeyValuesToTable( file.Read( FEL.ConfigFile ) )
-	end
+	-- Our own settings database <3.  This pretty much will only hold what databases we've created.  MySQL info goes somewhere else.
+	--[[FEL.SettingsDB = FEL.CreateDatabase( "fel_settings", true )
+		FEL.SettingsDB:ConstructColumns( {
+			Database = "TEXT:primary:not_null";
+			MySQL = "BOOLEAN:not_null";
+			BackupInterval = "INTEGER";
+		} )]]
+		
+	FEL.ReadSettingsFile()
 	
-	if !mysql and FEL.Config.mysql_enabled == "true" and SERVER then
+	-- Check and see if we need MySQL to operate.
+	if FEL.MySQLNeeded() and !mysql and SERVER then
 		local s, err = pcall( require, "mysqloo" )
 		if !s then
 			ErrorNoHalt( "FEL --> Unable to load 'mysqloo'.  Make the bin is located in lua/bin and libmysql with srcds.\n" )
 			ErrorNoHalt( "FEL --> Defaulting to SQLite.\n" )
-			
-			-- Override.
-			FEL.Config.mysql_enabled = "false"
-		end
-	end
-	
-	if !von then
-		local s, err = pcall( require, "von" )
-		if !s then
-			ErrorNoHalt( "FEL --> Unable to load 'von'.  Unable to backup databases." )
 		end
 	end
 	
 	file.CreateDir( FEL.BackupDirectory )
 end
+
+function FEL.ReadSettingsFile()
+
+	-- Read a new von encoded format.
+	if !file.Exists( FEL.ConfigFile, "DATA" ) then 
+		file.Write( FEL.ConfigFile, von.serialize( FEL.DefaultConfig ) )
+		FEL.Config = FEL.DefaultConfig
+	else
+	
+		FEL.Config = von.deserialize( file.Read( FEL.ConfigFile ) )
+
+		if FEL.Config[ 1 ] == "TableToKeyValue" then -- We're probably on the old util.TableToKeys.  Remove, sorry!
+			file.Write( FEL.ConfigFile, von.serialize( FEL.DefaultConfig ) )
+			FEL.Config = FEL.DefaultConfig
+		end
+	end
+
+end
+
+function FEL.SetMySQLInformation( user, pass, db, host )
+	FEL.Config.mysql_user = user;
+	FEL.Config.mysql_pass = pass;
+	FEL.Config.mysql_database = db;
+	FEL.Config.mysql_host = host;
+	FEL.SaveSettings();
+end	
+
+-- Hardcoded function if this API doesn't have any other methods to set mysql information.  This is just an API, not a handle-all.
+-- Developers should implement their own way of setting the mysql information.
+local function p( msg, ply )
+	if ply:EntIndex() == 0 then print( msg ) return end
+	ply:PrintMessage( HUD_PRINTCONSOLE, msg )
+end
+function FEL.HardcodeMySQLSet( ply, _, args )
+	if !ply:EntIndex() == 0 and game.IsDedicated() then
+		ply:PrintMessage( HUD_PRINTCONSOLE, "This command can only be run on the server console!" )
+	elseif ply:EntIndex() == 0 or ply:IsListenServerHost() then
+		if !args[ 1 ] or !args[ 2 ] or !args[ 3 ] or !args[ 4 ] then
+			p( "Invalid arguments!  We need the username, password, database, and the host: in that order.", ply )
+			return
+		end
+		p( "Setting mysql information.", ply )
+		FEL.SetMySQLInformation( unpack( args ) )
+	end
+end
+concommand.Add( "FELSetMySQLInformation", FEL.HardcodeMySQLSet )
+
+function FEL.SaveSettings()
+	file.Write( FEL.ConfigFile, von.serialize( FEL.Config ) )
+end
+
+function FEL.HasMySQLCapacity()
+	if FEL.Config.mysql_user and FEL.Config.mysql_pass and FEL.Config.mysql_database and FEL.Config.mysql_host and mysqloo then return true end
+end
+
+function FEL.MySQLNeeded()
+	FEL.Debug( "Checking if MySQL is needed.", 2 )
+
+	-- Check our new SQL configuration.  If we've saved one of these databases as MySQL needed, then we fucking need MySQL.
+	if #FEL.Config.mysql_databases >= 1 then return true end
+	
+	return false
+end	
 
 function FEL.Print( msg )
 	print( "FEL --> " .. msg )
@@ -97,6 +162,8 @@ function FEL.Debug( msg, level )
 end
 
 FEL.Init()
+
+-- Database metaobject
 
 local db = {
 	dbName;
@@ -130,11 +197,30 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	table.insert( FEL.Databases, obj )
 	hook.Add( "Think", "FELDBTHINK_" .. dbName, function() obj:Think() end )
 	
-	if FEL.Config.mysql_enabled == "true" and forceLocal != true then -- Connect to a mysql server.
-		obj:InitMySQL()
-	end
+	-- Do we need to initiate a MySQL object?
+	if obj:RequiresMySQL() and FEL.HasMySQLCapacity() then obj:InitMySQL() end
+	if !FEL.HasMySQLCapacity() then self:Error( "Assigned to use MySQL, but mysqloo is missing.  Please install properly." ) end
 	
 	return obj
+end
+
+function db:RequiresMySQL()
+	for _, db in ipairs( FEL.Config.mysql_databases ) do
+		if db == self:GetName() then return true end
+	end
+end
+
+-- This WILL NOT take place until the next server restart, for stability reasons.  I'm not to keen for handling this change live.
+function db:SetMySQL()
+	table.insert( FEL.Config.mysql_databases, self:GetName() )
+	FEL.SaveSettings()
+end
+
+function db:SetSQLite()
+	for _, db in ipairs( FEL.Config.mysql_databases ) do
+		if db == db:GetName() then table.remove( FEL.Config.mysql_databases, _ ) return end
+	end
+	FEL.SaveSettings()
 end
 
 function db:Disable( msg )
@@ -145,7 +231,7 @@ end
 function db:GetName() return self.dbName end
 
 function db:Error( msg )
-	exsto.ErrorNoHalt( "[" .. self.dbName .. "-Error]" .. msg )
+	exsto.ErrorNoHalt( "[" .. self.dbName .. "-Error] " .. msg )
 end
 
 function db:Print( msg )
@@ -168,6 +254,15 @@ function db:OnMySQLConnect()
 end
 
 function db:OnMySQLConnectFail( err )
+	-- Handle login errors.  Don't try to reconnect.  No point.  Their information is incorrect, this isn't a timeout.
+	if err:find( "Access denied for user" ) then
+		self:Error( "MySQL login error.  Are you using the correct login information?" )
+		self._mysqlSucces = false
+		self._AttemptingMySQLReconnect = nil
+		self._forcedLocal = true
+		return
+	end
+	
 	self:Error( "MySQL Error: " .. tostring( err ) )
 	self._mysqlSuccess = false
 	
@@ -194,7 +289,7 @@ function db:InitMySQL()
 	if self._mysqlDB then self._mysqlDB = nil end
 	
 	self:Debug( "Creating MySQL object.", 2 )
-	self._mysqlDB = mysqloo.connect( FEL.Config.host, FEL.Config.username, FEL.Config.password, FEL.Config.database )
+	self._mysqlDB = mysqloo.connect( FEL.Config.mysql_host, FEL.Config.mysql_user, FEL.Config.mysql_pass, FEL.Config.mysql_database )
 	self._mysqlDB:connect()
 	self._mysqlDB.onConnected = function( mysqldb ) self:OnMySQLConnect() end
 	self._mysqlDB.onConnectionFailed = function( mysqldb, err ) self:OnMySQLConnectFail( err ) end
@@ -938,3 +1033,9 @@ function FEL.PurgeDataCache( ply, _, args )
 	end
 end
 concommand.Add( "FELPurgeCache", FEL.PurgeDataCache )
+
+concommand.Add( "FELCreateMySQL", function( ply, _, args )
+	local db = FEL.GetDatabase( args[ 1 ] )
+	if !db then return end
+	db:SetMySQL()
+end )
