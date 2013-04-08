@@ -12,6 +12,7 @@ if SERVER then
 	function PLUGIN:Init()
 		util.AddNetworkString( "ExRequestDatabaseList" )
 		util.AddNetworkString( "ExSendDatabaseList" )
+		util.AddNetworkString( "ExSetMySQLDB" )
 	
 	end
 
@@ -24,11 +25,23 @@ if SERVER then
 			sender:AddShort( #FEL.GetDatabases() )
 		for _, obj in ipairs( FEL.GetDatabases() ) do
 			sender:AddString( obj:GetName() )
+			sender:AddBoolean( obj:IsMySQL() )
 		end
 		
 		sender:Send()
 	end
 	PLUGIN:CreateReader( "ExRequestDatabaseList", PLUGIN.RequestDatabases )
+	
+	function PLUGIN:SetMySQL( reader )
+		local ply = reader:ReadSender()
+		local db = FEL.GetDatabase( reader:ReadString() )
+		local status = reader:ReadBoolean()
+		
+		self:Debug( "Setting '" .. db:GetName() .. "' as mysql '" .. tostring( status ) .. "' by player '" .. ply:Nick() .. "'", 1 )
+		
+		if status then print( "setmysql" ) db:SetMySQL() else db:SetSQLite() end
+	end
+	PLUGIN:CreateReader( "ExSetMySQLDB", PLUGIN.SetMySQL )
 
 end
 
@@ -51,9 +64,11 @@ if CLIENT then
 		if !pnl then return end
 		
 		pnl.List:Clear()
-		for _, name in ipairs( dbs ) do
-			pnl.List:AddLine( name ).Name = name
+		for _, data in ipairs( dbs ) do
+			pnl.List:AddLine( data.db ).Data = data
 		end
+		
+		pnl.List:AddLine( "Global" ).Data = { db = "Global", mysql = nil }
 		
 		invalidate()
 	end
@@ -66,14 +81,14 @@ if CLIENT then
 	local function receiveDatabaseList( reader )
 		local tbl = {}
 		for I = 1, reader:ReadShort() do
-			table.insert( tbl, reader:ReadString() )
+			table.insert( tbl, { db = reader:ReadString(), mysql = reader:ReadBoolean() } )
 		end
 		refreshDatabaseList( tbl )
 	end
 	exsto.CreateReader( "ExSendDatabaseList", receiveDatabaseList )
 	
 	local function onRowSelected( lst, lineid, line )
-		PLUGIN.WorkingDB = line.Name
+		PLUGIN.WorkingDB = line.Data
 		exsto.Menu.EnableBackButton()
 		exsto.Menu.OpenPage( PLUGIN.DetailsPage )
 	end
@@ -96,7 +111,17 @@ if CLIENT then
 	local function showtimeDetails( page )
 		local pnl = page.Content
 		
-		pnl.Cat.Header:SetText( PLUGIN.WorkingDB )
+		pnl.Cat.Header:SetText( PLUGIN.WorkingDB.db )
+		pnl.MySQL:SetValue( PLUGIN.WorkingDB.mysql )
+		
+		pnl.Restore:SetDisabled( false )
+		pnl.Edit:SetDisabled( false )
+		
+		if PLUGIN.WorkingDB.db == "Global" then
+			pnl.Restore:SetDisabled( true )
+			pnl.Edit:SetDisabled( true )
+			pnl.MySQL:SetValue( FEL.AllDatabasesMySQL() )
+		end
 	end
 	
 	local function detailsInit( pnl )
@@ -126,6 +151,22 @@ if CLIENT then
 			pnl.MySQL:SetMaxTextWide( false )
 			pnl.MySQL:MaxFontSize( 28 )
 			pnl.MySQL:SetTall( 32 )
+			pnl.MySQL.OnClick = function( o, val )
+				if PLUGIN.WorkingDB.db == "Global" then
+					pnl:GetObject():Alert( "This will set EVERY database to MySQL.  Any SQLite data will not transfer over, and the server will need to be restarted in order for this to take effect.  Are you sure?",
+						function()
+						
+						end, function() o:SetValue( !val ) end )
+				else
+					pnl:GetObject():Alert( "Are you sure you want to set this database to MySQL?  Any data currently in SQLite will not transfer over, and you will need to restart the server.",
+						function()
+							local sender = exsto.CreateSender( "ExSetMySQLDB" )
+								sender:AddString( PLUGIN.WorkingDB.db )
+								sender:AddBoolean( val )
+							sender:Send()
+						end, function() o:SetValue( !val ) end )
+				end
+			end
 			
 		pnl.Edit = vgui.Create( "ExButton", pnl.Cat )
 			pnl.Edit:Text( "Edit" )
@@ -163,6 +204,13 @@ if CLIENT then
 		pnl.Cat = pnl:CreateCategory( "Backup" )
 	end
 	
+	local function infoInit( pnl )
+	end
+	
+	local function infoBackupFunction( obj )
+		exsto.Menu.OpenPage( PLUGIN.DetailsPage )
+	end
+	
 	function PLUGIN:Init()
 		self.MainPage = exsto.Menu.CreatePage( "felsettings", pageInit )
 			self.MainPage:SetTitle( "Databases" )
@@ -178,6 +226,11 @@ if CLIENT then
 			self.BackupPage:SetTitle( "Backup" )
 			self.BackupPage:SetUnaccessable()
 			self.BackupPage:SetBackFunction( backBackupFunction )
+			
+		self.MySQLInfoPage = exsto.Menu.CreatePage( "felmysqlinfo", infoInit )
+			self.MySQLInfoPage:SetTitle( "Account Information" )
+			self.MySQLInfoPage:SetUnnaccessable()
+			self.MySQLInfoPage:SetBackFunction( infoBackupFunction )
 			
 	end
 	

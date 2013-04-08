@@ -163,7 +163,7 @@ function page:Showtime( noAnim ) -- Wake him up!
 
 end
 
-function page:Alert( question, callback )
+function page:Alert( question, callbackYes, callbackNo )
 	if !self.AlertPanel then
 		self.AlertPanel = vgui.Create( "DPanelList", self.Content )
 			self.AlertPanel:SetPos( 0, self.Content:GetTall() + 1 )
@@ -192,12 +192,15 @@ function page:Alert( question, callback )
 	self.AlertPanel.Text:SizeToContents()
 	self.AlertPanel.OK.DoClick = function() 
 		self.AlertPanel:SetPos( 0, self.AlertPanel:GetTall() + 21 )
-		if callback then
-			callback() 
+		if callbackYes then
+			callbackYes() 
 		end
 	end
 	self.AlertPanel.Cancel.DoClick = function()
 		self.AlertPanel:SetPos( 0, self.AlertPanel:GetTall() + 21 )
+		if callbackNo then
+			callbackNo()
+		end
 	end
 	
 	self.AlertPanel:InvalidateLayout( true )

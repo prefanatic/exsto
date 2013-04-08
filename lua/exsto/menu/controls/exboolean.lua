@@ -30,6 +30,13 @@ end
 
 function PANEL:DoClick()
 	self:SetValue( not self:GetValue() )
+	self:OnValueSet( self:GetValue() )
+	self:OnClick( self:GetValue() )
+end
+
+function PANEL:OnClick()
+end
+function PANEL:OnValueSet()
 end
 
 function PANEL:SetValue( val )

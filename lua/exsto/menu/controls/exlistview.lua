@@ -25,6 +25,7 @@ function PANEL:Init()
 	-- Data for OnRowSelected
 	self.Data = {}
 	self:SetTextIndent( 5 )
+	self:SetDataHeight( 32 )
 
 end
 
@@ -35,6 +36,10 @@ end
 function PANEL:NoHeaders()
 	self:SetHideHeaders( true )
 	self:AddColumn( "" )
+end
+
+function PANEL:SetFont( fnt )
+	self._Font = fnt
 end
 
 function PANEL:LinePaintOver( func )

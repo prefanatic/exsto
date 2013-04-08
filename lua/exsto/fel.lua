@@ -138,6 +138,18 @@ function FEL.SaveSettings()
 	file.Write( FEL.ConfigFile, von.serialize( FEL.Config ) )
 end
 
+function FEL.GetMySQLDatabases()
+	local tbl = {}
+	for _, db in ipairs( FEL.GetDatabases() ) do
+		if table.HasValue( FEL.Config.mysql_databases, db:GetName() ) then table.insert( tbl, db ) end
+	end
+	return tbl
+end
+
+function FEL.AllDatabasesMySQL()
+	return #FEL.GetMySQLDatabases() == #FEL.GetDatabases()
+end
+
 function FEL.HasMySQLCapacity()
 	if FEL.Config.mysql_user and FEL.Config.mysql_pass and FEL.Config.mysql_database and FEL.Config.mysql_host and mysqloo then return true end
 end
@@ -210,6 +222,8 @@ function db:RequiresMySQL()
 	end
 end
 
+function db:IsMySQL() return self._mysqlSuccess end
+
 -- This WILL NOT take place until the next server restart, for stability reasons.  I'm not to keen for handling this change live.
 function db:SetMySQL()
 	table.insert( FEL.Config.mysql_databases, self:GetName() )
@@ -217,8 +231,8 @@ function db:SetMySQL()
 end
 
 function db:SetSQLite()
-	for _, db in ipairs( FEL.Config.mysql_databases ) do
-		if db == db:GetName() then table.remove( FEL.Config.mysql_databases, _ ) return end
+	for indx, db in ipairs( FEL.Config.mysql_databases ) do
+		if db == self:GetName() then table.remove( FEL.Config.mysql_databases, indx ) end
 	end
 	FEL.SaveSettings()
 end
