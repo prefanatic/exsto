@@ -1,6 +1,6 @@
 --[[
 	File Extension Library
-	Copyright (C) 2011  Prefanatic
+	Copyright (C) 2013  Prefanatic
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -66,14 +66,6 @@ function FEL.Init()
 		AddCSLuaFile( "fel_extensions/" .. f )
 	end
 	
-	-- Our own settings database <3.  This pretty much will only hold what databases we've created.  MySQL info goes somewhere else.
-	--[[FEL.SettingsDB = FEL.CreateDatabase( "fel_settings", true )
-		FEL.SettingsDB:ConstructColumns( {
-			Database = "TEXT:primary:not_null";
-			MySQL = "BOOLEAN:not_null";
-			BackupInterval = "INTEGER";
-		} )]]
-		
 	FEL.ReadSettingsFile()
 	
 	-- Check and see if we need MySQL to operate.
@@ -211,9 +203,16 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	
 	-- Do we need to initiate a MySQL object?
 	if obj:RequiresMySQL() and FEL.HasMySQLCapacity() then obj:InitMySQL() end
-	if !FEL.HasMySQLCapacity() then self:Error( "Assigned to use MySQL, but mysqloo is missing.  Please install properly." ) end
+	if !FEL.HasMySQLCapacity() then obj:Error( "Assigned to use MySQL, but mysqloo is missing.  Please install properly." ) end
+	
+	-- Create backup directory
+	file.CreateDir( FEL.BackupDirectory .. obj:GetName() .. "/" )
 	
 	return obj
+end
+
+function db:GetBackups()
+	return file.Find( FEL.BackupDirectory .. self:GetName() .. "/*.txt", "DATA" )
 end
 
 function db:RequiresMySQL()
@@ -808,7 +807,7 @@ function db:Backup()
 	local data = self:ReadAll()
 	
 	local date = os.date( "%m-%d-%y" )
-	local loc = FEL.BackupDirectory .. self.dbName .. ".txt"
+	local loc = FEL.BackupDirectory .. self.dbName .. "/" .. "backup_" .. date .. ".txt"
 	
 	-- We don't need it human readable?  Save as von encoded.
 	file.Write( loc, von.serialize( data ) )

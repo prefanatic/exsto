@@ -13,6 +13,10 @@ if SERVER then
 		util.AddNetworkString( "ExRequestDatabaseList" )
 		util.AddNetworkString( "ExSendDatabaseList" )
 		util.AddNetworkString( "ExSetMySQLDB" )
+		util.AddNetworkString( "ExRequestDatabaseBackups" )
+		util.AddNetworkString( "ExSendBackupList" )
+		util.AddNetworkString( "ExBackupDatabase" )
+		util.AddNetworkString( "ExRestoreDatabase" )
 	
 	end
 
@@ -42,13 +46,62 @@ if SERVER then
 		if status then print( "setmysql" ) db:SetMySQL() else db:SetSQLite() end
 	end
 	PLUGIN:CreateReader( "ExSetMySQLDB", PLUGIN.SetMySQL )
+	
+	function PLUGIN:RequestBackupList( reader )
+		local ply = reader:ReadSender()
+		local obj = FEL.GetDatabase( reader:ReadString() )
+		
+		if !obj then return end
+		self:Debug( "Sending backup list to '" .. ply:Nick() .. "'", 1 )
+
+		local sender = exsto.CreateSender( "ExSendBackupList", ply )
+
+		sender:AddShort( #obj:GetBackups() )
+		for _, f in ipairs( obj:GetBackups() ) do
+			sender:AddString( f )
+			sender:AddString( os.date( "%d.%m.%Y", file.Time( FEL.BackupDirectory .. obj:GetName() .. "/" .. f, "DATA" ) ) )
+		end
+		
+		sender:Send()
+	end
+	PLUGIN:CreateReader( "ExRequestDatabaseBackups", PLUGIN.RequestBackupList )
+
+	function PLUGIN:BackupDatabase( reader )
+		local ply = reader:ReadSender()
+		local db = FEL.GetDatabase( reader:ReadString() )
+		
+		if !db then return end
+		self:Debug( "Backing up database '" .. db:GetName() .. "' triggered by '" .. ply:Nick() .. "'", 1 )
+		
+		db:Backup()
+	end
+	PLUGIN:CreateReader( "ExBackupDatabase", PLUGIN.BackupDatabase )
+	
+	function PLUGIN:RestoreDatabase( reader )
+		local ply = reader:ReadSender()
+		local db = FEL.GetDatabase( reader:ReadString() )
+		local fLoc = reader:ReadString()
+		
+		if !db then return end
+		self:Debug( "Restoring database '" .. db:GetName() .. "' triggered by '" .. ply:Nick() .. "'", 1 )
+		
+		local d = file.Read( FEL.BackupDirectory .. db:GetName() .. "/" .. fLoc )
+		if !d then
+			self:Debug( "Unable to open file '" .. fLoc .. "'", 1 )
+			return
+		end
+		
+		db:Restore( d )
+		game.ConsoleCommand( "changelevel " .. string.gsub( game.GetMap(), ".bsp", "" ) .. "\n" )
+	end
+	PLUGIN:CreateReader( "ExRestoreDatabase", PLUGIN.RestoreDatabase )
 
 end
 
 if CLIENT then
 
-	local function invalidate()
-		local pnl = PLUGIN.MainPage.Content
+	local function invalidate( cont )
+		local pnl = cont.Content
 		if !pnl then PLUGIN:Error( "Oh no!  Attempted to access invalid page contents." ) return end
 		
 		pnl.List:SetDirty( true )
@@ -70,7 +123,7 @@ if CLIENT then
 		
 		pnl.List:AddLine( "Global" ).Data = { db = "Global", mysql = nil }
 		
-		invalidate()
+		invalidate( PLUGIN.MainPage )
 	end
 	
 	local function requestDatabaseList( page )
@@ -105,7 +158,7 @@ if CLIENT then
 			
 		pnl.List.OnRowSelected = onRowSelected
 	
-		invalidate()
+		invalidate( PLUGIN.MainPage )
 	end
 	
 	local function showtimeDetails( page )
@@ -114,12 +167,7 @@ if CLIENT then
 		pnl.Cat.Header:SetText( PLUGIN.WorkingDB.db )
 		pnl.MySQL:SetValue( PLUGIN.WorkingDB.mysql )
 		
-		pnl.Restore:SetDisabled( false )
-		pnl.Edit:SetDisabled( false )
-		
 		if PLUGIN.WorkingDB.db == "Global" then
-			pnl.Restore:SetDisabled( true )
-			pnl.Edit:SetDisabled( true )
 			pnl.MySQL:SetValue( FEL.AllDatabasesMySQL() )
 		end
 	end
@@ -128,20 +176,14 @@ if CLIENT then
 		pnl.Cat = pnl:CreateCategory( "%DATABASE" )
 		
 		-- Our options.
-		pnl.Restore = vgui.Create( "ExButton", pnl.Cat )
-			pnl.Restore:Text( "Restore" )
-			pnl.Restore:Dock( TOP )
-			pnl.Restore:SetQuickMenu()
-			pnl.Restore:SetTall( 32 )
-			pnl.Restore.DoClick = function()
-				pnl:GetObject():Alert( "Test Alert!", function() pnl:GetObject():Alert( "This is a secondary alert that should be much longer than the other one!" ) end )
+		pnl.BackupRestore = vgui.Create( "ExQuickButton", pnl.Cat )
+			pnl.BackupRestore:Text( "Backup/Restore" )
+			pnl.BackupRestore:Dock( TOP )
+			pnl.BackupRestore:SetQuickMenu()
+			pnl.BackupRestore:SetTall( 32 )
+			pnl.BackupRestore.DoClick = function()
+				exsto.Menu.OpenPage( PLUGIN.BackupPage )
 			end
-			
-		pnl.Backup = vgui.Create( "ExButton", pnl.Cat )
-			pnl.Backup:Text( "Backup" )
-			pnl.Backup:Dock( TOP )
-			pnl.Backup:SetQuickMenu()
-			pnl.Backup:SetTall( 32 )
 			
 		pnl.MySQL = vgui.Create( "ExBooleanChoice", pnl.Cat )
 			pnl.MySQL:Text( "MySQL Enabled" )
@@ -168,19 +210,19 @@ if CLIENT then
 				end
 			end
 			
-		pnl.Edit = vgui.Create( "ExButton", pnl.Cat )
+		pnl.Edit = vgui.Create( "ExQuickButton", pnl.Cat )
 			pnl.Edit:Text( "Edit" )
 			pnl.Edit:Dock( TOP )
 			pnl.Edit:SetQuickMenu()
 			pnl.Edit:SetTall( 32 )
 			
-		pnl.Recover = vgui.Create( "ExButton", pnl.Cat )
+		pnl.Recover = vgui.Create( "ExQuickButton", pnl.Cat )
 			pnl.Recover:Text( "Recover" )
 			pnl.Recover:Dock( TOP )
 			pnl.Recover:SetQuickMenu()
 			pnl.Recover:SetTall( 32 )
 			
-		pnl.Reset = vgui.Create( "ExButton", pnl.Cat )
+		pnl.Reset = vgui.Create( "ExQuickButton", pnl.Cat )
 			pnl.Reset:Text( "Reset" )
 			pnl.Reset:Dock( TOP )
 			pnl.Reset:SetQuickMenu()
@@ -200,8 +242,82 @@ if CLIENT then
 		exsto.Menu.OpenPage( PLUGIN.DetailsPage )
 	end
 	
+	local function refreshBackupList( dbs )
+		local pnl = PLUGIN.BackupPage.Content
+		if !pnl then return end
+		
+		pnl.List:Clear()
+		pnl.RestoreSelected = nil
+		for _, data in ipairs( dbs ) do
+			pnl.List:AddLine( data.db, data.time ).Data = data
+		end
+
+		invalidate( PLUGIN.BackupPage )
+	end
+	
+	local function requestBackupList( page )
+		PLUGIN:Debug( "Requesting backup list from server.", 1 )
+		local sender = exsto.CreateSender( "ExRequestDatabaseBackups" )
+			sender:AddString( PLUGIN.WorkingDB.db )
+		sender:Send()
+	end
+	
+	local function receiveBackupsList( reader )
+		local tbl = {}
+		for I = 1, reader:ReadShort() do -- Per 
+			table.insert( tbl, { db = reader:ReadString(), time = reader:ReadString() } )
+		end
+		refreshBackupList( tbl )
+	end
+	exsto.CreateReader( "ExSendBackupList", receiveBackupsList )
+	
 	local function backupInit( pnl )
-		pnl.Cat = pnl:CreateCategory( "Backup" )
+		pnl.Cat = pnl:CreateCategory( "Backup/Restore" )
+		
+		pnl.List = vgui.Create( "ExListView", pnl.Cat )
+			pnl.List:DockMargin( 4, 0, 4, 0 )
+			pnl.List:Dock( TOP )
+			pnl.List:DisableScrollbar()
+			pnl.List:AddColumn( "" )
+			pnl.List:AddColumn( "" )
+			pnl.List:SetHideHeaders( true )
+			pnl.List.OnRowSelected = function( o, id, l )
+				pnl.RestoreSelected = l.Data
+			end
+			
+		pnl.Restore = vgui.Create( "ExQuickButton", pnl.Cat )
+			pnl.Restore:Text( "Restore Selected" )
+			pnl.Restore:Dock( TOP )
+			pnl.Restore.DoClick = function( o )
+				if pnl.RestoreSelected then
+					pnl:GetObject():Alert( "You have selected to restore a backup!  This will erase all the contents existing in the database.  The server will also reload promptly after the restore has complete.  Are you sure?",
+						function()
+							local sender = exsto.CreateSender( "ExRestoreDatabase" )
+								sender:AddString( PLUGIN.WorkingDB.db )
+								sender:AddString( pnl.RestoreSelected.db )
+							sender:Send()
+						end
+					)
+				else 
+					-- We don't have anything selected.  TODO: Create a file browser to upload from computer.
+				end
+			end
+			
+		pnl.Backup = vgui.Create( "ExQuickButton", pnl.Cat )
+			pnl.Backup:Text( "Backup" )
+			pnl.Backup:Dock( TOP )
+			pnl.Backup.DoClick = function( o )
+				local sender = exsto.CreateSender( "ExBackupDatabase" )
+					sender:AddString( PLUGIN.WorkingDB.db )
+				sender:Send()
+				local sender = exsto.CreateSender( "ExRequestDatabaseBackups" )
+					sender:AddString( PLUGIN.WorkingDB.db )
+				sender:Send()
+				o:Text( "Backup Complete!" )
+				timer.Simple( 2, function() o:Text( "Backup" ) end )
+			end 
+			
+		invalidate( PLUGIN.BackupPage )
 	end
 	
 	local function infoInit( pnl )
@@ -226,6 +342,7 @@ if CLIENT then
 			self.BackupPage:SetTitle( "Backup" )
 			self.BackupPage:SetUnaccessable()
 			self.BackupPage:SetBackFunction( backBackupFunction )
+			self.BackupPage:OnShowtime( requestBackupList )
 			
 		self.MySQLInfoPage = exsto.Menu.CreatePage( "felmysqlinfo", infoInit )
 			self.MySQLInfoPage:SetTitle( "Account Information" )

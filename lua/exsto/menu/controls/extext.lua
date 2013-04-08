@@ -45,33 +45,29 @@ function PANEL:SetText( txt )
 	local words = string.Explode( " ", txt )
 	local construct = {}
 	
-	local I, w, h, l, maxH, word = 1, 0, 0, 1, 0
-	while true do
+	local w, h, l, maxH, word = 0, 0, 1, 0
+	for I = 1, #words do
 		word = words[ I ]
 		if !construct[ l ] then construct[ l ] = { _LINEW = 0 } end
 		
 		w, h = surface.GetTextSize( word )
-		w = w + 4
+		--w = w + 4
 		
 		if word:find( "\n" ) then
 			table.insert( construct[ l ], word:Replace( "\n", "" ) )
 			l = l + 1 -- Increase the line level
-			I = I + 1
 		elseif w + construct[ l ]._LINEW > self:GetWide() then
-			I = I - 1 -- Step backwards
 			l = l + 1 -- Increase the level
+			
+			-- Throw into the second line.  I hate having to do this, but its the only way to prevent an overflow for some reason.
+			construct[ l ] = { _LINEW = w }
+			table.insert( construct[ l ], word )
 		else
 			construct[ l ]._LINEW = construct[ l ]._LINEW + w
 			table.insert( construct[ l ], word )
-			I = I + 1
 		end
 		
 		if h > maxH then maxH = h end
-		if I > #words then break end
-		if I < 0 then -- Oh shit.
-			Error( "ExText control: set font does not allow words to fit." )
-			break
-		end
 	end
 	
 	-- Create our text objects for each line we have.
