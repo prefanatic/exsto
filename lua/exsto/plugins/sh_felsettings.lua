@@ -17,6 +17,7 @@ if SERVER then
 		util.AddNetworkString( "ExSendBackupList" )
 		util.AddNetworkString( "ExBackupDatabase" )
 		util.AddNetworkString( "ExRestoreDatabase" )
+		util.AddNetworkString( "ExDeleteBackup" )
 	
 	end
 
@@ -95,6 +96,18 @@ if SERVER then
 		game.ConsoleCommand( "changelevel " .. string.gsub( game.GetMap(), ".bsp", "" ) .. "\n" )
 	end
 	PLUGIN:CreateReader( "ExRestoreDatabase", PLUGIN.RestoreDatabase )
+	
+	function PLUGIN:DeleteBackup( reader )
+		local ply = reader:ReadSender()
+		local db = FEL.GetDatabase( reader:ReadString() )
+		local fLoc = reader:ReadString()
+		
+		if !db then return end
+		self:Debug( "Deleting database backup '" .. fLoc .. "' for db '" .. db:GetName() .. "' triggered by '" .. ply:Nick() .. "'", 1 )
+		
+		file.Delete( FEL.BackupDirectory .. db:GetName() .. "/" .. fLoc )
+	end
+	PLUGIN:CreateReader( "ExDeleteBackup", PLUGIN.DeleteBackup )
 
 end
 
@@ -271,6 +284,17 @@ if CLIENT then
 	end
 	exsto.CreateReader( "ExSendBackupList", receiveBackupsList )
 	
+	local function restoreSelected( pnl )
+		pnl:GetObject():Alert( "You have selected to restore a backup!  This will erase all the contents existing in the database.  The server will also reload promptly after the restore has complete.  Are you sure?",
+			function()
+				local sender = exsto.CreateSender( "ExRestoreDatabase" )
+					sender:AddString( PLUGIN.WorkingDB.db )
+					sender:AddString( pnl.RestoreSelected.db )
+				sender:Send()
+			end
+		)
+	end
+	
 	local function backupInit( pnl )
 		pnl.Cat = pnl:CreateCategory( "Backup/Restore" )
 		
@@ -284,20 +308,26 @@ if CLIENT then
 			pnl.List.OnRowSelected = function( o, id, l )
 				pnl.RestoreSelected = l.Data
 			end
+			pnl.List.OnRowRightClick = function( o, id, l )
+				local menu = DermaMenu()
+					menu:AddOption( "Restore", function() restoreSelected( pnl ) end )
+					menu:AddOption( "Delete", function()
+						local sender = exsto.CreateSender( "ExDeleteBackup" )
+							sender:AddString( PLUGIN.WorkingDB.db )
+							sender:AddString( pnl.RestoreSelected.db )
+						sender:Send()
+						local sender = exsto.CreateSender( "ExRequestDatabaseBackups" )
+							sender:AddString( PLUGIN.WorkingDB.db )
+						sender:Send()
+					end )
+			end
 			
 		pnl.Restore = vgui.Create( "ExQuickButton", pnl.Cat )
 			pnl.Restore:Text( "Restore Selected" )
 			pnl.Restore:Dock( TOP )
 			pnl.Restore.DoClick = function( o )
 				if pnl.RestoreSelected then
-					pnl:GetObject():Alert( "You have selected to restore a backup!  This will erase all the contents existing in the database.  The server will also reload promptly after the restore has complete.  Are you sure?",
-						function()
-							local sender = exsto.CreateSender( "ExRestoreDatabase" )
-								sender:AddString( PLUGIN.WorkingDB.db )
-								sender:AddString( pnl.RestoreSelected.db )
-							sender:Send()
-						end
-					)
+					restoreSelected( pnl )
 				else 
 					-- We don't have anything selected.  TODO: Create a file browser to upload from computer.
 				end

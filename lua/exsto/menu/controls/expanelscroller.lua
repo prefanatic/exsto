@@ -89,6 +89,8 @@ function PANEL:CreateCategory( catName )
 		--end
 		cat.Paint = categoryPaint
 		
+	cat:DockPadding( 0, 0, 0, 4 )
+		
 	self.Categories[ catName ] = cat
 	
 	return cat
