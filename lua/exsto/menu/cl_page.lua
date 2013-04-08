@@ -168,16 +168,20 @@ function page:Alert( question, callbackYes, callbackNo )
 		self.AlertPanel = vgui.Create( "DPanelList", self.Content )
 			self.AlertPanel:SetPos( 0, self.Content:GetTall() + 1 )
 			self.AlertPanel:SetSize( self.Content:GetWide(), self.Content:GetTall() )
+			self.AlertPanel:SetPadding( 26 )
+			self.AlertPanel:SetSpacing( 8 )
 			self.AlertPanel.Paint = function( pnl )
-				surface.SetDrawColor( 255, 255, 255, 75 )
+				surface.SetDrawColor( 245, 245, 245, 180 )
 				surface.DrawRect( 0, 0, pnl:GetWide(), pnl:GetTall() )
 			end
 			
 		self.AlertPanel.Text = vgui.Create( "ExText", self.AlertPanel )
+			self.AlertPanel.Text:SetFont( "ExGenericTextMidBold16" )
 			self.AlertPanel:AddItem( self.AlertPanel.Text )
 			
 		self.AlertPanel.OK = vgui.Create( "ExButton", self.AlertPanel )
 			self.AlertPanel.OK:SetText( "Yes, I am sure" )
+			self.AlertPanel.OK:SetWide( 50 )
 			self.AlertPanel:AddItem( self.AlertPanel.OK )
 			
 		self.AlertPanel.Cancel = vgui.Create( "ExButton", self.AlertPanel )

@@ -153,12 +153,12 @@ if CLIENT then
 			pnl.MySQL:SetTall( 32 )
 			pnl.MySQL.OnClick = function( o, val )
 				if PLUGIN.WorkingDB.db == "Global" then
-					pnl:GetObject():Alert( "This will set EVERY database to MySQL.  Any SQLite data will not transfer over, and the server will need to be restarted in order for this to take effect.  Are you sure?",
+					pnl:GetObject():Alert( string.format( "This will set EVERY database to %s.  Any %s data will not transfer over, and the server will need to be restarted in order for this to take effect.  Are you sure?", val and "MySQL" or "SQLite", val and "SQLite" or "MySQL" ),
 						function()
 						
 						end, function() o:SetValue( !val ) end )
 				else
-					pnl:GetObject():Alert( "Are you sure you want to set this database to MySQL?  Any data currently in SQLite will not transfer over, and you will need to restart the server.",
+					pnl:GetObject():Alert( string.format( "Are you sure you want to set this database to %s?  Any data currently in %s will not transfer over, and you will need to restart the server.", val and "MySQL" or "SQLite", val and "SQLite" or "MySQL" ),
 						function()
 							local sender = exsto.CreateSender( "ExSetMySQLDB" )
 								sender:AddString( PLUGIN.WorkingDB.db )
@@ -229,7 +229,7 @@ if CLIENT then
 			
 		self.MySQLInfoPage = exsto.Menu.CreatePage( "felmysqlinfo", infoInit )
 			self.MySQLInfoPage:SetTitle( "Account Information" )
-			self.MySQLInfoPage:SetUnnaccessable()
+			self.MySQLInfoPage:SetUnaccessable()
 			self.MySQLInfoPage:SetBackFunction( infoBackupFunction )
 			
 	end

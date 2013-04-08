@@ -27,7 +27,7 @@ end
 function PANEL:SetFont( fnt )
 	self._Font = fnt
 end
-function PANEL:GetFont() return self._Font or "ExGenericText14" end
+function PANEL:GetFont() return self._Font or "ExGenericTextNoBold14" end
 
 function PANEL:GetLines() return self.Lines end
 function PANEL:GetLineCount() return #self.Lines end
@@ -45,42 +45,50 @@ function PANEL:SetText( txt )
 	local words = string.Explode( " ", txt )
 	local construct = {}
 	
-	local w, h, l, maxH, word = 0, 0, 1, 0
-	for I = 1, #words do
+	local I, w, h, l, maxH, word = 1, 0, 0, 1, 0
+	while true do
 		word = words[ I ]
 		if !construct[ l ] then construct[ l ] = { _LINEW = 0 } end
 		
 		w, h = surface.GetTextSize( word )
+		w = w + 4
 		
 		if word:find( "\n" ) then
 			table.insert( construct[ l ], word:Replace( "\n", "" ) )
 			l = l + 1 -- Increase the line level
+			I = I + 1
 		elseif w + construct[ l ]._LINEW > self:GetWide() then
 			I = I - 1 -- Step backwards
 			l = l + 1 -- Increase the level
 		else
 			construct[ l ]._LINEW = construct[ l ]._LINEW + w
 			table.insert( construct[ l ], word )
+			I = I + 1
 		end
 		
 		if h > maxH then maxH = h end
+		if I > #words then break end
+		if I < 0 then -- Oh shit.
+			Error( "ExText control: set font does not allow words to fit." )
+			break
+		end
 	end
 	
 	-- Create our text objects for each line we have.
 	for I = 1, #construct do
 		local line = self:Add( "DLabel" )
 			line:SetText( table.concat( construct[ I ], " " ) )
-			line:SetWide( construct[ I ]._LINEW )
+			--line:SetWide( construct[ I ]._LINEW )
 			line:SetFont( self:GetFont() )
+			line:SizeToContents()
 		table.insert( self.Lines, line )
-		self:AddItem( line )
 	end
 	
 	self.GreatestLineHeight = maxH
 
 	self:InvalidateLayout( true )
 end
-
+--[[
 function PANEL:PerformLayout()
 	print( "inval", self:GetProjectedHeight() )
 	for _, l in ipairs( self.Lines ) do
@@ -90,6 +98,6 @@ function PANEL:PerformLayout()
 		end
 	end
 	self:SetTall( self:GetProjectedHeight() )
-end
+end]]
 
-derma.DefineControl( "ExText", "Exsto Text", PANEL, "DPanelList" )
+derma.DefineControl( "ExText", "Exsto Text", PANEL, "DIconLayout" )
