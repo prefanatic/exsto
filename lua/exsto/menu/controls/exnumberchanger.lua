@@ -22,60 +22,53 @@ PANEL = {}
 
 function PANEL:Init()
 
-	self:MaxFontSize( 20 )
 	self:SetAlignX( TEXT_ALIGN_LEFT )
-	self:SetMaxTextWide( 130 )
+	self:SetMaxTextWide( 166 )
+	self:MaxFontSize( 28 )
 	
 	-- Create our slider.
-	self.Slider = self:Add( "DSlider", self )
-		self.Slider:SetLockY( 0.5 )
-		self.Slider:SetTrapInside( true )
-		self.Slider:Dock( FILL )
-		self.Slider:SetHeight( 16 )
-		self.Slider.TranslateValues = function( slide, x, y ) return self:TranslateValues( x, y ) end
-		self.Slider:SetVisible( false ) 
-		Derma_Hook( self.Slider, "Paint", "Paint", "NumSlider" )
+	self.Scratch = self:Add( "DNumberScratch", self )
+		self.Scratch:SetImageVisible( false )
+		self.Scratch:SetText( "" )
+		self.Scratch:Dock( FILL )
+		--self.Scratch:SetDark( true )
 		
-	self.Entry = self:Add( "DTextEntry", self )
-		self.Entry:SetNumeric( true )
-		self.Entry:Dock( RIGHT )
+		self.Scratch:SetDecimals( nil )
+		self.Scratch.OnValueChanged = function( o, val )
+			val = tonumber( Format( "%i", o:GetFloatValue() ) )
+			self.Entry:SetValue( val or 0 )
+			self:OnValueSet( val )
+		end
+		self.Scratch.UpdateConVar = function() end
+		
+		
+	-- Text entry for the value
+	self.Entry = self:Add( "DTextEntry" )
 		self.Entry:DockMargin( 4, 4, 4, 4 )
-	
+		self.Entry:Dock( RIGHT )
+		self.Entry:SetNumeric( true )
+		self.Entry.OnTextChanged = function( o, val )
+			self.Scratch:SetValue( o:GetValue() )
+			self:OnValueSet( o:GetValue() )
+		end
+
 end
 
-function PANEL:TranslateValues( x, y )
-	self:SetValue( self:GetMin() + ( x * self:GetRange() ), true );
-	return self:GetFraction(), y 
-end
+function PANEL:SetDecimals( d ) self.Scratch:SetDecimals( d ) end
 
-function PANEL:GetMin() return self._Min end
-function PANEL:GetMax() return self._Max end
-function PANEL:GetValue() return self._Val end
-function PANEL:GetRange() return self:GetMax() - self:GetMin() end
-function PANEL:GetFraction() return ( self:GetValue() - self:GetMin() ) / self:GetRange() end
+function PANEL:SetMinMax( min, max ) 
+	self.Scratch:SetMin( min )
+	self.Scratch:SetMax( max )
+end
+function PANEL:SetMin( min ) self.Scratch:SetMin( min ) end
+function PANEL:SetMax( max ) self.Scratch:SetMax( max ) end
+function PANEL:SetValue( val )
+	self.Scratch:SetValue( val )
+	self.Entry:SetValue( val ) 
+end
+function PANEL:GetValue() return self.Scratch:GetValue() end
 
-function PANEL:SetMin( val ) self._Min = val end
-function PANEL:SetMax( val ) self._Max = val  end
-function PANEL:SetValue( val, trans ) 
-	val = math.Clamp( math.ceil( val ), self:GetMin(), self:GetMax() )
-	
-	self._Val = val
-	self.Entry:SetValue( val )
-	
-	if !trans then self.Slider:SetSlideX( self:GetFraction() ) end
-	
-	self:OnValueSet( self:GetValue() )
-end
-function PANEL:SetFraction( f )
-	self._Fraction = self:GetMin() + ( f * self:GetRange() )
-end
-function PANEL:SetDecimals( val ) self._Decimals = val end
-
--- Override ExButton's.  We now need to convert the button into the wanger.  Whoaurgoarghoa!
-function PANEL:DoClick()
-	self.Slider:SetVisible( not self.Slider:IsVisible() )
-	self:HideText( self.Slider:IsVisible() )
-end
+function PANEL:OnValueSet( val ) end
 
 function PANEL:Paint()
 	local w, h = self:GetSize()

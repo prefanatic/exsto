@@ -47,6 +47,7 @@ function PANEL:MaxFontSize( num )
 end
 
 function PANEL:SetMaxTextWide( num )
+	print( "Setting max text wide", num )
 	self._MaxTextWidth = num
 end
 
@@ -59,7 +60,7 @@ function PANEL:GetMaxFontSize()
 end
 
 function PANEL:GetText()
-	return self._Text
+	return self.__TEXT
 end
 
 function PANEL:SetFontSize( num )
@@ -79,8 +80,9 @@ function PANEL:GetFont()
 end
 
 function PANEL:Text( txt )
+	print( "SETTING TEXT TO ", txt )
 	self:SetText( "" )
-	self._Text = txt
+	self.__TEXT = txt
 	self:InvalidateLayout( true )
 end
 
@@ -100,6 +102,8 @@ function PANEL:SetFontStyle( t, exfont )
 			w = w or self:GetWide()
 		
 		local workingSize, tw, th = self:GetMaxFontSize()
+		
+		print( "Constrained size ", w, "text", self:GetText(), "maxfont", workingSize )
 		while true do
 			surface.SetFont( exfont .. workingSize )
 			tw, th = surface.GetTextSize( self:GetText() )
@@ -108,12 +112,15 @@ function PANEL:SetFontStyle( t, exfont )
 			tw = tw + ( self:GetTextPadding() * 2 )
 			th = th + ( self:GetTextPadding() * 2 )
 			
+			print( tw, w, " --- ", th, h )
+			
 			if ( tw < w ) or workingSize == 14 then break end -- If we are smaller than our size.
 			if ( th < h ) or workingSize == 14 then break end
 			
 			-- Otherwise, lets go down to the next font size
 			workingSize = workingSize - 1
 		end
+		print( "end" )
 		
 		self:SetFontSize( workingSize )
 		
@@ -190,6 +197,7 @@ function PANEL:Paint()
 end
 
 function PANEL:PerformLayout()
+	print( "EXBUTTONINVALIDATION" )
 	self:SetFontStyle( "resize", self:GetFont() )
 end
 

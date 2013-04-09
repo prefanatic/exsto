@@ -27,6 +27,7 @@ FEL = {}
 		mysql_host = "localhost";
 		debug_level = 0;
 		mysql_databases = {};
+		backup_rates = {}
 	}
 	FEL.ConfigFile = "fel_settings.txt";
 	FEL.TableCache = "fel_tablecache/"
@@ -69,7 +70,7 @@ function FEL.Init()
 	FEL.ReadSettingsFile()
 	
 	-- Check and see if we need MySQL to operate.
-	if FEL.MySQLNeeded() and !mysql and SERVER then
+	if FEL.MySQLNeeded() and !mysqloo and SERVER then
 		local s, err = pcall( require, "mysqloo" )
 		if !s then
 			ErrorNoHalt( "FEL --> Unable to load 'mysqloo'.  Make the bin is located in lua/bin and libmysql with srcds.\n" )
@@ -205,8 +206,21 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	if obj:RequiresMySQL() and FEL.HasMySQLCapacity() then obj:InitMySQL() end
 	if !FEL.HasMySQLCapacity() then obj:Error( "Assigned to use MySQL, but mysqloo is missing.  Please install properly." ) end
 	
+	-- Set our backup rate.
+	local f = false
+	for _, tbl in ipairs( FEL.Config.backup_rates ) do
+		if tbl[1] == obj:GetName() then obj:SetAutoBackup( tbl[2] ) f = true end
+	end
+	
+	-- Insert into backup rates if we don't already exist.
+	if !f then
+		table.insert( FEL.Config.backup_rates, { obj:GetName(), 0 } )
+	end
+	
 	-- Create backup directory
 	file.CreateDir( FEL.BackupDirectory .. obj:GetName() .. "/" )
+	
+	FEL.SaveSettings()
 	
 	return obj
 end
@@ -800,14 +814,21 @@ end
 -- Sets automatic backups as an interval of t
 function db:SetAutoBackup( t )
 	self.backupRate = t * 60
+	
+	for _, tbl in ipairs( FEL.Config.backup_rates ) do
+		if tbl[ 1 ] == self:GetName() then FEL.Config.backup_rates[ _ ][ 2 ] = self.backupRate end
+	end
+	FEL.SaveSettings()
 end
+function db:GetAutoBackupRate() return self.backupRate / 60 end
 
 function db:Backup()
 	-- Read our cache.  Use ReadAll instead of GetAll because we aren't changing this data.
 	local data = self:ReadAll()
 	
 	local date = os.date( "%m-%d-%y" )
-	local loc = FEL.BackupDirectory .. self.dbName .. "/" .. "backup_" .. date .. ".txt"
+	local time = tostring( os.date( "%H-%M-%S" ) )
+	local loc = FEL.BackupDirectory .. self.dbName .. "/" .. "backup_" .. date .. " " .. time .. ".txt"
 	
 	-- We don't need it human readable?  Save as von encoded.
 	file.Write( loc, von.serialize( data ) )

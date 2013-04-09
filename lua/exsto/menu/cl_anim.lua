@@ -180,13 +180,12 @@ local function constructMeta( obj )
 		return o:GetAnimationData().ProgAlpha > 0
 	end
 	
-	]]
 	
 	obj.Close = function( o )
 		if o:GetAnimationClose() == ANIM_BLIND_UP then
 			o:SetTall( 0 )
 		end
-	end
+	end]]
 	-- Misc
 	
 	obj.ForceAnimationRefresh = function( o )

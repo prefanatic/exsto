@@ -18,6 +18,7 @@ if SERVER then
 		util.AddNetworkString( "ExBackupDatabase" )
 		util.AddNetworkString( "ExRestoreDatabase" )
 		util.AddNetworkString( "ExDeleteBackup" )
+		util.AddNetworkString( "ExBackupRate" )
 	
 	end
 
@@ -57,6 +58,7 @@ if SERVER then
 
 		local sender = exsto.CreateSender( "ExSendBackupList", ply )
 
+		sender:AddShort( obj:GetAutoBackupRate() )
 		sender:AddShort( #obj:GetBackups() )
 		for _, f in ipairs( obj:GetBackups() ) do
 			sender:AddString( f )
@@ -66,6 +68,17 @@ if SERVER then
 		sender:Send()
 	end
 	PLUGIN:CreateReader( "ExRequestDatabaseBackups", PLUGIN.RequestBackupList )
+	
+	function PLUGIN:SetAutoBackupRate( reader )
+		local ply = reader:ReadSender()
+		local db = FEL.GetDatabase( reader:ReadString() )
+		local rate = reader:ReadShort()
+		
+		if !db then return end
+		self:Debug( "Setting '" .. db:GetName() .. "' autobackup rate to '" .. rate .. "'" , 1 )
+		db:SetAutoBackup( rate )
+	end
+	PLUGIN:CreateReader( "ExBackupRate", PLUGIN.SetAutoBackupRate )
 
 	function PLUGIN:BackupDatabase( reader )
 		local ply = reader:ReadSender()
@@ -131,10 +144,10 @@ if CLIENT then
 		
 		pnl.List:Clear()
 		for _, data in ipairs( dbs ) do
-			pnl.List:AddLine( data.db ).Data = data
+			pnl.List:AddRow( { data.db }, data )
 		end
 		
-		pnl.List:AddLine( "Global" ).Data = { db = "Global", mysql = nil }
+		pnl.List:AddRow( { "Global" }, { db = "Global", mysql = nil } )
 		
 		invalidate( PLUGIN.MainPage )
 	end
@@ -153,12 +166,6 @@ if CLIENT then
 	end
 	exsto.CreateReader( "ExSendDatabaseList", receiveDatabaseList )
 	
-	local function onRowSelected( lst, lineid, line )
-		PLUGIN.WorkingDB = line.Data
-		exsto.Menu.EnableBackButton()
-		exsto.Menu.OpenPage( PLUGIN.DetailsPage )
-	end
-
 	local function pageInit( pnl )
 		pnl.Cat = pnl:CreateCategory( "Databases" )
 		
@@ -169,7 +176,11 @@ if CLIENT then
 			pnl.List:AddColumn( "" )
 			pnl.List:SetHideHeaders( true )
 			
-		pnl.List.OnRowSelected = onRowSelected
+		pnl.List.LineSelected = function( lst, disp, data, obj )
+			PLUGIN.WorkingDB = data
+			exsto.Menu.EnableBackButton()
+			exsto.Menu.OpenPage( PLUGIN.DetailsPage )
+		end
 	
 		invalidate( PLUGIN.MainPage )
 	end
@@ -202,9 +213,6 @@ if CLIENT then
 			pnl.MySQL:Text( "MySQL Enabled" )
 			pnl.MySQL:Dock( TOP )
 			pnl.MySQL:SetQuickMenu()
-			pnl.MySQL:SetAlignX( TEXT_ALIGN_CENTER )
-			pnl.MySQL:SetMaxTextWide( false )
-			pnl.MySQL:MaxFontSize( 28 )
 			pnl.MySQL:SetTall( 32 )
 			pnl.MySQL.OnClick = function( o, val )
 				if PLUGIN.WorkingDB.db == "Global" then
@@ -262,8 +270,10 @@ if CLIENT then
 		pnl.List:Clear()
 		pnl.RestoreSelected = nil
 		for _, data in ipairs( dbs ) do
-			pnl.List:AddLine( data.db, data.time ).Data = data
+			pnl.List:AddRow( { data.db, data.time }, data )
 		end
+		print( "BACKUP ", PLUGIN.WorkingDB.autoBackup )
+		pnl.AutoBackup:SetValue( PLUGIN.WorkingDB.autoBackup )
 
 		invalidate( PLUGIN.BackupPage )
 	end
@@ -277,6 +287,7 @@ if CLIENT then
 	
 	local function receiveBackupsList( reader )
 		local tbl = {}
+		PLUGIN.WorkingDB.autoBackup = reader:ReadShort()
 		for I = 1, reader:ReadShort() do -- Per 
 			table.insert( tbl, { db = reader:ReadString(), time = reader:ReadString() } )
 		end
@@ -305,8 +316,8 @@ if CLIENT then
 			pnl.List:AddColumn( "" )
 			pnl.List:AddColumn( "" )
 			pnl.List:SetHideHeaders( true )
-			pnl.List.OnRowSelected = function( o, id, l )
-				pnl.RestoreSelected = l.Data
+			pnl.List.LineSelected = function( o, disp, data, obj )
+				pnl.RestoreSelected = data
 			end
 			pnl.List.OnRowRightClick = function( o, id, l )
 				local menu = DermaMenu()
@@ -346,6 +357,18 @@ if CLIENT then
 				o:Text( "Backup Complete!" )
 				timer.Simple( 2, function() o:Text( "Backup" ) end )
 			end 
+			
+		pnl.AutoBackup = vgui.Create( "ExNumberChoice", pnl.Cat )
+			pnl.AutoBackup:Text( "Backup Rate" )
+			pnl.AutoBackup:SetMinMax( 0, 100 )
+			pnl.AutoBackup:Dock( TOP )
+			pnl.AutoBackup:SetTall( 32 )
+			pnl.AutoBackup.OnValueSet = function( o, val )
+				local sender = exsto.CreateSender( "ExBackupRate" )
+					sender:AddString( PLUGIN.WorkingDB.db )
+					sender:AddShort( val )
+				sender:Send()
+			end
 			
 		invalidate( PLUGIN.BackupPage )
 	end

@@ -42,6 +42,8 @@ function PANEL:SetFont( fnt )
 	self._Font = fnt
 end
 
+function PANEL:GetFont() return self._Font or "ExGenericTextNoBold14" end
+
 function PANEL:LinePaintOver( func )
 	self._LinePaintOver = func
 end
