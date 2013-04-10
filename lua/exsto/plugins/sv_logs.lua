@@ -23,6 +23,7 @@ function PLUGIN:Init()
 		
 	self.SaveDebug = exsto.CreateVariable( "ExSaveDebugLogs", "Save Debug", 0, "Saves debugging information as a log." )
 		self.SaveDebug:SetBoolean()
+		self.SaveDebug:SetCategory( "Debug" )
 end
 
 function PLUGIN:ShutDown()

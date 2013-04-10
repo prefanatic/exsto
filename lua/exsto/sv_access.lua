@@ -58,6 +58,7 @@ exsto.aLoader.ErrorHandle = exsto.CreateVariable( "ExRankErrorHandle",
 	"Designates how Exsto shall handle errors in ranks.\n - 'auto' : Automatically tries to recover ranks by removing broken data.\n - 'restore' : Restores default ranks temporarily.\n - 'delrestore' : Restores ranks and saves them.  Backups old rank data to .txt"
 )
 exsto.aLoader.ErrorHandle:SetPossible( "auto", "restore", "delrestore" )
+exsto.aLoader.ErrorHandle:SetCategory( "Exsto General" )
 
 -- Hardcoded flags
 --exsto.CreateFlag( "quickmenu", "Allows access to the quickmenu." )

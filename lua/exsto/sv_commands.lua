@@ -59,9 +59,11 @@ AddArg( "TIME", "number", function( num )
 end )
 
 exsto.ChatSpellingSuggest = exsto.CreateVariable( "ExSpellingCorrect",
-	"Enable Chat Spelling Suggestions",
-	true,
+	"Spelling Suggestions",
+	1,
 	"If enabled, Exsto will tell you when you type a command incorrectly." )
+	exsto.ChatSpellingSuggest:SetBoolean()
+	exsto.ChatSpellingSuggest:SetCategory( "Exsto General" )
 
 --[[ -----------------------------------
 	Function: exsto.SendCommandList
@@ -509,6 +511,8 @@ exsto.ComImmuneStyle = exsto.CreateVariable( "ExComImmuneStyle",
 	"remove",
 	"Changes how command immunity works, on a selection basis.\n - 'remove' : Removes players who cannot be accessed.\n - 'kill' : Stops the command from running if Exsto fails immune checks."
 )
+exsto.ComImmuneStyle:SetPossible( "remove", "kill" )
+exsto.ComImmuneStyle:SetCategory( "Exsto General" )
 
 --[[ -----------------------------------
 	Function: ExstoParseCommand

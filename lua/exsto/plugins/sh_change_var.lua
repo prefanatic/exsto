@@ -160,25 +160,39 @@ elseif CLIENT then
 
 	-- TODO: Refresh this editor if variables are changed.
 		-- Check and make sure the ID belongs to the currently selected page.  If so, refresh and reselect.  If not, refresh anyways.
-
-	local function onShowtime( pnl )
-		pnl.Content.Select:Populate()
+		
+	local function invalidate( cont )
+		local pnl = cont.Content
+		if !pnl then PLUGIN:Error( "Oh no!  Attempted to access invalid page contents." ) return end
+		
+		pnl.List:SetDirty( true )
+		pnl.List:InvalidateLayout( true )
+		
+		pnl.List:SizeToContents()
+		
+		pnl.Cat:InvalidateLayout( true )
 	end
 
-	local function selectPopulate( pnl )
-		pnl:Clear()
+	local function onShowtime( page )
+		local pnl = page.Content
+		if !pnl then return end
+		
+		pnl.List:Clear()
 		
 		local tmp = {}
 		for id, data in pairs( exsto.ServerVariables ) do
 			if !tmp[ data.Category ] then tmp[ data.Category ] = {} end
 			table.insert( tmp[ data.Category ], id )
 		end
-		
-		for cat, data in pairs( tmp ) do
-			pnl:AddChoice( cat, data )
+
+		for cat, ids in pairs( tmp ) do
+			pnl.List:AddRow( { cat }, ids )
 		end
+		
+		pnl.List:SortByColumn( 1 )
+		invalidate( PLUGIN.Page )
 	end
-	
+
 	local function updateVariable( id, val )
 		-- Send this information up to the big guys to change!
 		local sender = exsto.CreateSender( "ExChangeVar" )
@@ -187,8 +201,8 @@ elseif CLIENT then
 		sender:Send()
 	end
 	
-	local function selectSelected( box, index, value, var )
-		local page = PLUGIN.Page.Content
+	local function detailsOnShowtime( page )
+		local page = page.Content
 		if !page.Objects then page.Objects = {} end
 		
 		-- Clear the old objects.
@@ -196,10 +210,10 @@ elseif CLIENT then
 			obj:Remove()
 		end
 		page.Objects = {}
-		
+
 		-- Now, we need to loop through all of our data and create objects for each of these things.  Cross your fingers.
 		local data
-		for _, id in ipairs( var ) do
+		for _, id in ipairs( PLUGIN.WorkingCat ) do
 			data = exsto.ServerVariables[ id ] -- So this is 'live' so to speak
 		
 			-- If we're a boolean
@@ -254,20 +268,36 @@ elseif CLIENT then
 			
 		end
 
-		page.Cat:InvalidateLayout( true )
 	end
 
 	local function settingsInit( pnl )
 		pnl.Cat = pnl:CreateCategory( "Settings" )
-			pnl.Cat:DockMargin( 4, 0, 4, 0 )
 		
-		pnl.Select = vgui.Create( "ExComboBox", pnl.Cat )
-			pnl.Select:Dock( TOP )
-			pnl.Select:SetTall( 32 )
-			pnl.Select.Populate = selectPopulate
-			pnl.Select.OnSelect = selectSelected
+		pnl.List = vgui.Create( "ExListView", pnl.Cat )
+			pnl.List:DockMargin( 4, 0, 4, 0 )
+			pnl.List:Dock( TOP )
+			pnl.List:DisableScrollbar()
+			pnl.List:AddColumn( "" )
+			pnl.List.OnMouseWheeled = nil
+			pnl.List:SetHideHeaders( true )
 			
-		pnl.Cat:InvalidateLayout( true )
+		pnl.List.LineSelected = function( o, disp, data, line )
+			PLUGIN.WorkingCat = data
+			exsto.Menu.EnableBackButton()
+			exsto.Menu.OpenPage( PLUGIN.DetailsPage )
+		end
+			
+		invalidate( PLUGIN.Page )
+	end
+	
+	local function detailsInit( pnl )
+		pnl.Cat = pnl:CreateCategory( "%CAT" )
+	end
+	
+	local function detailsBack( page )
+		PLUGIN.WorkingCat = nil
+		exsto.Menu.DisableBackButton()
+		exsto.Menu.OpenPage( PLUGIN.Page )
 	end
 
 	function PLUGIN:Init()
@@ -276,6 +306,12 @@ elseif CLIENT then
 			self.Page:SetSearchable( true )
 			self.Page:OnShowtime( onShowtime )
 			self.Page:SetIcon( "exsto/settings.png" )
+		
+		self.DetailsPage = exsto.Menu.CreatePage( "settingsdetails", detailsInit )
+			self.DetailsPage:SetTitle( "Details" )
+			self.DetailsPage:OnShowtime( detailsOnShowtime )
+			self.DetailsPage:SetBackFunction( detailsBack )
+			self.DetailsPage:SetUnaccessable()
 	end
 	
 end

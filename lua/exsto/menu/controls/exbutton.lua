@@ -47,7 +47,7 @@ function PANEL:MaxFontSize( num )
 end
 
 function PANEL:SetMaxTextWide( num )
-	print( "Setting max text wide", num )
+
 	self._MaxTextWidth = num
 end
 
@@ -102,8 +102,7 @@ function PANEL:SetFontStyle( t, exfont )
 			w = w or self:GetWide()
 		
 		local workingSize, tw, th = self:GetMaxFontSize()
-		
-		print( "Constrained size ", w, "text", self:GetText(), "maxfont", workingSize )
+
 		while true do
 			surface.SetFont( exfont .. workingSize )
 			tw, th = surface.GetTextSize( self:GetText() )
@@ -111,8 +110,7 @@ function PANEL:SetFontStyle( t, exfont )
 			-- Work with text padding
 			tw = tw + ( self:GetTextPadding() * 2 )
 			th = th + ( self:GetTextPadding() * 2 )
-			
-			print( tw, w, " --- ", th, h )
+
 			
 			if ( tw < w ) or workingSize == 14 then break end -- If we are smaller than our size.
 			if ( th < h ) or workingSize == 14 then break end
@@ -120,8 +118,7 @@ function PANEL:SetFontStyle( t, exfont )
 			-- Otherwise, lets go down to the next font size
 			workingSize = workingSize - 1
 		end
-		print( "end" )
-		
+
 		self:SetFontSize( workingSize )
 		
 		-- We also should set a tmp to move the text down based off half its height
@@ -197,7 +194,6 @@ function PANEL:Paint()
 end
 
 function PANEL:PerformLayout()
-	print( "EXBUTTONINVALIDATION" )
 	self:SetFontStyle( "resize", self:GetFont() )
 end
 

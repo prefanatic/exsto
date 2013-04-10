@@ -24,15 +24,10 @@ function PANEL:Init()
 
 	-- Data for OnRowSelected
 	self.Data = {}
-	self:SetTextIndent( 5 )
+	self:SetTextInset( 5 )
 	self:SetDataHeight( 32 )
 
 end
-
-function PANEL:SetTextIndent( num )
-	self._Indent = num
-end
-
 function PANEL:NoHeaders()
 	self:SetHideHeaders( true )
 	self:AddColumn( "" )
@@ -41,6 +36,12 @@ end
 function PANEL:SetFont( fnt )
 	self._Font = fnt
 end
+
+function PANEL:SetTextInset( x, y )
+	self._TINX = x or 0
+	self._TINY = y or 0
+end
+function PANEL:GetTextInset() return self._TINX, self._TINY end
 
 function PANEL:GetFont() return self._Font or "ExGenericTextNoBold14" end
 
@@ -57,7 +58,7 @@ function PANEL:AddRow( cols, data )
 	line.Info = self.Data[ #self.Data ]
 	
 	for i, label in ipairs( line.Columns ) do
-		label:SetTextInset( 25, 0 )
+		label:SetTextInset( self:GetTextInset() )
 		label:SetFont( "ExGenericTextNoBold14" )
 	end
 	

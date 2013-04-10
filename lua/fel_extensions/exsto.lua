@@ -27,6 +27,7 @@ if SERVER then
 		exsto.FELDebug = exsto.CreateVariable( "ExFelDebug", "FEL Debugging", 0, "Enables FEL to debug all queries to the console." )
 		exsto.FELDebug:SetMinimum( 0 )
 		exsto.FELDebug:SetMaximum( 3 )
+		exsto.FELDebug:SetCategory( "Debug" )
 	end )
 	
 end

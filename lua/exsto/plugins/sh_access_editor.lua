@@ -404,6 +404,7 @@ elseif CLIENT then
 			pnl.Flags:Dock( FILL )
 			pnl.Flags:DockMargin( 0, 4, 0, 0 )
 			pnl.Flags:SetDataHeight( 22 )
+			pnl.Flags:SetTextInset( 25 )
 			pnl.Flags:NoHeaders()
 			pnl.Flags:LinePaintOver( flagIndicator )
 			pnl.Flags.LineSelected = flagHandler
