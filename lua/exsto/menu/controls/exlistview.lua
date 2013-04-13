@@ -32,6 +32,10 @@ function PANEL:Init()
 
 end
 
+function PANEL:SetQuickList()
+	self.Paint = function() end
+end
+
 function PANEL:SetTextColor( col ) self._TextCol = col end
 function PANEL:SetTextHoverColor( col ) self._TextHover = col end
 
@@ -66,7 +70,7 @@ function PANEL:AddRow( cols, data )
 	
 	for i, label in ipairs( line.Columns ) do
 		label:SetTextInset( self:GetTextInset() )
-		label:SetFont( "ExGenericTextNoBold17" )
+		label:SetFont( "ExGenericText16" )
 	end
 	
 	if self._LinePaintOver then

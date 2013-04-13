@@ -280,6 +280,7 @@ elseif CLIENT then
 			pnl.List:AddColumn( "" )
 			pnl.List.OnMouseWheeled = nil
 			pnl.List:SetHideHeaders( true )
+			pnl.List:SetQuickList()
 			
 		pnl.List.LineSelected = function( o, disp, data, line )
 			PLUGIN.WorkingCat = data

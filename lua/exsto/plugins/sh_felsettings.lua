@@ -173,6 +173,7 @@ if CLIENT then
 			pnl.List:DisableScrollbar()
 			pnl.List:AddColumn( "" )
 			pnl.List:SetHideHeaders( true )
+			pnl.List:SetQuickList()
 			
 		pnl.List.LineSelected = function( lst, disp, data, obj )
 			PLUGIN.WorkingDB = data
