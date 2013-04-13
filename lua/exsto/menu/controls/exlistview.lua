@@ -26,8 +26,15 @@ function PANEL:Init()
 	self.Data = {}
 	self:SetTextInset( 5 )
 	self:SetDataHeight( 32 )
+	
+	self:SetTextColor( Color( 85, 85, 85, 255 ) )
+	self:SetTextHoverColor( Color( 255, 255, 255 ) )
 
 end
+
+function PANEL:SetTextColor( col ) self._TextCol = col end
+function PANEL:SetTextHoverColor( col ) self._TextHover = col end
+
 function PANEL:NoHeaders()
 	self:SetHideHeaders( true )
 	self:AddColumn( "" )
@@ -59,11 +66,21 @@ function PANEL:AddRow( cols, data )
 	
 	for i, label in ipairs( line.Columns ) do
 		label:SetTextInset( self:GetTextInset() )
-		label:SetFont( "ExGenericTextNoBold14" )
+		label:SetFont( "ExGenericTextNoBold17" )
 	end
 	
 	if self._LinePaintOver then
 		line.PaintOver = self._LinePaintOver
+	end
+	
+	-- I hate this :(
+	line.__OLDTHINK = line.Think
+	line.Think = function( l )
+		if !l.Hovered and l.HoverThinked then l.Columns[ 1 ]:SetTextColor( self._TextCol ) l.HoverThinked = false end
+		if l.Hovered and !l.HoverThinked then l.Columns[ 1 ]:SetTextColor( self._TextHover ) l.HoverThinked = true end
+		if l.__OLDTHINK then
+			return l.__OLDTHINK()
+		end
 	end
 	
 	return line
@@ -101,16 +118,6 @@ function PANEL:OnRowSelected( lineID, line )
 	
 	self:LineSelected( disp, data, line )
 end
---[[
-function PANEL:PerformLayout()
-	-- Loop through all our lines and their columns AND THEIR LABELSSSS!!!111
-	for id, line in ipairs( self:GetLines() ) do
-		if line.Columns then
-			for i, label in ipairs( line.Columns ) do
-				label:SetTextInset( self._Indent or 5, 0 )
-			end
-		end
-	end
-end]]
+
 
 derma.DefineControl( "ExListView", "Exsto ListView", PANEL, "DListView" )

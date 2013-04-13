@@ -82,6 +82,11 @@ function exstoResources()
 	for _, fl in ipairs( fs ) do
 		resource.AddFile( "materials/exsto/" .. fl )
 	end
+	local fs = file.Find( "resource/fonts/*.ttf", "GAME" )
+	for _, fl in ipairs( fs ) do
+		print( "LOADING FONT " .. fl )
+		resource.AddFile( "resource/fonts/" .. fl )
+	end
 end
 
 function exstoModule( mod )

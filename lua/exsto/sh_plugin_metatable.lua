@@ -62,6 +62,7 @@ function plugin:SetInfo( tbl )
 	tbl.Experimental = tbl.Experimental or false
 	tbl.Disabled = tbl.Disabled or false
 	tbl.Clientside = tbl.Clientside or false
+	tbl.CleanUnload = tbl.CleanUnload or false
 
 	self.Info = tbl
 end
@@ -108,6 +109,7 @@ function plugin:Register()
 				Owner = self.Info.Owner,
 				Clientside = self.Info.Clientside,
 				Experimental = self.Info.Experimental or false,
+				CleanUnload = self.Info.CleanUnload,
 				Object = self,
 				Disabled = true,
 			}
@@ -127,6 +129,7 @@ function plugin:Register()
 		Owner = self.Info.Owner,
 		Clientside = self.Info.Clientside,
 		Experimental = self.Info.Experimental or false,
+		CleanUnload = self.Info.CleanUnload,
 		Object = self,
 		Disabled = false,
 	}
@@ -167,10 +170,6 @@ function plugin:Register()
 		exsto.SetQuickmenuSlot( info.name, info.disp, info.data )
 	end
 	
-	--MsgC( COLOR.NAME, "." )
-	
-	--exsto.Print( exsto_CONSOLE, "PLUGIN --> Loading " .. self.Info.Name .. " by " .. self.Info.Owner .. "!" )
-	
 	self:Init()
 	self.Info.Initialized = true
 	exsto.LastPluginRegister = self
@@ -184,7 +183,13 @@ end
      ----------------------------------- ]]
 function plugin:Unload()
 
-	exsto.Print( exsto_CONSOLE, "PLUGIN --> Unloading " .. self.Info.Name .. "!" )
+	self:Print( "Unloading!" )
+	
+	if !self.Info.CleanUnload then
+		self:Print( "Warning!  This plugin may not unload properly due to developmental error.  It is suggested you perform a server restart in order to cleanly unload." )
+	end
+	
+	-- TODO: Clean Unload Plugins
 	
 	-- Call our own "OnUnload"
 	if self.OnUnload then

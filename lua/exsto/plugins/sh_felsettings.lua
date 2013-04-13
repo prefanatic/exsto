@@ -147,8 +147,6 @@ if CLIENT then
 			pnl.List:AddRow( { data.db }, data )
 		end
 		
-		pnl.List:AddRow( { "Global" }, { db = "Global", mysql = nil } )
-		
 		invalidate( PLUGIN.MainPage )
 	end
 	

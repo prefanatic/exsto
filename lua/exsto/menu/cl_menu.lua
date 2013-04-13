@@ -33,7 +33,7 @@ exsto.Menu = {
 }
 
 local fontTbl = {
-	font = "Arial",
+	font = "Arimo",
 	size = 0,
 	weight = 530,
 }

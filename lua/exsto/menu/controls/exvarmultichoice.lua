@@ -30,7 +30,12 @@ function PANEL:Init()
 		self.Entry:Dock( FILL )
 		self.Entry:DockMargin( 4, 4, 4, 4 )
 		self.Entry:SetVisible( false )
-		self.Entry.OnSelect = function( entry, index, val, data ) self:OnSelect( index, val, data ) end
+		self.Entry.OnSelect = function( entry, index, val, data ) self:OnSelect( index, val, data ) self:DoClick() end
+		
+	hook.Add( "ExOptionButtonOpened", "ExMaintainBPolish_" .. tostring( self ), function( panel )
+		print( "Called", self, panel, self != panel, self.Entry:IsVisible() )
+		if self != panel and self.Entry:IsVisible() then self:DoClick() end
+	end )
 end
 
 function PANEL:OnSelect( index, name, data )
@@ -48,6 +53,9 @@ function PANEL:GetValue() return self.Entry:GetValue() end
 function PANEL:DoClick()
 	self.Entry:SetVisible( not self.Entry:IsVisible() )
 	self:HideText( self.Entry:IsVisible() )
+	
+	-- Hook to close other panels.
+	hook.Call( "ExOptionButtonOpened", nil, self )
 end
 
 function PANEL:Paint()
