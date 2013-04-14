@@ -124,12 +124,14 @@ function exsto.CreateReader( id, func )
 	obj.callback = function( l, p )
 		obj._Sender = p
 		obj._Len = l
-
-		local success, err = pcall( func, obj, l, p )
-		if !success then
-			exsto.ErrorNoHalt( "NET --> Error with net parse: " .. err )
+		
+		-- Do NOT run if our hook that we call returns false.
+		if hook.Call( id, nil, obj ) != false then
+			local success, err = pcall( func, obj, l, p )
+			if !success then
+				exsto.ErrorNoHalt( "NET --> Error with net parse: " .. err )
+			end
 		end
-		hook.Call( id ) -- Call our lovelies
 	end
 	
 	net.Receive( id, obj.callback )

@@ -8,14 +8,29 @@ PLUGIN:SetInfo( {
 } )
 
 if SERVER then
-	
-	util.AddNetworkString( "ExPushRankToSrv" )
-	util.AddNetworkString( "ExRecImmuneChange" )
-	util.AddNetworkString( "ExDelRankFromClient" )
-	util.AddNetworkString( "ExUpImmunity" )
-	
+
 	function PLUGIN:Init()
 		exsto.CreateFlag( "rankeditor", "Allows users to edit ranks in the menu." )
+		exsto.CreateFlag( "immunity", "Allows users access to edit immunity in the editor subpage." )
+		
+		util.AddNetworkString( "ExPushRankToSrv" )
+		util.AddNetworkString( "ExRecImmuneChange" )
+		util.AddNetworkString( "ExDelRankFromClient" )
+		util.AddNetworkString( "ExUpImmunity" )
+	end
+	
+	-- Security
+	function PLUGIN:ExPushRankToSrv( reader )
+		return reader:ReadSender():IsAllowed( "rankeditor" )
+	end
+	function PLUGIN:ExRecImmuneChange( reader )
+		return reader:ReadSender():IsAllowed( "rankeditor" )
+	end
+	function PLUGIN:ExDelRankFromClient( reader )
+		return reader:ReadSender():IsAllowed( "rankeditor" )
+	end
+	function PLUGIN:ExUpImmunity( reader )
+		return reader:ReadSender():IsAllowed( "rankeditor" )
 	end
 
 	function PLUGIN.DeleteRank( reader )

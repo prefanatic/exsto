@@ -20,7 +20,43 @@ if SERVER then
 		util.AddNetworkString( "ExDeleteBackup" )
 		util.AddNetworkString( "ExBackupRate" )
 		util.AddNetworkString( "ExResetDB" )
+		
+		exsto.CreateFlag( "felsettings", "Allows users to have access to database settings." )
+		exsto.CreateFlag( "feldetails", "Allows users access to the database detail subpage." )
+		exsto.CreateFlag( "felbackup", "Allows users to the database backup subpage of felsettings." )
 	
+	end
+	
+	-- Security!
+	function PLUGIN:ExRequestDatabaseList( reader )
+		return reader:ReadSender():IsAllowed( "felsettings" )
+	end
+	function PLUGIN:ExSendDatabaseList( reader )
+		return reader:ReadSender():IsAllowed( "felsettings" )
+	end
+	function PLUGIN:ExSetMySQLDB( reader )
+		return reader:ReadSender():IsAllowed( "felsettings" )
+	end
+	function PLUGIN:ExRequestDatabaseBackups( reader )
+		return reader:ReadSender():IsAllowed( "felsettings" )
+	end
+	function PLUGIN:ExSendBackupList( reader )
+		return reader:ReadSender():IsAllowed( "felsettings" )
+	end
+	function PLUGIN:ExBackupDatabase( reader )
+		return reader:ReadSender():IsAllowed( "felsettings" )
+	end
+	function PLUGIN:ExRestoreDatabase( reader )
+		return reader:ReadSender():IsAllowed( "felsettings" )
+	end
+	function PLUGIN:ExDeleteBackup( reader )
+		return reader:ReadSender():IsAllowed( "felsettings" )
+	end
+	function PLUGIN:ExBackupRate( reader )
+		return reader:ReadSender():IsAllowed( "felsettings" )
+	end
+	function PLUGIN:ExResetDB( reader )
+		return reader:ReadSender():IsAllowed( "felsettings" )
 	end
 
 	function PLUGIN:RequestDatabases( reader )

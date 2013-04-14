@@ -376,8 +376,8 @@ exsto.DefaultRanks = {
 		Immunity = 0,
 		FlagsAllow = von.serialize( {
 			"issuperadmin", "variable", "resendplug", "deletevar", "createvar", "reloadplug", "playertitle", "addgimp",  "luarun", "cexec",
-			"vareditor", "rankeditor", "addadvert", "allowentity", "allowprop", "allowstool", "allowswep", "ban", "banid", "deladvert",
-			"denyentity", "denyprop", "denystool", "denyswep", "entspawn", "felbackup", "feldetails", "felmysqlinfo", "felsettings", "immunity",
+			"rankeditor", "addadvert", "allowentity", "allowprop", "allowstool", "allowswep", "ban", "banid", "deladvert",
+			"denyentity", "denyprop", "denystool", "denyswep", "entspawn", "felbackup", "feldetails", "felsettings", "immunity",
 			"rank", "rankid", "settingsdetails", "settings", "banlistdetails", "afkkickignore", "command", "findghosts",
 			"playerpickup", "setconvar", "unban", 
 		} );

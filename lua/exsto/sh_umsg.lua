@@ -153,7 +153,7 @@ if SERVER then
 		local flag = reader:ReadString()
 		
 		exsto.Debug( "Flags --> Creating '" .. flag .. "' from client '" .. ply:Nick() .. "'", 1 )
-		exsto.CreateFlag( flag, reader:ReadString() )
+		--exsto.CreateFlag( flag, reader:ReadString() )
 	end
 	exsto.CreateReader( "ExCreateFlag", createFlagFromClient )
 	

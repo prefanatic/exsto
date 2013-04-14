@@ -13,135 +13,15 @@ PLUGIN:SetInfo({
 if SERVER then
 
 	function PLUGIN:Init()
-		exsto.CreateFlag( "vareditor", "Allows users to open the variable menu." )
+		exsto.CreateFlag( "settings", "Allows users to see the settings." )
+		exsto.CreateFlag( "settingsdetails", "Allows users to see settings details." )
 		
 		util.AddNetworkString( "ExChangeVar" )
 	end
-
-	function PLUGIN:CreateEnvVar( owner, dirty, value )
-		
-		-- If we are creating an existing one.
-		local existing = exsto.GetVar( dirty )
-		if existing then
-			
-			-- Check if it is an env var.  Update if it is.
-			if existing.EnvVar == true then
-				exsto.Variables[ dirty ].Value = value
-				exsto.Variables[ dirty ].DataType = type( value )
-				
-				return { owner, COLOR.NORM, "Updating existing env var ", COLOR.NAME, dirty, COLOR.NORM, " with value: ", COLOR.NAME, value, COLOR.NORM, "!" }
-			-- It is an existing Exsto hard-coded variable.  End it!
-			else
-				return { owner, COLOR.NORM, "An existing Exsto global variable already exists for ", COLOR.NAME, dirty, COLOR.NORM, "!" }
-			end
-			
-		end
-		
-		-- Create it.
-		exsto.AddEnvironmentVar( dirty, value )
-		return { COLOR.NAME, owner:Nick(), COLOR.NORM, " has created a new environment variable: ", COLOR.NAME, dirty, COLOR.NORM, "!" }
-			
-	end
-	PLUGIN:AddCommand( "createvar", {
-		Call = PLUGIN.CreateEnvVar,
-		Desc = "Allows users to create environment variables.",
-		Console = { "createenv" },
-		Chat = { "!createenv" },
-		ReturnOrder = "Variable-Value",
-		Args = {Variable = "STRING", Value = "STRING"},
-		Category = "Variables",
-	})
 	
-	function PLUGIN:DeleteEnvVar( owner, dirty )
-		
-		-- If we are an existing one.
-		local existing = exsto.GetVar( dirty )
-		if existing then
-			if !existing.EnvVar then -- Oh god, dont do this
-				return { owner, COLOR.NORM, "You cannot delete an ", COLOR.NAME, "environmental variable!" }
-			end
-			
-			exsto.Variables[ dirty ] = nil
-			
-			exsto.VarDB:DropRow( dirty )
-			return { COLOR.NAME, owner:Nick(), COLOR.NORM, " has deleted environmental variable: ", COLOR.NAME, dirty, COLOR.NORM, "!" }
-		end
-		
-		return { owner, COLOR.NORM, "No existing environmental variable for ", COLOR.NAME, dirty, COLOR.NORM, "!" }
-		
+	function PLUGIN:ExChangeVar( reader )
+		return reader:ReadSender():IsAllowed( "settings" )
 	end
-	PLUGIN:AddCommand( "deletevar", {
-		Call = PLUGIN.DeleteEnvVar,
-		Desc = "Allows users to delete environment variables.",
-		Console = { "deleteenv" },
-		Chat = { "!deleteenv" },
-		ReturnOrder = "Variable",
-		Args = {Variable = "STRING"},
-		Category = "Variables",
-	})
-
-	function PLUGIN:ChangeVar( owner, var, value )
-	
-		local variable = exsto.GetVar( var )
-		
-		if !variable then
-			return { owner, COLOR.NORM, "There is no variable named ", COLOR.NAME, var, COLOR.NORM, "!" }
-		end
-
-		local done, returnData = exsto.SetVar( var, value )
-		
-		if done then
-			if returnData then
-				if type( returnData ) == "table" then
-					return table.insert( { owner }, returnData )
-				elseif type( returnData ) == "string" then
-					return { owner, COLOR.NORM, returnData }
-				end
-			else
-				return { COLOR.NAME, var, COLOR.NORM, " has been set to ", COLOR.NAME, value, COLOR.NORM, "!" }
-			end
-		else
-			if !returnData then
-				return { owner, COLOR.NORM, "The variables callback refuses the data set request!" }
-			else
-				if type( returnData ) == "table" then
-					return table.insert( { owner }, returnData )
-				elseif type( returnData ) == "string" then
-					return { owner, COLOR.NORM, "Cannot change variable: " .. returnData }
-				end
-			end
-		end
-		
-	end
-	PLUGIN:AddCommand( "variable", {
-		Call = PLUGIN.ChangeVar,
-		Desc = "Allows users to change exsto variables.",
-		Console = { "changevar" },
-		Chat = { "!setvariable" },
-		ReturnOrder = "Variable-Value",
-		Args = {Variable = "STRING", Value = "STRING"},
-		Category = "Variables",
-	})
-	
-	function PLUGIN:GetVar( owner, var )
-	
-		local value = exsto.GetVar( var ).Value
-		
-		if !value then
-			return { owner, COLOR.NORM, "There is no variable named ", COLOR.NAME, var, COLOR.NORM, "!" }
-		else
-			return { owner, COLOR.NAME, var, COLOR.NORM, " is set to ", COLOR.NAME, tostring( value ), COLOR.NORM, "!" }
-		end
-	end
-	PLUGIN:AddCommand( "getvariable", {
-		Call = PLUGIN.GetVar,
-		Desc = "Allows users to view variable values.",
-		Console = { "getvariable" },
-		Chat = { "!getvariable" },
-		ReturnOrder = "Variable",
-		Args = {Variable = "STRING"},
-		Category = "Variables",
-	})
 	
 	function PLUGIN:UpdateVariable( reader )
 		local id = reader:ReadString()
