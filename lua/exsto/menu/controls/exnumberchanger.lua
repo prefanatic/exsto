@@ -23,8 +23,10 @@ PANEL = {}
 function PANEL:Init()
 
 	self:SetAlignX( TEXT_ALIGN_LEFT )
-	self:SetMaxTextWide( 166 )
-	self:MaxFontSize( 28 )
+	self:SetMaxTextWide( 130 )
+	self:MaxFontSize( 20 )
+	
+	self.Material = Material( "exsto/buttonsettings.png" )
 	
 	-- Create our slider.
 	self.Scratch = self:Add( "DNumberScratch", self )
@@ -36,8 +38,12 @@ function PANEL:Init()
 		self.Scratch:SetDecimals( nil )
 		self.Scratch.OnValueChanged = function( o, val )
 			val = tonumber( Format( "%i", o:GetFloatValue() ) )
-			self.Entry:SetValue( val or 0 )
-			self:OnValueSet( val )
+			
+			if self._LAST != val then
+				self.Entry:SetValue( val or 0 )
+				self:OnValueSet( val )
+				self._LAST = val
+			end
 		end
 		self.Scratch.UpdateConVar = function() end
 		
@@ -53,6 +59,8 @@ function PANEL:Init()
 		end
 
 end
+
+function PANEL:SetUnit( u ) self:Text( u ) end
 
 function PANEL:SetDecimals( d ) self.Scratch:SetDecimals( d ) end
 
@@ -71,27 +79,20 @@ function PANEL:GetValue() return self.Scratch:GetValue() end
 function PANEL:OnValueSet( val ) end
 
 function PANEL:Paint()
-	local w, h = self:GetSize()
+local w, h = self:GetSize()
 	
-	if self.Hovered then
-		self:GetSkin().tex.Input.ComboBox.Hover( 0, 0, w, h )
-	else
-		self:GetSkin().tex.Input.ComboBox.Normal( 0, 0, w, h )
-	end
+	surface.SetDrawColor( 255, 255, 255, 255 )
+	surface.SetMaterial( self.Material )
+	surface.DrawTexturedRect( 0, 0, w, h )
+
+	-- Text
+	local x = self:GetWide() / 2
+	local y = self:GetTall() / 2
 	
-	if !self._HideText then
-		
-		-- Text
-		local x = self:GetWide() / 2
-		local y = self:GetTall() / 2
-		
-		if self._AlignX == TEXT_ALIGN_LEFT then x = self:GetTextPadding() end
-		
-		--if self._AlignY == TEXT_ALIGN_TOP then y = y + self._YMod end
-		
-		draw.SimpleText( self:GetText(), self:GetFont() .. self:GetFontSize(), x, y, self:GetTextColor(), self._AlignX, self._AlignY )
-		
-	end
+	if self._AlignX == TEXT_ALIGN_LEFT then x = self:GetTextPadding() end
+	
+	draw.SimpleText( self:GetText(), self:GetFont() .. self:GetFontSize(), x, y, self:GetTextColor(), self._AlignX, self._AlignY )
+
 end
 
 derma.DefineControl( "ExNumberChoice", "Exsto Number Choice", PANEL, "ExButton" )

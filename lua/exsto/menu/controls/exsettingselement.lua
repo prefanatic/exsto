@@ -37,12 +37,13 @@ function PANEL:Init()
 		self.Header:Dock( TOP )
 	self.Title = self.Header:Add( "DLabel" )
 		self.Title:Dock( LEFT )
-		self.Title:SetFont( "ExGenericText16" )
+		self.Title:SetFont( "ExGenericText18" )
 		self.Title:SetText( "%TITLE" )
 		self.Title:SetTextColor( Color( 0, 180, 255, 255 ) )
 	
 	-- Help text
 	self.Help = self:Add( "ExText" )
+		self.Help:SetFont( "ExGenericText14" )
 		self.Help:SetText( "%HELP" )
 		self.Help:Dock( TOP )
 	
@@ -87,6 +88,10 @@ function PANEL:SetTextEntry()
 		self.Button:SetTall( 40 )
 		self.Button.OnValueSet = function( o, val ) self:OnValueSet( val ) end
 end
+
+function PANEL:SetMultipleOptions() self.Button:SetMultipleOptions() end
+
+function PANEL:SetUnit( u ) self.Button:SetUnit( u ) end
 
 function PANEL:AddChoice( disp, data ) self.Button:AddChoice( disp, data ) end
 

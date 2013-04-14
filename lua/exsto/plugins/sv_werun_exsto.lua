@@ -14,8 +14,9 @@ function PLUGIN:Init()
 	self.Delay = exsto.CreateVariable( "ExCreditDelay", 
 		"Exsto's Credit Delay", 
 		5,
-		"Specifies a delay (in minutes) for when players are notified of Exsto." )
+		"Specifies a delay in which the server is notified of Exsto's existance." )
 		self.Delay:SetCategory( "Exsto General" )
+		self.Delay:SetUnit( "Time (minutes)" )
 		
 	self.Next = CurTime() + self.Delay:GetValue() * 60
 end

@@ -27,10 +27,11 @@ if SERVER then
 		self.AFKTime = exsto.CreateVariable( "ExAFKDelay",
 			"Mark Delay",
 			5,
-			"Time in minutes until a player is marked AFK."
+			"Time until a player is marked AFK."
 		)
 		self.AFKTime:SetCategory( "AFK" )
 		self.AFKTime:SetCallback( OnAFKTimeChange )
+		self.AFKTime:SetUnit( "Time (minutes)" )
 		
 		self.AFKAction = exsto.CreateVariable( "ExAFKAction",
 			"Action",

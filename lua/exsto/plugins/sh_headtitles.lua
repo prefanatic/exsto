@@ -26,9 +26,11 @@ if SERVER then
 		self.Limit = exsto.CreateVariable( "ExTitleLimit",
 			"Limit",
 			50,
-			"The limit of letters in a players title."
+			"Sets the limit of letters in the title."
 		)
+		self.Limit:SetMin( 1 )
 		self.Limit:SetCategory( "Titles" )
+		self.Limit:SetUnit( "Letters" )
 	end	
 
 	function PLUGIN:ExInitSpawn( ply, sid )

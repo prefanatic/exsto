@@ -48,6 +48,7 @@ if SERVER then
 			sender:AddString( obj:GetCategory() )
 			sender:AddTable( obj:GetPossible() or {} )
 			sender:AddBoolean( obj._MultiChoice or false )
+			sender:AddString( obj:GetUnit() )
 		sender:Send()
 	end
 	
@@ -77,6 +78,7 @@ elseif CLIENT then
 			Category = reader:ReadString(),
 			Possible = reader:ReadTable(),
 			Multi = reader:ReadBoolean(),
+			Unit = reader:ReadString(),
 		}
 		exsto.Debug( "Variables --> Received '" .. id .. "' from the server!", 3 )
 	end )
@@ -114,6 +116,7 @@ function exsto.CreateVariable( id, display, default, help )
 	-- Set the maximum and default minimum values for the number wanger.
 	obj:SetMaximum( 100 )
 	obj:SetMinimum( 0 )
+	obj:SetUnit( "Units" )
 	
 	-- Helper if we're a boolean
 	if obj:GetType() == "boolean" then 
@@ -197,10 +200,12 @@ function var:GetCategory() return self.Category end
 function var:SetMaximum( num )
 	self.NumMax = num
 end
+var.SetMax = var.SetMaximum
 
 function var:SetMinimum( num )
 	self.NumMin = num
 end
+var.SetMin = var.SetMinimum
 
 -- Helper to designate between variables being booleans or not.
 function var:IsBoolean()
@@ -215,6 +220,9 @@ function var:SetBoolean()
 	self:SetMaximum( 1 )
 	self:SetMinimum( 0 )
 end
+
+function var:SetUnit( u ) self.Unit = u end
+function var:GetUnit() return self.Unit end
 
 function var:GetType() return self.Type end
 

@@ -24,10 +24,11 @@ FEL.BackupDirectory = "exsto_db_backups/";
 if SERVER then
 	
 	hook.Add( "ExVariableInit", "ExFELIntegration", function()	
-		exsto.FELDebug = exsto.CreateVariable( "ExFelDebug", "FEL Debugging", 0, "Enables FEL to debug all queries to the console." )
+		exsto.FELDebug = exsto.CreateVariable( "ExFelDebug", "FEL Debugging", 0, "Sets the level of debug FEL will print.  0 being nothing, 3 being every debug message." )
 		exsto.FELDebug:SetMinimum( 0 )
 		exsto.FELDebug:SetMaximum( 3 )
 		exsto.FELDebug:SetCategory( "Debug" )
+		exsto.FELDebug:SetUnit( "Level" )
 	end )
 	
 end

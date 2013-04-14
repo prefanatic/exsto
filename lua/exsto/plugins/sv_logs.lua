@@ -18,8 +18,10 @@ function PLUGIN:Init()
 	
 	-- Create variables for console printing per request of Mors Quaedam
 	exsto.CreateFlag( "printlogs", "Prints logs specified by 'ExPrintLogs' to the console." )
-	self.Printing = exsto.CreateVariable( "ExPrintLogs", "Print to Console", "", "Selects the possible logs to print to the console." )
-		self.Printing:SetMultiChoice() -- TODO: Set possibles
+	self.Printing = exsto.CreateVariable( "ExPrintLogs", "Print to Console", "none", "Selects the possible logs to print to the console." )
+		self.Printing:SetMultiChoice()
+		self.Printing:SetCategory( "Logging" )
+		self.Printing:SetPossible( unpack( self.Types ), "none" )
 		
 	self.SaveDebug = exsto.CreateVariable( "ExSaveDebugLogs", "Save Debug", 0, "Saves debugging information as a log." )
 		self.SaveDebug:SetBoolean()

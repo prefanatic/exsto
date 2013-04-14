@@ -86,6 +86,7 @@ function PLUGIN:Init()
 	self.Timeout = exsto.CreateVariable( "ExVotemapTimeout", "Votemap timeout", 30, "How long the votemap has until it is done polling for votes." )
 	self.Timeout:SetMinimum( 0 )
 	self.Timeout:SetCategory( "Votes" )
+	self.Timeout:SetUnit( "Time (seconds" )
 	exsto.VotemapDB = FEL.CreateDatabase( "exsto_plugin_votemap" )
 		exsto.VotemapDB:ConstructColumns( {
 			Map = "VARCHAR(255):primary:not_null";

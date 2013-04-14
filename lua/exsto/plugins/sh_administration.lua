@@ -30,10 +30,11 @@ if SERVER then
 		self.BanRefreshRate = exsto.CreateVariable( "ExBanRefreshRate",
 			"Ban Refresh Rate",
 			3,
-			"Changes how often the bans should be refreshed on the server.  Value is in minutes."
+			"How often bans should be refreshed."
 		)
 		self.BanRefreshRate:SetCallback( setRefresh )
 		self.BanRefreshRate:SetCategory( "Administration" )
+		self.BanRefreshRate:SetUnit( "Time (minutes" )
 		
 		self.OldPlayers = {}
 		exsto.BanDB = FEL.CreateDatabase( "exsto_data_bans" )

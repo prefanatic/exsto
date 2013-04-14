@@ -196,10 +196,11 @@ exsto_DEBUG = AddPrint(
 		if !level then level = 1 end
 		if !exsto.DebugLevel and exsto.CreateVariable then -- Create our debug level!
 			exsto.DebugLevel = 0 -- To prevent a stack overflow.
-			exsto.DebugLevel = exsto.CreateVariable( "ExDebugLevel", "Exsto Debug Level", 0, "Sets the level of debug Exsto will print, from 0 to 3." )
+			exsto.DebugLevel = exsto.CreateVariable( "ExDebugLevel", "Exsto Debug Level", 0, "Sets the level of debug Exsto will print.  0 being nothing, 3 being every debug message." )
 				exsto.DebugLevel:SetMinimum( 0 )
 				exsto.DebugLevel:SetMaximum( 3 )
 				exsto.DebugLevel:SetCategory( "Debug" )
+				exsto.DebugLevel:SetUnit( "Level" )
 		end
 		
 		if exsto.DebugLevel and exsto.DebugLevel != 0 and ( exsto.DebugLevel:GetValue() >= level ) then

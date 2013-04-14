@@ -37,7 +37,7 @@ function PLUGIN:Init()
 		"Designates if user's countries are shown on connect."
 	)
 		self.Country:SetCallback( dispCountryOnChange )
-		self.Country:SetPossible( 0, 1 )
+		self.Country:SetBoolean()
 		self.Country:SetCategory( "Join Messages" )
 	
 	if not GeoIP and self.Country:GetValue() == 1 then 

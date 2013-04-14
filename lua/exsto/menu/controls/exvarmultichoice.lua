@@ -46,6 +46,11 @@ function PANEL:Init()
 
 end
 
+function PANEL:SetMultipleOptions()
+	self._MultiSelect = true
+	self.List:SetMultiSelect()
+end
+
 function PANEL:OnValueSet( val ) end
 
 function PANEL:Clear()

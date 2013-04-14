@@ -111,15 +111,22 @@ elseif CLIENT then
 				for i, possible in ipairs( data.Possible ) do
 					obj:AddChoice( possible, possible )
 				end
+				
+				-- Enable multi selecting if we can do that.
+				if data.Multi then obj:SetMultipleOptions() end
 			elseif data.Type == "string" then -- We're a text box
 				obj:SetTextEntry()
 			elseif data.Type == "number" then -- We're a number!
 				obj:SetNumberEntry( "" )
 				obj:SetMin( data.Minimum )
 				obj:SetMax( data.Maximum )
+				obj:SetUnit( data.Unit )
 			end
 			
 			obj:SetValue( data.Value )
+			obj.OnValueSet = function( o, val )
+				updateVariable( id, val )
+			end
 			
 			table.insert( page.Objects, obj )
 			

@@ -23,9 +23,10 @@ function PLUGIN:Init()
 	self.SinkRate = exsto.CreateVariable( "ExGraveSinkRate",
 		"Sink Rate",
 		5,
-		"How long until the grave sinks, if 'sink' is set."
+		"Sets how long the graves should wait until they sink, if 'sink' is set."
 	)
 	self.SinkRate:SetCategory( "Graves" )
+	self.SinkRate:SetUnit( "Time (seconds)" )
 	
 	self.RandomDeathMessages = { "He couldn't load the death messages file." }
 

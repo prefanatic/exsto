@@ -49,7 +49,6 @@ end
 
 function PANEL:SetValue( val )
 	self._Value = tobool( val )
-	self:OnValueSet( self:GetValue() )
 end
 
 function PANEL:GetValue()

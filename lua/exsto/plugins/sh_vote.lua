@@ -19,13 +19,15 @@ if SERVER then
 	util.AddNetworkString( "ExVoteClear" )
 	
 	function PLUGIN:Init()
-		self.Timeout = exsto.CreateVariable( "ExVoteTimeout", "Vote Timeout Length", 30, "This sets the default time for a vote, if no delay is passed." )
+		self.Timeout = exsto.CreateVariable( "ExVoteTimeout", "Timeout Length", 30, "This sets the default time for a vote, if no delay is passed." )
 			self.Timeout:SetCategory( "Votes" )
-		self.DefaultStyle = exsto.CreateVariable( "ExVoteDefaultStyle", "Default Vote Style", "chat", "This sets the default voting style.\n - 'small' : Small vote menu.\n - 'large' : Large vote menu.\n - 'chat' : Chat voting.")
+			self.Timeout:SetMin( 0 )
+			self.Timeout:SetUnit( "Time (seconds)" )
+		self.DefaultStyle = exsto.CreateVariable( "ExVoteDefaultStyle", "Default Style", "chat", "This sets the default voting style.\n - 'small' : Small vote menu.\n - 'large' : Large vote menu.\n - 'chat' : Chat voting.")
 			self.DefaultStyle:SetPossible( "chat", "large" )
 			self.DefaultStyle:SetCategory( "Votes" )
-		self.AllowRevote = exsto.CreateVariable( "ExAllowRevote", "Allow revotes", 0, "Setting true allows players to revote after they have already cast a vote." )
-			self.AllowRevote:SetPossible( 0, 1 )
+		self.AllowRevote = exsto.CreateVariable( "ExAllowRevote", "Allow Revotes", 0, "Setting true allows players to revote after they have already cast a vote." )
+			self.AllowRevote:SetBoolean()
 			self.AllowRevote:SetCategory( "Votes" )
 	end
 
