@@ -345,7 +345,12 @@ hook.Add( "OnTextEntryLoseFocus", "ExMenuTextFocusOff", keyboardFocusOff )
 	** Menu open/close **
 ]]
 
+hook.Add( "ExReceivedRanks", "ExFinalizeMenu", function() exsto.Menu.RanksReceived = true end )
+
 function exsto.Menu.Open()
+	-- We do NOTHING until exsto.Ranks is around and we've fully been executed on the client.
+	if !exsto.Menu.RanksReceived then return end
+	
 	-- Handle close if we're open.  We don't want to re-open it I guess.
 	if exsto.Menu._Opened then
 		exsto.Menu.Close()
