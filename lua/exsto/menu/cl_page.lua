@@ -163,6 +163,59 @@ function page:Showtime( noAnim ) -- Wake him up!
 
 end
 
+function page:InputText( question, callbackYes, callbackNo )
+	if !self.InputTextPanel then
+		self.InputTextPanel = vgui.Create( "DPanelList", self.Content )
+			self.InputTextPanel:SetPos( 0, self.Content:GetTall() + 1 )
+			self.InputTextPanel:SetSize( self.Content:GetWide(), self.Content:GetTall() )
+			self.InputTextPanel:SetPadding( 26 )
+			self.InputTextPanel:SetSpacing( 8 )
+			self.InputTextPanel.Paint = function( pnl )
+				surface.SetDrawColor( 245, 245, 245, 180 )
+				surface.DrawRect( 0, 0, pnl:GetWide(), pnl:GetTall() )
+			end
+			
+		self.InputTextPanel.Text = vgui.Create( "ExText", self.InputTextPanel )
+			self.InputTextPanel.Text:SetFont( "ExGenericText16" )
+			self.InputTextPanel:AddItem( self.InputTextPanel.Text )
+			
+		self.InputTextPanel.Entry = vgui.Create( "DTextEntry", self.InputTextPanel )
+			self.InputTextPanel.Entry.OnEnter = function() self.InputTextPanel.OK:DoClick() end
+			self.InputTextPanel.Entry:SetFont( "ExGenericText14" )
+			self.InputTextPanel:AddItem( self.InputTextPanel.Entry )
+			
+		self.InputTextPanel.OK = vgui.Create( "ExButton", self.InputTextPanel )
+			self.InputTextPanel.OK:SetText( "Done" )
+			self.InputTextPanel:AddItem( self.InputTextPanel.OK )
+			
+		self.InputTextPanel.Cancel = vgui.Create( "ExButton", self.InputTextPanel )
+			self.InputTextPanel.Cancel:SetText( "Cancel" )
+			self.InputTextPanel:AddItem( self.InputTextPanel.Cancel )
+		
+		exsto.Animations.Create( self.InputTextPanel )
+	end
+	
+	self.InputTextPanel:SetPos( 0, 0 )
+	self.InputTextPanel.Text:SetText( question )
+	self.InputTextPanel.Text:SizeToContents()
+	self.InputTextPanel.OK.DoClick = function() 
+		self.InputTextPanel:SetPos( 0, self.InputTextPanel:GetTall() + 21 )
+		if callbackYes then
+			callbackYes( self.InputTextPanel.Entry:GetValue() ) 
+		end
+	end
+	self.InputTextPanel.Cancel.DoClick = function()
+		self.InputTextPanel:SetPos( 0, self.InputTextPanel:GetTall() + 21 )
+		if callbackNo then
+			callbackNo()
+		end
+	end
+	
+	self.InputTextPanel:InvalidateLayout( true )
+	
+	self.InputTextPanel:SetVisible( true )
+end
+
 function page:Alert( question, callbackYes, callbackNo )
 	if !self.AlertPanel then
 		self.AlertPanel = vgui.Create( "DPanelList", self.Content )
@@ -176,7 +229,7 @@ function page:Alert( question, callbackYes, callbackNo )
 			end
 			
 		self.AlertPanel.Text = vgui.Create( "ExText", self.AlertPanel )
-			self.AlertPanel.Text:SetFont( "ExGenericTextMidBold16" )
+			self.AlertPanel.Text:SetFont( "ExGenericText16" )
 			self.AlertPanel:AddItem( self.AlertPanel.Text )
 			
 		self.AlertPanel.OK = vgui.Create( "ExButton", self.AlertPanel )

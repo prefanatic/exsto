@@ -53,7 +53,7 @@ if SERVER then
 		end
 		
 		-- Give FEL some time to save shit.
-		timer.Simple( 0.1, function()
+		--timer.Simple( 0.1, function()
 
 			-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
 			exsto.aLoader.Initialize()
@@ -70,7 +70,7 @@ if SERVER then
 				exsto.SendRankErrors( ply )
 			end
 			
-		end )
+		--end )
 	end
 	exsto.CreateReader( "ExPushRankToSrv", PLUGIN.CommitChanges )
 	
@@ -215,8 +215,8 @@ elseif CLIENT then
 		PLUGIN:Debug( "Updating rank content for '" .. rank.Name .. "'" )
 		local sender = exsto.CreateSender( "ExPushRankToSrv" )
 			sender:AddString( rank.ID )
-			sender:AddString( pnl.RankName:GetValue() )
-			sender:AddString( string.Explode( " ", pnl.Derive:GetValue() )[1] )
+			sender:AddString( rank.Name )
+			sender:AddString( rank.Parent )
 			sender:AddColor( pnl.RankColor:GetColor() )
 			sender:AddTable( rank.FlagsAllow )
 		sender:Send()
@@ -269,8 +269,6 @@ elseif CLIENT then
 	end
 	
 	local function flagPopulate( lst, rank )
-		local allow = rank.FlagsAllow
-		local drv_allow = exsto.Ranks[ rank.Parent ] and exsto.Ranks[ rank.Parent].FlagsAllow or {}
 
 		lst:Clear()
 		local status = "open"
@@ -285,29 +283,24 @@ elseif CLIENT then
 		end
 	end
 	
-	local function createNewRank()
-		-- Create our client holder.
-		local count = table.Count( exsto.Ranks )
-		local id = "exrank_" .. count
+	local function createNewRank()		
+		PLUGIN.Page:InputText( "Please type a unique identifyer for your rank.  It must not contain any spaces, and it should be accurate based on the rank you are creating.  This cannot be changed later.",
+			function( val ) 
+				val = val:lower():Replace( " ", "_" )
+				
+				exsto.Ranks[ val ] = {
+					Name = "Type a name!";
+					ID = val;
+					Parent = "NONE";
+					Color = COLOR.NAME;
+					FlagsAllow = {};
+				}
 		
-		-- Saftey check
-		while true do
-			if !exsto.Ranks[ id ] then break end
-			if count > 20 then PLUGIN:Error( "Failed to perform saftey check on new rank creation.  This is a bug!" ) return end
-			count = count + 1
-			id = "exrank_" .. count
-		end
-		
-		exsto.Ranks[ id ] = {
-			Name = "Type a name";
-			ID = id;
-			Parent = "NONE";
-			Color = COLOR.NAME;
-			FlagsAllow = { "test" };
-		};
-		
-		PLUGIN.WorkingRank = exsto.Ranks[ id ];
-		refreshEditor()		
+				PLUGIN.WorkingRank = exsto.Ranks[ val ];
+				refreshEditor()		
+			end,
+			function() end
+		)
 	end
 
 	local function deleteRank( self )
@@ -374,7 +367,10 @@ elseif CLIENT then
 			pnl.RankName:SetFont( "ExGenericText14" )
 			pnl.RankName.OnTextChanged = function( entry )
 				pnl.RankSelect:SetValue( entry:GetValue() )
+				PLUGIN.WorkingRank.Name = entry:GetValue()
 			end
+			pnl.RankName.OnEnter = function( entry ) pushUpdate() end
+				
 		
 		pnl.Derive = vgui.Create( "DComboBox", pnl.Holder )
 			pnl.Derive:SetTall( 32 )
@@ -382,6 +378,10 @@ elseif CLIENT then
 			pnl.Derive:DockMargin( 0, 4, 0, 0 )
 			pnl.Derive:SetToolTip( "Set parent." )
 			pnl.Derive:SetFont( "ExGenericText14" )
+			pnl.Derive.OnSelect = function( d, index, val, data )
+				PLUGIN.WorkingRank.Parent = string.Explode( " ", val )[1]
+				pushUpdate()
+			end
 			
 		pnl.ColorHolder = vgui.Create( "DPanel", pnl.Holder )
 			pnl.ColorHolder:SetTall( 76 )

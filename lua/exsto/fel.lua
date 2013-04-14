@@ -449,6 +449,7 @@ function db:CheckIntegrity()
 		self.Cache._new = table.Copy( self.Cache._cache )
 		self:DropTable( false )
 		self:Query( self:ConstructQuery( "create" ), false )
+		self:PushSaves()
 		self:Think( true )
 		
 		file.Write( FEL.TableCache .. self.dbName .. "_cache.txt", von.serialize( self.Columns ) )
@@ -501,6 +502,7 @@ function db:CheckIntegrity()
 		self.Cache._new = table.Copy( self.Cache._cache )
 		self:DropTable( false )
 		self:Query( self:ConstructQuery( "create" ), false )
+		self:PushSaves()
 		self:Think( true )
 		
 		file.Write( FEL.TableCache .. self.dbName .. "_cache.txt", von.serialize( self.Columns ) )
@@ -511,6 +513,7 @@ function db:PurgeCache()
 	self:Print( "Clearing cache.", 1 )
 	
 	-- We need to push any data we have that needs to be saved.
+	self:PushSaves()
 	self:Think( true )
 	
 	self:GetCacheData()
@@ -630,32 +633,30 @@ function db:Query( str, threaded, callback )
 	end
 end
 
-function db:Think( force )
+function db:PushSaves()
+	if #self.Cache._changed > 0 then -- Hoho we have some changes!
+		for _, rowData in ipairs( self.Cache._changed ) do
+			self:Query( self:ConstructQuery( "changed", rowData ), true )
+		end
+		
+		self.Cache._changed = {}
+	end
+	
+	if #self.Cache._new > 0 then
+		for _, rowData in ipairs( self.Cache._new ) do
+			self:Query( self:ConstructQuery( "new", rowData ), true )
+		end
+		
+		self.Cache._new = {}
+	end
+end
+
+function db:Think()
 	if self._Disabled then return end
-	if ( CurTime() > self._lastThink + self.thinkDelay ) or force then
-		if FEL.Config.mysql_enabled == "true" and self._mysqlSuccess != true and self._mysqlSuccess != false and self._forcedLocal != true then -- Wait.  Just queue up;
-			self._lastThink = CurTime()
-			return
-		end
-		
-		if #self.Cache._changed > 0 then -- Hoho we have some changes!
-			for _, rowData in ipairs( self.Cache._changed ) do
-				self:Query( self:ConstructQuery( "changed", rowData ), true )
-			end
-			
-			self.Cache._changed = {}
-		end
-		
-		if #self.Cache._new > 0 then
-			for _, rowData in ipairs( self.Cache._new ) do
-				self:Query( self:ConstructQuery( "new", rowData ), true )
-			end
-			
-			self.Cache._new = {}
-		end
-		
+	if ( CurTime() > self._lastThink + self.thinkDelay ) then
+
 		-- Heartbeat please.
-		if FEL.Config.mysql_enabled == "true" and self._forcedLocal != true then self:Query( "SELECT 1 + 1", true ) end
+		if self:IsMySQL() and self._forcedLocal != true then self:Query( "SELECT 1 + 1", true ) end
 		
 		self._lastThink = CurTime()
 	end
@@ -729,11 +730,13 @@ function db:AddRow( data, options )
 	-- Check our _new and _changed first brother.
 	if self:CheckCache( "_new", data ) then
 		table.Merge( self.Cache._new[ self._LastKey ], data )
-		if #player.GetHumans() == 0 then self:Think( true ) end
+		self:PushSaves()
+		self:Think( true )
 		return
 	elseif self:CheckCache( "_changed", data ) then
 		table.Merge( self.Cache._changed[ self._LastKey ], data )
-		if #player.GetHumans() == 0 then self:Think( true ) end
+		self:PushSaves()
+		self:Think( true )
 		return
 	end
 		
@@ -741,12 +744,14 @@ function db:AddRow( data, options )
 		if options.Update == false then return end	
 		table.Merge( self.Cache._cache[ self._LastKey ], data )		
 		self:TblInsert( self.Cache._changed, data )
-		if #player.GetHumans() == 0 then self:Think( true ) end
+		self:PushSaves()
+		self:Think( true )
 		return
 	else
 		self:TblInsert( self.Cache._cache, data )
 		self:TblInsert( self.Cache._new, data )
-		if #player.GetHumans() == 0 then self:Think( true ) end
+		self:PushSaves()
+		self:Think( true )
 	end
 end
 
@@ -861,6 +866,7 @@ function db:Restore( data )
 	self:DropTable( false )
 	self.Cache._new = data;
 	self:Query( self:ConstructQuery( "create" ), false )
+	self:PushSaves()
 	self:Think( true )
 end
 
