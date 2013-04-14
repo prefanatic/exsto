@@ -169,6 +169,11 @@ function exsto.InitQuickMenu( pnl )
 		pnl.PlayerList.CreateContent = function( lst, search )
 			lst:ClearContent()
 			
+			if table.Count( lst.Objects ) <= 0 then -- What the fuck?
+				qm.Object:Error( "Player list objects counted to be 0.  This most likely means that no ranks currently exist on the client!  This shouldn't happen anymore.  If it does, please report." )
+				return
+			end
+			
 			-- Loop through the formatted table
 			for rank, plyTbl in SortedPairsByMemberValue( lst.Objects, "Immunity", true ) do
 				

@@ -811,6 +811,18 @@ function db:DropTable( threaded )
 	self:Query( "DROP TABLE " .. self.dbName, threaded )
 end
 
+-- Completely drops and resets the table.
+function db:Reset()
+	self:Print( "Resetting database!" )
+	
+	self:DropTable( true )
+	self:Query( self:ConstructQuery( "create" ), false )
+	
+	self:GetCacheData( false )
+	self:CheckIntegrity()	
+	self:QOSCheck()	
+end
+
 -- Sets automatic backups as an interval of t
 function db:SetAutoBackup( t )
 	self.backupRate = t * 60

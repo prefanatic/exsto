@@ -279,7 +279,8 @@ elseif CLIENT then
 			if table.HasValue( exsto.GetRankFlags( rank.ID ), flag ) then status = "allowed" end
 			if table.HasValue( exsto.GetInheritedFlags( rank.ID ), flag ) then status = "locked" end
 			
-			lst:AddRow( { flag }, {Desc = desc, Status = status } )
+			local line = lst:AddRow( { flag }, {Desc = desc, Status = status } )
+				line:SetToolTip( desc )
 			status = "open" -- reset.  Why didn't I realize this earlier :/
 		end
 	end

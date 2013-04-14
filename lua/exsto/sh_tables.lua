@@ -376,7 +376,10 @@ exsto.DefaultRanks = {
 		Immunity = 0,
 		FlagsAllow = von.serialize( {
 			"issuperadmin", "variable", "resendplug", "deletevar", "createvar", "reloadplug", "playertitle", "addgimp",  "luarun", "cexec",
-			"vareditor", "rankeditor",
+			"vareditor", "rankeditor", "addadvert", "allowentity", "allowprop", "allowstool", "allowswep", "ban", "banid", "deladvert",
+			"denyentity", "denyprop", "denystool", "denyswep", "entspawn", "felbackup", "feldetails", "felmysqlinfo", "felsettings", "immunity",
+			"rank", "rankid", "settingsdetails", "settings", "banlistdetails", "afkkickignore", "command", "findghosts",
+			"playerpickup", "setconvar", "unban", 
 		} );
 		FlagsDeny = von.serialize( {
 		} );
@@ -390,7 +393,13 @@ exsto.DefaultRanks = {
 		Parent = "guest",
 		Immunity = 1,
 		FlagsAllow = von.serialize( {
-			"isadmin", "banlist", "mapslist",
+			"isadmin", "banlist", "mapslist", "adminsay", "blind", "bring", "cannoclip", "changelvl", "chatnotify",
+			"chatnotify2", "clear", "color", "count", "decals", "effect", "enter", "exit", "extinguish", "freeze",
+			"gag", "ghost", "gimp", "give", "godmode", "goto", "hideadmin", "ignite", "jail", "jumppower", "kick",
+			"lookup", "mute", "noclip", "nolimits", "own", "playsound", "pm", "printlogs", "printrestrict", "ragdoll",
+			"rave", "reloadmap", "respawn", "returnweps", "rocketman", "runspeed", "say", "seizure", "send",
+			"setarmor", "setfrags", "setdeaths", "sethealth", "slap", "slay", "spectate", "stopsounds", "stripweps",
+			"teleport", "unlimitedammo", "unmute", "walkspeed"
 		} );
 		FlagsDeny = von.serialize( {
 		} );
@@ -405,7 +414,7 @@ exsto.DefaultRanks = {
 		Immunity = 9,
 		FlagsAllow = von.serialize( {
 			"getrank", "search", "menu", "gettotaltime", "title", "displayheadtags", "mytitle", "togglechatanim", "updateownerrank",
-			"helppage", 
+			"helppage", "review", "round", "voteban", "votekick", "voteno", "voteyes"
 		} );
 		FlagsDeny = von.serialize( {
 		} );

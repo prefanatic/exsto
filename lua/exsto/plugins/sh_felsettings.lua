@@ -122,6 +122,18 @@ if SERVER then
 		file.Delete( FEL.BackupDirectory .. db:GetName() .. "/" .. fLoc )
 	end
 	PLUGIN:CreateReader( "ExDeleteBackup", PLUGIN.DeleteBackup )
+	
+	function PLUGIN:ResetDatabase( reader )
+		local ply = reader:ReadSender()
+		local db = FEL.GetDatabase( reader:ReadString() )
+		
+		if !db then return end
+		self:Debug( "Resetting database '" .. db:GetName() .. "' triggered by '" .. ply:Nick() .. "'", 1 )
+		
+		db:Reset()
+		game.ConsoleCommand( "changelevel " .. string.gsub( game.GetMap(), ".bsp", "" ) .. "\n" )
+	end
+	PLUGIN:CreateReader( "ExResetDB", PLUGIN.ResetDatabase )
 
 end
 
@@ -250,7 +262,7 @@ if CLIENT then
 			pnl.Reset:SetTall( 32 )
 			pnl.Reset:SetEvil()
 			pnl.Reset.OnClick = function( o )
-				pnl:GetObject():Alert( "Warning!  This will completely delete all the data in the table.  Are you absolutely sure you want to do this?", 
+				pnl:GetObject():Alert( "Warning!  This will completely delete all the data in the table.  A server restart is required to complete this action.  Are you sure you want to continue?", 
 					function()
 						local sender = exsto.CreateSender( "ExResetDB" )
 							sender:AddString( PLUGIN.WorkingDB.db )
