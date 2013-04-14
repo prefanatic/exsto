@@ -53,16 +53,22 @@ elseif CLIENT then
 		pnl.Cat:InvalidateLayout( true )
 	end
 
-	local function onShowtime( page )
+	local function onShowtime( page, search )
 		local pnl = page.Content
 		if !pnl then return end
+		
+		print( search )
+		
+		search = search or ""
 		
 		pnl.List:Clear()
 		
 		local tmp = {}
 		for id, data in pairs( exsto.ServerVariables ) do
-			if !tmp[ data.Category ] then tmp[ data.Category ] = {} end
-			table.insert( tmp[ data.Category ], id )
+			if data.Category:lower():find( search ) then
+				if !tmp[ data.Category ] then tmp[ data.Category ] = {} end
+				table.insert( tmp[ data.Category ], id )
+			end
 		end
 
 		for cat, ids in pairs( tmp ) do
@@ -164,6 +170,10 @@ elseif CLIENT then
 		exsto.Menu.DisableBackButton()
 		exsto.Menu.OpenPage( PLUGIN.Page )
 	end
+	
+	local function onSearch( e )
+		onShowtime( PLUGIN.Page, e:GetValue() )
+	end
 
 	function PLUGIN:Init()
 		self.Page = exsto.Menu.CreatePage( "settings", settingsInit )
@@ -171,6 +181,7 @@ elseif CLIENT then
 			self.Page:SetSearchable( true )
 			self.Page:OnShowtime( onShowtime )
 			self.Page:SetIcon( "exsto/settings.png" )
+			self.Page:OnSearchTyped( onSearch )
 		
 		self.DetailsPage = exsto.Menu.CreatePage( "settingsdetails", detailsInit )
 			self.DetailsPage:SetTitle( "Details" )

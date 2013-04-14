@@ -159,6 +159,8 @@ function exsto.Menu.EnableSearch()
 	exsto.Menu.Search:SetPos( 4, exsto.Menu.Frame:GetTall() - 28 )
 	exsto.Menu.Search:SetEditable( true )
 	exsto.Menu.Search._Disabled = false
+	
+	exsto.Menu.Search:RequestFocus()
 end
 
 function exsto.Menu.DisableSearch()
@@ -176,7 +178,7 @@ function exsto.Menu.SearchOnTextChanged( entry )
 	if !exsto.Menu.ActivePage then return end
 	
 	local obj = exsto.Menu.ActivePage
-	if !obj_SearchOnTextChanged then return end
+	if !obj._SearchOnTextChanged then return end
 	
 	local succ, err = pcall( obj._SearchOnTextChanged, entry )
 	if !succ then
