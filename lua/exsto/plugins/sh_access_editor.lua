@@ -346,6 +346,7 @@ elseif CLIENT then
 			pnl.RankSelect:Dock( FILL )
 			pnl.RankSelect.OnSelect = editorRankSelected
 			pnl.RankSelect:SetToolTip( "Select a rank." )
+			pnl.RankSelect:SetFont( "ExGenericText14" )
 
 		pnl.DeleteRank = vgui.Create( "DImageButton", pnl.Header )
 			pnl.DeleteRank:SetImage( "exsto/trash_disabled.png" )
@@ -369,6 +370,7 @@ elseif CLIENT then
 			pnl.RankName:DockMargin( 0, 4, 0, 0 )
 			pnl.RankName:SetTextInset( 10, 0 )
 			pnl.RankName:SetToolTip( "Rank name." )
+			pnl.RankName:SetFont( "ExGenericText14" )
 			pnl.RankName.OnTextChanged = function( entry )
 				pnl.RankSelect:SetValue( entry:GetValue() )
 			end
@@ -378,6 +380,7 @@ elseif CLIENT then
 			pnl.Derive:Dock( TOP )
 			pnl.Derive:DockMargin( 0, 4, 0, 0 )
 			pnl.Derive:SetToolTip( "Set parent." )
+			pnl.Derive:SetFont( "ExGenericText14" )
 			
 		pnl.ColorHolder = vgui.Create( "DPanel", pnl.Holder )
 			pnl.ColorHolder:SetTall( 76 )

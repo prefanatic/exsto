@@ -26,6 +26,14 @@ function PANEL:Init()
 	self:MaxFontSize( 20 )
 	self:SetAlignX( TEXT_ALIGN_LEFT )
 	self:SetMaxTextWide( 130 )
+	self:SetTextColor( Color( 133, 133, 133, 255 ) )
+	
+	-- +17, +47, +47
+	self.NormalColor = Color( 27, 184, 50, 255 )
+	self.RedColor = Color( 193, 85, 85, 255 )
+	self.Material = Material( "exsto/buttonsettings.png" )
+	self.IconOn = Material( "exsto/green.png" )
+	self.IconOff = Material( "exsto/red.png" )
 end
 
 function PANEL:DoClick()
@@ -51,27 +59,25 @@ end
 function PANEL:Paint()
 	local w, h = self:GetSize()
 	
-	if self._Value then
-		self:GetSkin().tex.Input.ComboBox.Down( 0, 0, w, h )
-	elseif self.Hovered then
-		self:GetSkin().tex.Input.ComboBox.Hover( 0, 0, w, h )
-	else
-		self:GetSkin().tex.Input.ComboBox.Normal( 0, 0, w, h )
-	end
+	surface.SetDrawColor( 255, 255, 255, 255 )
+	surface.SetMaterial( self.Material )
+	surface.DrawTexturedRect( 0, 0, w, h )
+
+	-- Text
+	local x = self:GetWide() / 2
+	local y = self:GetTall() / 2
 	
-	if !self._HideText then
-		
-		-- Text
-		local x = self:GetWide() / 2
-		local y = self:GetTall() / 2
-		
-		if self._AlignX == TEXT_ALIGN_LEFT then x = self:GetTextPadding() end
-		
-		--if self._AlignY == TEXT_ALIGN_TOP then y = y + self._YMod end
-		
-		draw.SimpleText( self:GetText(), self:GetFont() .. self:GetFontSize(), x, y, self:GetTextColor(), self._AlignX, self._AlignY )
-		
-	end
+	if self._AlignX == TEXT_ALIGN_LEFT then x = self:GetTextPadding() end
+	
+	surface.SetFont( self:GetFont() .. self:GetFontSize() )
+	local tw = surface.GetTextSize( self:GetText() )
+	
+	draw.SimpleText( self:GetText(), self:GetFont() .. self:GetFontSize(), x, y, self:GetTextColor(), self._AlignX, self._AlignY )
+	draw.SimpleText( self._Value and "Enabled" or "Disabled", self:GetFont() .. self:GetFontSize(), tw + x + 5, y, self._Value and self.NormalColor or self.RedColor, self._AlignX, self._AlignY )
+	
+	surface.SetMaterial( self._Value and self.IconOn or self.IconOff )
+	surface.DrawTexturedRect( w - 22, y - 8, 16, 16 )
+
 end
 
 derma.DefineControl( "ExBooleanChoice", "Exsto Boolean Choice", PANEL, "ExButton" )

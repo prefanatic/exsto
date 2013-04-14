@@ -22,12 +22,16 @@ PANEL = {}
 
 function PANEL:Init()
 	self:Font( "ExGenericText" )
-	self:MaxFontSize( 28 )
+	self:MaxFontSize( 20 )
 	self:TextPadding( 6 )
 	self:Text( "" )
-	self:SetTextColor( Color( 0, 153, 176, 255 ) )
+	self:SetTextColor( Color( 133, 133, 133, 255 ) )
 	self:SetAlignX( TEXT_ALIGN_CENTER )
 	self:SetAlignY( TEXT_ALIGN_CENTER )
+end
+
+function PANEL:SetEvil()
+	self:SetTextColor( Color( 193, 85, 85, 255 ) )
 end
 
 function PANEL:SetQuickMenu()

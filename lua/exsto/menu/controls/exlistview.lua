@@ -123,5 +123,16 @@ function PANEL:OnRowSelected( lineID, line )
 	self:LineSelected( disp, data, line )
 end
 
+function PANEL:PerformLayout()
+	DListView.PerformLayout( self )
+	if IsValid( self.VBar ) then
+		self.VBar:SetPos( self:GetWide() - 3, 0 )
+		self.VBar:SetSize( 3, self:GetTall() )
+		self.VBar:SetUp( self.VBar:GetTall() - self:GetHeaderHeight(), self.pnlCanvas:GetTall() )
+		
+		self.pnlCanvas:SetWide( self:GetWide() )
+	end
+end
+
 
 derma.DefineControl( "ExListView", "Exsto ListView", PANEL, "DListView" )

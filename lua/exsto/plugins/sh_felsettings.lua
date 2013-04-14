@@ -19,6 +19,7 @@ if SERVER then
 		util.AddNetworkString( "ExRestoreDatabase" )
 		util.AddNetworkString( "ExDeleteBackup" )
 		util.AddNetworkString( "ExBackupRate" )
+		util.AddNetworkString( "ExResetDB" )
 	
 	end
 
@@ -230,11 +231,11 @@ if CLIENT then
 				end
 			end
 			
-		pnl.Edit = vgui.Create( "ExQuickButton", pnl.Cat )
+		--[[pnl.Edit = vgui.Create( "ExQuickButton", pnl.Cat )
 			pnl.Edit:Text( "Edit" )
 			pnl.Edit:Dock( TOP )
 			pnl.Edit:SetQuickMenu()
-			pnl.Edit:SetTall( 32 )
+			pnl.Edit:SetTall( 32 )]]
 			
 		pnl.Recover = vgui.Create( "ExQuickButton", pnl.Cat )
 			pnl.Recover:Text( "Recover" )
@@ -247,6 +248,16 @@ if CLIENT then
 			pnl.Reset:Dock( TOP )
 			pnl.Reset:SetQuickMenu()
 			pnl.Reset:SetTall( 32 )
+			pnl.Reset:SetEvil()
+			pnl.Reset.OnClick = function( o )
+				pnl:GetObject():Alert( "Warning!  This will completely delete all the data in the table.  Are you absolutely sure you want to do this?", 
+					function()
+						local sender = exsto.CreateSender( "ExResetDB" )
+							sender:AddString( PLUGIN.WorkingDB.db )
+						sender:Send()
+					end
+				)
+			end
 
 		pnl.Cat:InvalidateLayout( true )
 	end

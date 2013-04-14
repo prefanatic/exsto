@@ -16,8 +16,8 @@ if SERVER then
 	
 	local afkTime
 	
-	local function OnAFKTimeChange(time)
-		afkTime = time * 60
+	local function OnAFKTimeChange(old,time)
+		afkTime = tonumber( time ) * 60
 		return true
 	end
 	

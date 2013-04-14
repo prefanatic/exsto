@@ -22,20 +22,35 @@ PANEL = {}
 
 function PANEL:Init()
 
+	self.Choices = {}
+	self.Expanded = false
+	self.Material = Material( "exsto/buttonsettings.png" )
+
 	self:MaxFontSize( 20 )
 	self:SetAlignX( TEXT_ALIGN_LEFT )
 	self:SetMaxTextWide( 130 )
-	
-	self.Entry = self:Add( "DComboBox", self )
-		self.Entry:Dock( FILL )
-		self.Entry:DockMargin( 4, 4, 4, 4 )
-		self.Entry:SetVisible( false )
-		self.Entry.OnSelect = function( entry, index, val, data ) self:OnSelect( index, val, data ) self:DoClick() end
+
+	-- We have a list that contains the possible choices we have for a variable.		
+	self.List = self:Add( "ExListView" )
+		self.List:SetPos( 0, 40 )
+		self.List:DisableScrollbar()
+		self.List:AddColumn( "" )
+		self.List:SetHideHeaders( true )
+		self.List.LineSelected = function( o, disp, data, l )
+			self:DoClick()
+			self:SetValue( data )
+			self:OnValueSet( data )
+		end
 		
-	hook.Add( "ExOptionButtonOpened", "ExMaintainBPolish_" .. tostring( self ), function( panel )
-		print( "Called", self, panel, self != panel, self.Entry:IsVisible() )
-		if self != panel and self.Entry:IsVisible() then self:DoClick() end
-	end )
+	--exsto.Animations.Create( self )
+
+end
+
+function PANEL:OnValueSet( val ) end
+
+function PANEL:Clear()
+	self.Choices = {}
+	self.List:Clear()
 end
 
 function PANEL:OnSelect( index, name, data )
@@ -43,43 +58,56 @@ function PANEL:OnSelect( index, name, data )
 end
 
 function PANEL:AddChoice( name, data )
-	self.Entry:AddChoice( name, data )
+	table.insert( self.Choices, { Name = name, Data = data } )
+	
+	self.List:AddRow( { name }, data )
 end
 
-function PANEL:SetValue( val ) self.Entry:SetValue( val ) self:OnValueSet( self:GetValue() ) end
-function PANEL:GetValue() return self.Entry:GetValue() end
+function PANEL:SetValue( val ) self._Value = val self:Text( val ) end
+function PANEL:GetValue() return self._Value end
 
 -- Override ExButton's.  We now need to convert the button into the wanger.  Whoaurgoarghoa!
 function PANEL:DoClick()
-	self.Entry:SetVisible( not self.Entry:IsVisible() )
-	self:HideText( self.Entry:IsVisible() )
-	
-	-- Hook to close other panels.
-	hook.Call( "ExOptionButtonOpened", nil, self )
+	if !self.Expanded then
+		print( "Expanding", self:GetTall() )
+		self.StoredH = self:GetTall()
+		
+		self.List:SizeToContents()
+		self:SetTall( self.List:GetTall() + 4 + 40 )
+		self.Expanded = true
+	else
+		print( "Reset", self.StoredH )
+		self:SetTall( self.StoredH )
+		self.Expanded = false
+	end
 end
 
 function PANEL:Paint()
-	local w, h = self:GetSize()
+local w, h = self:GetSize()
 	
-	if self.Hovered then
-		self:GetSkin().tex.Input.ComboBox.Hover( 0, 0, w, h )
+	surface.SetDrawColor( 255, 255, 255, 255 )
+	surface.SetMaterial( self.Material )
+	surface.DrawTexturedRect( 0, 0, w, h )
+
+	-- Text
+	local x = self:GetWide() / 2
+	local y = self:GetTall() / 2
+	
+	if self._AlignX == TEXT_ALIGN_LEFT then x = self:GetTextPadding() end
+	
+	draw.SimpleText( self:GetText(), self:GetFont() .. self:GetFontSize(), x, y, self:GetTextColor(), self._AlignX, self._AlignY )
+
+end
+
+function PANEL:PerformLayout()
+	if self.Expanded then
+		self.List:SetPos( 0, self:GetTall() - self.List:GetTall() )
+		self.List:SizeToContents()
+		self.List:SetWide( self:GetWide() - 1 )
 	else
-		self:GetSkin().tex.Input.ComboBox.Normal( 0, 0, w, h )
+		self.List:SetPos( 0, 40 )
 	end
-	
-	if !self._HideText then
-		
-		-- Text
-		local x = self:GetWide() / 2
-		local y = self:GetTall() / 2
-		
-		if self._AlignX == TEXT_ALIGN_LEFT then x = self:GetTextPadding() end
-		
-		--if self._AlignY == TEXT_ALIGN_TOP then y = y + self._YMod end
-		
-		draw.SimpleText( self:GetText(), self:GetFont() .. self:GetFontSize(), x, y, self:GetTextColor(), self._AlignX, self._AlignY )
-		
-	end
+	ExButton.PerformLayout( self )
 end
 
 derma.DefineControl( "ExVarMultiChoice", "Exsto Multi Choice", PANEL, "ExButton" )

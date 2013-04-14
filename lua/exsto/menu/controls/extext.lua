@@ -22,7 +22,14 @@ PANEL = {}
 
 function PANEL:Init()
 	self.Lines = {}
+	
+	self:SetTextColor( Color( 133, 133, 133, 255 ) )
 end
+
+function PANEL:Paint() end
+
+function PANEL:SetTextColor( col ) self.TextColor = col end
+function PANEL:GetTextColor() return self.TextColor end
 
 function PANEL:SetFont( fnt )
 	self._Font = fnt
@@ -33,67 +40,81 @@ function PANEL:GetLines() return self.Lines end
 function PANEL:GetLineCount() return #self.Lines end
 function PANEL:GetProjectedHeight() return #self.Lines * self.GreatestLineHeight end
 
-function PANEL:SetText( txt )
-
-	self:Clear( true )
-	for _, line in ipairs( self:GetLines() ) do
-		if line and line:IsValid() then line:Remove() end
-	end
-	
+function PANEL:ConstructLines( txt )
 	-- Abide by the width of our panel so we create new lines downward.
 	surface.SetFont( self:GetFont() )
 	local words = string.Explode( " ", txt )
-	local construct = {}
+	local tbl = {}
 	
-	local w, h, l, maxH, word = 0, 0, 1, 0
+	local w, h, l, tW, word = 0, 0, 1, 0
 	for I = 1, #words do
 		word = words[ I ]
-		if !construct[ l ] then construct[ l ] = { _LINEW = 0 } end
+		if !tbl[ l ] then tbl[ l ] = {} end
 		
 		w, h = surface.GetTextSize( word )
 		w = w + 4
 		
 		if word:find( "\n" ) then
-			table.insert( construct[ l ], word:Replace( "\n", "" ) )
+			table.insert( tbl[ l ], word:Replace( "\n", "" ) )
 			l = l + 1 -- Increase the line level
-		elseif w + construct[ l ]._LINEW > self:GetWide() then
-			l = l + 1 -- Increase the level
+			tW = 0
+		elseif w + tW > self:GetWide() then
+			l = l + 1
 			
-			-- Throw into the second line.  I hate having to do this, but its the only way to prevent an overflow for some reason.
-			construct[ l ] = { _LINEW = w }
-			table.insert( construct[ l ], word )
+			tW = w
+			tbl[ l ] = {}
+			table.insert( tbl[ l ], word )
 		else
-			construct[ l ]._LINEW = construct[ l ]._LINEW + w
-			table.insert( construct[ l ], word )
+			tW = tW + w
+			table.insert( tbl[ l ], word )
 		end
 		
-		if h > maxH then maxH = h end
 	end
 	
+	return tbl
+end
+
+function PANEL:SetText( txt )
+
+	self._TEXT = txt
+
+	for _, line in ipairs( self:GetLines() ) do
+		if IsValid( line ) then line:Remove() end
+	end
+	self.Lines = {}
+	
+	local construct = self:ConstructLines( txt )
+
 	-- Create our text objects for each line we have.
 	for I = 1, #construct do
 		local line = self:Add( "DLabel" )
+			line:Dock( TOP )
 			line:SetText( table.concat( construct[ I ], " " ) )
-			--line:SetWide( construct[ I ]._LINEW )
+			line:SetTextColor( self:GetTextColor() )
 			line:SetFont( self:GetFont() )
 			line:SizeToContents()
 		table.insert( self.Lines, line )
 	end
 	
-	self.GreatestLineHeight = maxH
-
-	self:InvalidateLayout( true )
-end
---[[
-function PANEL:PerformLayout()
-	print( "inval", self:GetProjectedHeight() )
-	for _, l in ipairs( self.Lines ) do
-		if l and l:IsValid() then
-			l:SizeToContents()
-			l:InvalidateLayout()
-		end
+	-- Set our H
+	local h = 0
+	for _, line in ipairs( self:GetLines() ) do
+		h = h + line:GetTall()
 	end
-	self:SetTall( self:GetProjectedHeight() )
-end]]
+	self:SetTall( h + 4 )
 
-derma.DefineControl( "ExText", "Exsto Text", PANEL, "DIconLayout" )
+end
+
+function PANEL:PerformLayout()
+	local w, h = self:GetWide()
+	
+	if w != self._W or h != self._H then -- We changed sizes!
+		self._W = w
+		self._H = h
+		
+		self:SetText( self._TEXT )
+	end
+	
+end
+
+derma.DefineControl( "ExText", "Exsto Text", PANEL, "DPanel" )

@@ -215,56 +215,33 @@ elseif CLIENT then
 		local data
 		for _, id in ipairs( PLUGIN.WorkingCat ) do
 			data = exsto.ServerVariables[ id ] -- So this is 'live' so to speak
-		
-			-- If we're a boolean
-			if data.Maximum == 1 and data.Minimum == 0 and #data.Possible == 2 then
-				local obj = vgui.Create( "ExBooleanChoice", page.Cat )
-					obj:Dock( TOP )
-					obj:DockMargin( 0, 4, 0, 0 )
-					obj:SetTall( 32 )
-					obj:Text( data.Display )
-					obj:SetValue( data.Value )
-					obj.OnValueSet = function( o, val ) updateVariable( data.ID, val ) end
-					
-				table.insert( page.Objects, obj )
-			elseif #data.Possible > 0 then
-				local obj = vgui.Create( "ExVarMultiChoice", page.Cat )
-					obj:Dock( TOP )
-					obj:DockMargin( 0, 4, 0, 0 )
-					obj:SetTall( 32 )
-					obj:SetValue( data.Value )
-					obj:Text( data.Display )
-					obj.OnValueSet = function( o, val ) updateVariable( data.ID, val ) end
-					
-					for i, possible in ipairs( data.Possible ) do
-						obj:AddChoice( possible )
-					end
-					
-				table.insert( page.Objects, obj )
-			elseif data.Type == "string" then -- If we require a text box!
-				local obj = vgui.Create( "ExTextChoice", page.Cat )
-					obj:Dock( TOP )
-					obj:DockMargin( 0, 4, 0, 0 )
-					obj:SetTall( 32 )
-					obj:SetValue( data.Value )
-					obj:Text( data.Display )
-					obj.OnValueSet = function( o, val ) updateVariable( data.ID, val ) end
-					
-				table.insert( page.Objects, obj )
-			elseif data.Type == "number" then -- Anddd WANG IT.
-				local obj = vgui.Create( "ExNumberChoice", page.Cat )
-					obj:Dock( TOP )
-					obj:DockMargin( 0, 4, 0, 0 )
-					obj:SetTall( 32 )
-					obj:Text( data.Display )
-					obj:SetMin( data.Minimum )
-					obj:SetMax( data.Maximum )
-					obj:SetValue( data.Value )
-					obj:SetDecimals( 0 )
-					obj.OnValueSet = function( o, val ) updateVariable( data.ID, val ) end
-					
-				table.insert( page.Objects, obj )
+			
+			page.Cat.Header:SetText( data.Category ) -- Kind of silly to do this, but it saves writing extra code.
+			
+			local obj = vgui.Create( "ExSettingsElement", page.Cat )
+				obj:Dock( TOP )
+				obj:SetTitle( data.Display )
+				obj:SetHelp( data.Help )
+				
+			if data.Maximum == 1 and data.Minimum == 0 and #data.Possible == 2 then -- We're a boolean
+				obj:SetBoolean()
+			elseif  #data.Possible > 0 then
+				obj:SetMultiChoice()
+				
+				for i, possible in ipairs( data.Possible ) do
+					obj:AddChoice( possible, possible )
+				end
+			elseif data.Type == "string" then -- We're a text box
+				obj:SetTextEntry()
+			elseif data.Type == "number" then -- We're a number!
+				obj:SetNumberEntry( "" )
+				obj:SetMin( data.Minimum )
+				obj:SetMax( data.Maximum )
 			end
+			
+			obj:SetValue( data.Value )
+			
+			table.insert( page.Objects, obj )
 			
 		end
 
