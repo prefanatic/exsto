@@ -19,7 +19,7 @@ if SERVER then
 	util.AddNetworkString( "ExVoteClear" )
 	
 	function PLUGIN:Init()
-		self.Timeout = exsto.CreateVariable( "ExVoteTimeout", "Vote Timeout Lenght", 30, "This sets the default time for a vote, if no delay is passed." )
+		self.Timeout = exsto.CreateVariable( "ExVoteTimeout", "Vote Timeout Length", 30, "This sets the default time for a vote, if no delay is passed." )
 			self.Timeout:SetCategory( "Votes" )
 		self.DefaultStyle = exsto.CreateVariable( "ExVoteDefaultStyle", "Default Vote Style", "chat", "This sets the default voting style.\n - 'small' : Small vote menu.\n - 'large' : Large vote menu.\n - 'chat' : Chat voting.")
 			self.DefaultStyle:SetPossible( "chat", "large" )
