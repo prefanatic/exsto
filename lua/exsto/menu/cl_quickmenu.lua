@@ -191,7 +191,7 @@ function exsto.InitQuickMenu( pnl )
 					cat.PlyList.Paint = function() end
 				
 				for _, data in ipairs( plyTbl ) do
-					if string.find( data.Ply:Nick(), search or "" ) then
+					if string.find( data.Ply:Nick():lower(), search or "" ) then
 						local obj = cat.PlyList:AddLine( data.Ply:Nick() )
 							obj.Columns[1]:SetFont( "ExGenericTextMidBold16" )
 							obj.Data = data
@@ -363,7 +363,7 @@ function qm.CreateCommandWindow( pnl )
 				
 			local comboObj
 			for id, comdata in SortedPairsByMemberValue( exsto.Commands, "DisplayName", false ) do
-				if comdata.QuickMenu and string.find( comdata.DisplayName, search or "" ) and LocalPlayer():IsAllowed( id ) then
+				if comdata.QuickMenu and string.find( comdata.DisplayName:lower(), search or "" ) and LocalPlayer():IsAllowed( id ) then
 					comboObj = pnl.CommandList:AddLine( comdata.DisplayName )
 						comboObj.Columns[1]:SetFont( "ExGenericTextMidBold16" )
 						comboObj.Type = "COMMAND"

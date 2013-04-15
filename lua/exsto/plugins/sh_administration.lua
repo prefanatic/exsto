@@ -41,12 +41,10 @@ if SERVER then
 			exsto.BanDB:ConstructColumns( {
 				Name = "TEXT:not_null";
 				SteamID = "VARCHAR(50):primary:not_null";
-				SteamID64 = "INTEGER:not_null";
 				Length = "INTEGER:not_null";
 				Reason = "TEXT";
 				BannedBy = "TEXT:not_null";
 				BannerID = "VARCHAR(50)";
-				BannerID64 = "INTEGER";
 				BannedAt = "INTEGER:not_null";
 			} )
 			exsto.BanDB:SetRefreshRate( self.BanRefreshRate:GetValue() * 60 )
@@ -177,13 +175,11 @@ if SERVER then
 		exsto.BanDB:AddRow( {
 			Name = ply:Nick();
 			SteamID = ply:SteamID();
-			SteamID64 = ply:SteamID64();
 			Reason = reason;
 			Length = len;
 			BannedBy = ownerNick;
 			BannedAt = os.time();
 			BannerID = ownerID;
-			BannerID64 = owner:SteamID64()
 		} )
 		
 		self:Drop( ply:UserID(), reason )
@@ -382,14 +378,12 @@ if SERVER then
 	function PLUGIN:SendBan( tbl, ply )
 		local sender = exsto.CreateSender( "ExRecBan", ply )
 			sender:AddString( tbl.SteamID )
-			sender:AddLong( tbl.SteamID64 )
 			sender:AddString( tbl.Name )
 			sender:AddString( tbl.Reason )
 			sender:AddString( tbl.BannedBy )
 			sender:AddShort( tbl.Length )
 			sender:AddLong( tbl.BannedAt )
 			sender:AddString( tbl.BannerID )
-			sender:AddLong( tbl.BannerID64 )
 		sender:Send()
 	end
 
@@ -401,14 +395,12 @@ if SERVER then
 		
 		self:SendBan( {
 			SteamID = ply:SteamID();
-			SteamID64 = ply:SteamID64();
 			Name = ply:Nick();
 			Reason = "Testing.";
 			BannedBy = ply:Nick();
 			Length = 0;
 			BannedAt = os.time();
 			BannerID = ply:SteamID();
-			BannerID64 = ply:SteamID64();
 		}, ply )
 	end 
 	PLUGIN:CreateReader( "ExRequestBans", PLUGIN.RequestBans )
@@ -464,14 +456,12 @@ elseif CLIENT then
 	local function recBanAdd( reader )
 		local tbl = {
 			SteamID = reader:ReadString();
-			SteamID64 = reader:ReadLong();
 			Name = reader:ReadString();
 			Reason = reader:ReadString();
 			BannedBy = reader:ReadString();
 			Length = reader:ReadShort();
 			BannedAt = reader:ReadLong();
 			BannerID = reader:ReadString();
-			BannerID64 = reader:ReadLong();
 		}
 		PLUGIN.Bans[ tbl.SteamID ] = tbl;
 		
