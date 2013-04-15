@@ -56,6 +56,7 @@ function PANEL:SetMultiChoice()
 	self.Button = self:Add( "ExVarMultiChoice" )
 		self.Button:Dock( TOP )
 		self.Button:SetTall( 40 )
+		self.Button:SetHeaderSize( 40 )
 		self.Button.OnValueSet = function( o, val ) self:OnValueSet( val ) end	
 end
 

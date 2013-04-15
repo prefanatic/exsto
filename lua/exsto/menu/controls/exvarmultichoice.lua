@@ -36,6 +36,7 @@ function PANEL:Init()
 		self.List:DisableScrollbar()
 		self.List:AddColumn( "" )
 		self.List:SetHideHeaders( true )
+		self.List.Paint = function() end
 		self.List.LineSelected = function( o, disp, data, l )
 			self:DoClick()
 			self:SetValue( data )
@@ -45,6 +46,8 @@ function PANEL:Init()
 	--exsto.Animations.Create( self )
 
 end
+
+function PANEL:SetHeaderSize( n ) self._HeaderSize = n end
 
 function PANEL:SetMultipleOptions()
 	self._MultiSelect = true
@@ -75,28 +78,27 @@ function PANEL:GetValue() return self._Value end
 function PANEL:DoClick()
 	if !self.Expanded then
 		print( "Expanding", self:GetTall() )
-		self.StoredH = self:GetTall()
 		
 		self.List:SizeToContents()
-		self:SetTall( self.List:GetTall() + 4 + 40 )
+		self:SetTall( self.List:GetTall() + 4 + self._HeaderSize )
 		self.Expanded = true
 	else
 		print( "Reset", self.StoredH )
-		self:SetTall( self.StoredH )
+		self:SetTall( self._HeaderSize )
 		self.Expanded = false
 	end
 end
 
 function PANEL:Paint()
-local w, h = self:GetSize()
+	local w, h = self:GetSize()
 	
 	surface.SetDrawColor( 255, 255, 255, 255 )
 	surface.SetMaterial( self.Material )
-	surface.DrawTexturedRect( 0, 0, w, h )
+	surface.DrawTexturedRect( 0, 0, w, self._HeaderSize )
 
 	-- Text
 	local x = self:GetWide() / 2
-	local y = self:GetTall() / 2
+	local y = self._HeaderSize / 2
 	
 	if self._AlignX == TEXT_ALIGN_LEFT then x = self:GetTextPadding() end
 	
@@ -110,7 +112,7 @@ function PANEL:PerformLayout()
 		self.List:SizeToContents()
 		self.List:SetWide( self:GetWide() - 1 )
 	else
-		self.List:SetPos( 0, 40 )
+		self.List:SetPos( 0, self._HeaderSize )
 	end
 	ExButton.PerformLayout( self )
 end
