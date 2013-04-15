@@ -51,8 +51,7 @@ function PANEL:ConstructLines( txt )
 		word = words[ I ]
 		if !tbl[ l ] then tbl[ l ] = {} end
 		
-		w, h = surface.GetTextSize( word )
-		w = w + 4
+		w, h = surface.GetTextSize( word .. " " )
 		
 		if word:find( "\n" ) then
 			table.insert( tbl[ l ], word:Replace( "\n", "" ) )

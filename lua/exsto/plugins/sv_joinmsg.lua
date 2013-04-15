@@ -34,7 +34,7 @@ function PLUGIN:Init()
 	self.Country = exsto.CreateVariable( "ExCountryOnConnect",
 		"Display origin country on connect",
 		0,
-		"Designates if user's countries are shown on connect."
+		"Designates if user's countries are shown on connect.  The GeoIP module is needed for this."
 	)
 		self.Country:SetCallback( dispCountryOnChange )
 		self.Country:SetBoolean()
