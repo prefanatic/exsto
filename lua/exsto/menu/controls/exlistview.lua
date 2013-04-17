@@ -34,6 +34,7 @@ end
 
 function PANEL:SetQuickList()
 	self.Paint = function() end
+	self.OnMouseWheeled = nil
 end
 
 function PANEL:SetTextColor( col ) self._TextCol = col end

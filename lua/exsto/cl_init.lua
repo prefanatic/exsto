@@ -45,9 +45,27 @@
 	exstoClient( "sh_plugins.lua" )
 	--exstoClient( "sh_cloud.lua" )
 	
-	-- Init clientside items.
-	exsto.LoadPlugins()
-	exsto.InitPlugins( launchInit )
+	-- I don't know why or how, but sometimes LocalPlayer is completely valid BEFORE clientside actually finishes a load....
+	-- SO!  Lets check.  If we're good, we good.  If not, lets make sure we GET good.
+	if LocalPlayer() and IsValid( LocalPlayer() ) then
+		hook.Call( "ExClientLoading" )
+		exsto.CreateSender( "ExClientLoad" ):Send()
+	else
+	
+		hook.Add( "OnEntityCreated", "ExPlayerCheck", function( ent )
+			print( ent, ent == LocalPlayer() )
+			if ent == LocalPlayer() and IsValid( ent ) then
+				hook.Call( "ExClientLoading" )
+				exsto.CreateSender( "ExClientLoading" ):Send()
+				hook.Remove( "OnEntityCreated", "ExPlayerCheck" )
+			end
+		end )
+	end
+	
+	hook.Add( "ExReceivedPlugSettings", "ExInitCLPlugs", function()
+		exsto.LoadPlugins()
+		exsto.InitPlugins()
+	end )
 	
 	local seconds = SysTime() - exsto.StartTime
-	MsgC( Color( 146, 232, 136, 255 ), "Exsto load finished.\n"	)
+	MsgC( Color( 146, 232, 136, 255 ), "Exsto load finished.  Waiting for server to initiate plugin load.\n"	)

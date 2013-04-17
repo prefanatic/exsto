@@ -74,7 +74,7 @@ function exsto.SendCommandList( ply )
 		exsto.SendCommand( id, ply )
 	end
 end
-hook.Add( "ExInitSpawn", "exsto_StreamCommandList", exsto.SendCommandList )
+hook.Add( "ExClientLoading", "exsto_StreamCommandList", exsto.SendCommandList )
 concommand.Add( "_ResendCommands", exsto.SendCommandList )
 
 function exsto.SendCommand( id, ply )

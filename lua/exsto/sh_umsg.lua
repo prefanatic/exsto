@@ -51,6 +51,7 @@ exsto.Net = {
 		"ExSendVariable";
 		"ExRecRankErr";
 		"ExCreateFlag";
+		"ExClientLoad";
 	},
 	NotifiedNetStrings = {}
 }
@@ -81,6 +82,14 @@ if SERVER then
 	for _, id in ipairs( exsto.Net.NetworkStrings ) do
 		util.AddNetworkString( id )
 	end
+	
+	function exsto.InitializeClient( reader )
+		local ply = reader:ReadSender()
+		
+		exsto.Debug( "Player '" .. ply:Nick() .. "' ready for clientside load.", 1 )
+		hook.Call( "ExClientLoading", nil, ply )
+	end
+	exsto.CreateReader( "ExClientLoad", exsto.InitializeClient )
 	
 --[[-----------------------------------
 	Function: exsto.SendRankErrors

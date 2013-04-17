@@ -30,8 +30,6 @@ function exsto.CreatePlugin()
 	
 	obj.Info = {}
 	obj.Commands = {}
-	--obj.Hooks = {}
-	--obj.HookID = {}
 	obj.FEL = {}
 	obj.FEL.CreateTable = {}
 	obj.FEL.AddData = {}
@@ -63,6 +61,8 @@ function plugin:SetInfo( tbl )
 	tbl.Disabled = tbl.Disabled or false
 	tbl.Clientside = tbl.Clientside or false
 	tbl.CleanUnload = tbl.CleanUnload or false
+	
+	self._id = tbl.ID
 
 	self.Info = tbl
 end
@@ -71,73 +71,44 @@ end
 	Function: plugin:Register
 	Description: Registers the plugin with Exsto.
      ----------------------------------- ]]
-local queuedPlugins = {}
+function plugin:Register()
 
-if SERVER then
-	concommand.Add( "_ExClientPlugsReady", function( ply )
-		hook.Call( "ExClientPluginsReady", nil, ply )
-	end )
+	-- Register with Exsto.
+	table.insert( exsto.Plugins, self )
+	
+	if SERVER then -- Server side plugin checking.
+		-- Do we exist in the settings db?
+		local f = false
+		for _, data in ipairs( exsto.PluginDB:ReadAll() ) do
+			if data.ID == self:GetID() then f = data end
+		end
+		
+		-- If we don't exist, create our table entry.
+		self:Debug( "Checking settings state.", 2 )
+		if not f then
+			self:Debug( "No settings found.  Writing.", 2 )
+			exsto.PluginDB:AddRow( {
+				ID = self:GetID();
+				Enabled = 1;
+			} )
+		end
+	end
+	
+	-- Proper checks are done.  Check to make sure we can inject ourselves, if we're not disabled.
+	self:Debug( "Checking disabled state.", 2 )
+	if !self:IsEnabled() then
+		self:Debug( "Skipping injection.  Disabled.", 1 )
+		return
+	end
+	
+	self:Inject()
+	
 end
 
-hook.Add( "exsto_RecievedSettings", "exsto_CheckOnSettings", function()
-	-- Go through our client plugins and remove those who the server doesn't allow.
-	for short, data in pairs( exsto.Plugins ) do
-		if tobool( exsto.ServerPlugSettings[ short ] ) == false and !data.Clientside then
-			data.Object:Unload()
-		end
-	end
-	hook.Call( "ExPluginsReady" )
-	RunConsoleCommand( "_ExClientPlugsReady" )
-end )
-
-function plugin:Register()
-	
-	-- Check and see if we exist in the saved plugin table.
-	if !exsto.PluginSaved( self ) then
-		exsto.NeedSaved[self.Info.ID] = !self.Info.Disabled
-	else
-		
-		-- We are saved, so lets check and see if we are disabled.
-		if exsto.PluginDisabled( self ) then
-			exsto.Print( exsto_CONSOLE, "PLUGIN --> Skipping loading plugin " .. self.Info.ID .. ".  Not Enabled." )
-			
-			-- We need to tell Exsto hes atleast disabled.
-			exsto.Plugins[self.Info.ID] = {
-				Name = self.Info.Name,
-				Desc = self.Info.Desc,
-				ID = self.Info.ID,
-				Owner = self.Info.Owner,
-				Clientside = self.Info.Clientside,
-				Experimental = self.Info.Experimental or false,
-				CleanUnload = self.Info.CleanUnload,
-				Object = self,
-				Disabled = true,
-			}
-	
-			return
-		end
-		
-	end
-	
-	--self:CreateGamemodeHooks()
-	
-	-- Tell Exsto we exist!
-	exsto.Plugins[self.Info.ID] = {
-		Name = self.Info.Name,
-		Desc = self.Info.Desc,
-		ID = self.Info.ID,
-		Owner = self.Info.Owner,
-		Clientside = self.Info.Clientside,
-		Experimental = self.Info.Experimental or false,
-		CleanUnload = self.Info.CleanUnload,
-		Object = self,
-		Disabled = false,
-	}
-
+function plugin:Inject()
 	-- Construct the commands we requested.
 	for k,v in pairs( self.Commands ) do
 		if CLIENT then return end
-		--print( "Passing command " .. k .. " to comsys" )
 		exsto.AddChatCommand( k, v )
 	end
 	
@@ -171,7 +142,7 @@ function plugin:Register()
 	end
 	
 	self:Init()
-	self.Info.Initialized = true
+	self.Initialized = true
 	exsto.LastPluginRegister = self
 	
 	hook.Call( "ExPluginRegister", nil, self )
@@ -208,7 +179,7 @@ function plugin:Unload()
 		end
 	end
 	
-	self.Info.Disabled = true
+	self.Disabled = true
 end
 
 --[[ -----------------------------------
@@ -224,14 +195,35 @@ end
 		Plugin Helper Functions
      ----------------------------------- ]]
 function plugin:IsEnabled()
-	if exsto.PluginDisabled( self ) then return false end
-	if self.Info.Disabled then return false end
+	if self.Disabled then return false end
+	if CLIENT then
+		if exsto.ServerPluginSettings[ self:GetID() ] == false then return false end
+	elseif SERVER then
+		for _, data in ipairs( exsto.PluginDB:ReadAll() ) do
+			if data.ID == self:GetID() then return tobool( data.Enabled ) end
+		end
+	end
 	return true
+end
+
+function plugin:Disable( r )
+	if r == 1 then -- Disabling due to an error
+		self:Print( "Disabling plugin due to error related causes!" )
+	end
+	self.Disabled = true
+	self:Unload()
+end
+
+function plugin:GetID() return self._id end
+function plugin:GetName() return self.Info.Name end
+
+function plugin:Initialized()
+	return self.Initialized
 end
 
 function plugin:Print( enum, ... )
 	if type( enum ) == "string" then
-		exsto.Print( exsto_CONSOLE, "PLUGINS --> " .. self.Info.Name .. " --> " .. enum )
+		exsto.Print( exsto_CONSOLE, "Plugins --> " .. self.Info.Name .. " --> " .. enum )
 		return
 	end
 
@@ -239,7 +231,7 @@ function plugin:Print( enum, ... )
 end
 
 function plugin:Debug( msg )
-	exsto.Debug( "Plugins --> " .. self.Info.Name .. " --> " .. msg )
+	exsto.Debug( "Plugins --> " .. self:GetName() .. " --> " .. msg )
 end
 
 function plugin:Error( msg )

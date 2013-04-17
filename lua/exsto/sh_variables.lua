@@ -53,13 +53,13 @@ if SERVER then
 	end
 	
 	function exsto.SendAllVariables( ply )
-		exsto.Debug( "Variables --> Sending all variables to '" .. tostring( ply ) .. "'", 2 )
+		exsto.Debug( "Variables --> Sending all variables to '" .. ply:Nick() .. "'", 2 )
 		for id, obj in pairs( exsto.Variables ) do
 			exsto.SendVariable( obj, ply )
 		end
 		exsto.Debug( "Variables --> Variables sent.", 2 )
 	end
-	hook.Add( "ExInitSpawn", "ExSendVariables", exsto.SendAllVariables )
+	hook.Add( "ExClientLoading", "ExSendVariables", exsto.SendAllVariables )
 
 elseif CLIENT then
 	

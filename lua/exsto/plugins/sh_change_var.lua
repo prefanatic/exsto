@@ -56,9 +56,7 @@ elseif CLIENT then
 	local function onShowtime( page, search )
 		local pnl = page.Content
 		if !pnl then return end
-		
-		print( search )
-		
+
 		search = search or ""
 		
 		pnl.List:Clear()

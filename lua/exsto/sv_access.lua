@@ -599,7 +599,7 @@ function exsto.SendRankData( ply, sid, uid )
 	exsto.SendFlags( ply )
 	exsto.SendRanks( ply )
 end
-hook.Add( "exsto_InitSpawn", "exsto_SendRankData", exsto.SendRankData )
+hook.Add( "ExClientLoading", "exsto_SendRankData", exsto.SendRankData )
 concommand.Add( "_ResendRanks", exsto.SendRankData )
 
 --[[ -----------------------------------

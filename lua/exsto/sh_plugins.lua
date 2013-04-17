@@ -18,7 +18,7 @@
 
 -- Variables
 exsto.NumberHooks = 0
-exsto.PluginSettings = {}
+exsto.ServerPluginSettings = {}
 exsto.NeedSaved = {}
 exsto.Plugins = {}
 exsto.LoadedPlugins = {}
@@ -32,15 +32,16 @@ if SERVER then
 	Description: Sends the plugin settings to a player.
      ----------------------------------- ]]
 	function exsto.SendPluginSettings( ply )
+		local db = exsto.PluginDB:ReadAll()
 		local sender = exsto.CreateSender( "ExRecPlugSettings", ply )
-			sender:AddShort( exsto.PluginSettings and table.Count( exsto.PluginSettings ) or 0 )
-			for id, enabled in pairs( exsto.PluginSettings ) do
-				sender:AddString( id )
-				sender:AddBool( enabled )
+			sender:AddShort( #db )
+			for _, data in ipairs( db ) do
+				sender:AddString( data.ID )
+				sender:AddBool( data.Enabled )
 			end
 			sender:Send()
 	end
-	hook.Add( "ExInitSpawn", "exsto_StreamPluginSettingsList", exsto.SendPluginSettings )
+	hook.Add( "ExClientLoading", "ExStreamPluginList", exsto.SendPluginSettings )
 	
 elseif CLIENT then
 	
@@ -49,10 +50,12 @@ elseif CLIENT then
 	Description: Recieves the server's plugin settings file.
      ----------------------------------- ]]
 	function exsto.ReceivePluginSettings( reader )
-		exsto.ServerPlugSettings = {}
+		exsto.ServerPluginSettings = {}
 		for I = 1, reader:ReadShort() do
-			exsto.ServerPlugSettings[ reader:ReadString() ] = reader:ReadBool()
+			exsto.ServerPluginSettings[ reader:ReadString() ] = reader:ReadBool()
 		end
+		
+		hook.Call( "ExReceivedPlugSettings" )
 
 		-- Legacy
 		hook.Call( "exsto_RecievedSettings" )
@@ -66,8 +69,8 @@ end
 	Description: Calls hooks for plugins.
      ----------------------------------- ]]
 function exsto.HookCall( name, gm, ... )
-	for _, plug in pairs( exsto.Plugins ) do
-		if type( plug.Object[ name ] ) == "function" and !plug.Object.Info.Disabled and plug.Object.Info.Initialized then
+	for _, plug in ipairs( exsto.Plugins ) do
+		if type( plug[ name ] ) == "function" and !plug:IsEnabled() and plug:Initialized() then
 
 			local data = { pcall( plug.Object[ name ], plug.Object, ... ) }
 			
@@ -83,7 +86,7 @@ function exsto.HookCall( name, gm, ... )
 			elseif data[1] == false then -- It returned an error, catch it.
 				exsto.ErrorNoHalt( "Hook '" .. name .. "' failed in plugin '" .. plug.ID .. "' error: " )
 				exsto.ErrorNoHalt( data[2] )
-				exsto.Plugins[ _ ].Disabled = true
+				exsto.Plugins[ _ ]:Disable( 1 )
 			end
 		end
 	end
@@ -91,13 +94,25 @@ function exsto.HookCall( name, gm, ... )
 	return exsto_HOOKCALL( name, gm, ... )
 end
 
+if SERVER then
+	concommand.Add( "_ExClientPlugsReady", function( ply )
+		hook.Call( "ExClientPluginsReady", nil, ply )
+	end )
+end
+
+hook.Add( "ExReceivedServerPlugSettings", "ExCheckPlugins", function()
+	exsto.LoadPlugins()
+	exsto.InitPlugins( launchInit )
+	hook.Call( "ExPluginsReady" )
+	RunConsoleCommand( "_ExClientPlugsReady" )
+end )
+
 --[[ -----------------------------------
 	Function: exsto.LoadPlugins
 	Description: Reads all the plugins from the plugin folder.
      ----------------------------------- ]]
 function exsto.LoadPlugins()
-	local plugins = file.Find( exsto.PlugLocation .. "*.lua", "LUA"	)
-	exsto.PluginLocations = plugins
+	exsto.PluginLocations = file.Find( exsto.PlugLocation .. "*.lua", "LUA"	)
 end
 
 --[[ -----------------------------------
@@ -105,18 +120,23 @@ end
 	Description: Initializes all the plugins that were loaded.
      ----------------------------------- ]]
 function exsto.InitPlugins()
-
 	exsto.Print( exsto_CONSOLE, "Plugins --> Starting load." );
+	
+	if SERVER then
+		-- Create the settings database.
+		exsto.Debug( "Plugins --> Creating settings table.", 2 );
+		exsto.PluginDB = FEL.CreateDatabase( "exsto_plugin_settings" )
+			exsto.PluginDB:ConstructColumns( {
+				ID = "TEXT:not_null:primary";
+				Enabled = "TINYINT:not_null";
+			} )
+	end
 
-	exsto.PluginSettings = FEL.LoadSettingsFile( "exsto_plugin_settings" )
-
+	exsto.Debug( "Plugins --> Looping into load process.", 2 );
 	local prefix, prefixFind
 	for k,v in pairs( exsto.PluginLocations ) do
-	
 		prefixFind = string.find( v, "_" )
-		
 		if prefixFind then
-		
 			prefix = string.Left( v, prefixFind - 1 )
 			
 			-- If we are running as the client, only exstoInclude plugins that are shared or clientside
@@ -129,21 +149,10 @@ function exsto.InitPlugins()
 				if prefix == "sh" or prefix == "sv" then exstoServer( "plugins/" .. v ) end
 				
 			end
-			
 		end
-		
 	end
 	
-	-- All are initialized.  Save the plugin table we have.
-	if table.Count( exsto.NeedSaved ) >= 1 then
-		table.Merge( exsto.PluginSettings, exsto.NeedSaved )
-		FEL.CreateSettingsFile( "exsto_plugin_settings", exsto.PluginSettings )
-		exsto.NeedSaved = {}
-	end
-	
-	--Msg( "\n" )
 	exsto.Print( exsto_CONSOLE, "Plugins --> Finished load." )
-
 end
 
 --[[ -----------------------------------
@@ -153,11 +162,7 @@ end
 function exsto.UnloadAllPlugins()
 	exsto.NumberHooks = 0
 	for k,v in pairs( exsto.Plugins ) do
-		if v.Object then
-			v.Object:Unload()
-		else
-			exsto.ErrorNoHalt( "PLUGIN --> " .. v.ID .. " --> This plugin is not up to date with the new plugin system!" )
-		end
+		v.Object:Unload()
 	end
 end
 
@@ -208,34 +213,12 @@ function exsto.PluginStatus( plug )
 end
 
 --[[ -----------------------------------
-	Function: exsto.PluginSaved
-	Description: Returns true if a plugin has saved into the settings table.
-     ----------------------------------- ]]
-function exsto.PluginSaved( plug )
-	for k,v in pairs( exsto.PluginSettings ) do
-		if k == plug.Info.ID then return true end
-	end
-	return false
-end
-
---[[ -----------------------------------
-	Function: exsto.PluginDisabled
-	Description: Returns true if a plugin is disabled.
-     ----------------------------------- ]]
-function exsto.PluginDisabled( plug )
-	for k,v in pairs( exsto.PluginSettings ) do
-		if k == plug.Info.ID and v == false then return true end
-	end
-	return false
-end
-
---[[ -----------------------------------
 	Function: exsto.GetPlugin
 	Description: Returns the plugin's data object.
      ----------------------------------- ]]
 function exsto.GetPlugin( id )
-	for k,v in pairs( exsto.Plugins ) do
-		if k == id then return v.Object end
+	for _, plug in pairs( exsto.Plugins ) do
+		if plug:GetID() == id then return plug end
 	end
 	return false
 end
