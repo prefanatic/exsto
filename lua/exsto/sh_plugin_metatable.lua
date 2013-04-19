@@ -73,8 +73,10 @@ end
      ----------------------------------- ]]
 function plugin:Register()
 
-	-- Register with Exsto.
-	table.insert( exsto.Plugins, self )
+	-- Register with Exsto. -- IF WE DONT ALREADY EXIST!!
+	if not exsto.GetPlugin( self:GetID() ) then
+		table.insert( exsto.Plugins, self )
+	end
 	
 	if SERVER then -- Server side plugin checking.
 		-- Do we exist in the settings db?
@@ -195,7 +197,6 @@ end
 		Plugin Helper Functions
      ----------------------------------- ]]
 function plugin:IsEnabled()
-	if self.Disabled then return false end
 	if CLIENT then
 		if exsto.ServerPluginSettings[ self:GetID() ] == false then return false end
 	elseif SERVER then
@@ -203,23 +204,43 @@ function plugin:IsEnabled()
 			if data.ID == self:GetID() then return tobool( data.Enabled ) end
 		end
 	end
-	return true
+	return not self.Disabled
+end
+
+function plugin:Enable()
+	-- Save this.
+	exsto.PluginDB:AddRow( {
+		ID = self:GetID();
+		Enabled = 1;
+	} )
+	
+	self.Disabled = false;
+	self:Register()
+	
+	exsto.SendPluginSettings( player.GetAll() )
 end
 
 function plugin:Disable( r )
+	-- Save this.
+	exsto.PluginDB:AddRow( {
+		ID = self:GetID();
+		Enabled = 0;
+	} )
+	
 	if r == 1 then -- Disabling due to an error
 		self:Print( "Disabling plugin due to error related causes!" )
 	end
+	self:Debug( "Disabling!" )
 	self.Disabled = true
 	self:Unload()
+	
+	exsto.SendPluginSettings( player.GetAll() )
 end
 
 function plugin:GetID() return self._id end
 function plugin:GetName() return self.Info.Name end
 
-function plugin:Initialized()
-	return self.Initialized
-end
+function plugin:CanCleanlyUnload() return self.Info.CleanUnload end
 
 function plugin:Print( enum, ... )
 	if type( enum ) == "string" then

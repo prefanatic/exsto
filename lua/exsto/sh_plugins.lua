@@ -70,9 +70,9 @@ end
      ----------------------------------- ]]
 function exsto.HookCall( name, gm, ... )
 	for _, plug in ipairs( exsto.Plugins ) do
-		if type( plug[ name ] ) == "function" and !plug:IsEnabled() and plug:Initialized() then
+		if type( plug[ name ] ) == "function" and plug:IsEnabled() and plug.Initialized then
 
-			local data = { pcall( plug.Object[ name ], plug.Object, ... ) }
+			local data = { pcall( plug[ name ], plug, ... ) }
 			
 			-- data[1] == Status
 			-- data[2] == Error or First Return
@@ -84,7 +84,7 @@ function exsto.HookCall( name, gm, ... )
 				table.remove( data, 1 )
 				return unpack( data )
 			elseif data[1] == false then -- It returned an error, catch it.
-				exsto.ErrorNoHalt( "Hook '" .. name .. "' failed in plugin '" .. plug.ID .. "' error: " )
+				exsto.ErrorNoHalt( "Hook '" .. name .. "' failed in plugin '" .. plug:GetID() .. "' error: " )
 				exsto.ErrorNoHalt( data[2] )
 				exsto.Plugins[ _ ]:Disable( 1 )
 			end
