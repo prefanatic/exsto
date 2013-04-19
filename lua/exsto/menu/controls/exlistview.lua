@@ -32,6 +32,11 @@ function PANEL:Init()
 
 end
 
+function PANEL:Clear()
+	self.Data = {};
+	DListView.Clear( self )
+end
+
 function PANEL:SetQuickList()
 	self.Paint = function() end
 	self.OnMouseWheeled = nil

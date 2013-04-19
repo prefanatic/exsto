@@ -42,7 +42,7 @@ if SERVER then
 	end
 	PLUGIN:CreateReader( "ExRequestPluginList", PLUGIN.SendPluginList )
 	
-	function PLUGIN:TogglePlugin( reader )
+	function PLUGIN:ChangePlugin( reader )
 		local ply = reader:ReadSender()
 		local id = reader:ReadString()
 		local status = reader:ReadBoolean()
@@ -60,7 +60,7 @@ if SERVER then
 		
 		self:SendPluginList( reader )
 	end
-	PLUGIN:CreateReader( "ExTogglePlugin", PLUGIN.TogglePlugin )
+	PLUGIN:CreateReader( "ExTogglePlugin", PLUGIN.ChangePlugin )
 
 	
 elseif CLIENT then
@@ -116,7 +116,6 @@ elseif CLIENT then
 		end
 		
 		pnl.List.LineSelected = function( o, disp, data, line )
-			PrintTable( data )
 			if data.CleanUnload == 0 and tobool( data.Enabled ) == true then
 				PLUGIN.Page:Alert( "Warning!  This plugin cannot unload cleanly due to developmental error.  A server restart is RECOMMENDED in order to disable.",
 					function()

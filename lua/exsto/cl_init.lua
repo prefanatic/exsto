@@ -63,8 +63,19 @@
 	end
 	
 	hook.Add( "ExReceivedPlugSettings", "ExInitCLPlugs", function()
-		exsto.LoadPlugins()
-		exsto.InitPlugins()
+		if #exsto.Plugins == 0 then
+			exsto.LoadPlugins()
+			exsto.InitPlugins()
+			
+			-- Legacy
+			hook.Call( "ExPluginsReady" )
+			exsto.CreateSender( "ExClientReady" ):Send()
+		else
+			-- We just want to poll a reload of plugins if one changed or not.
+			for _, plug in ipairs( exsto.Plugins ) do
+				plug:CheckStatus()
+			end
+		end
 	end )
 	
 	local seconds = SysTime() - exsto.StartTime

@@ -56,7 +56,7 @@ elseif CLIENT then
 		end
 		
 		hook.Call( "ExReceivedPlugSettings" )
-
+		
 		-- Legacy
 		hook.Call( "exsto_RecievedSettings" )
 	end
@@ -93,19 +93,6 @@ function exsto.HookCall( name, gm, ... )
 	
 	return exsto_HOOKCALL( name, gm, ... )
 end
-
-if SERVER then
-	concommand.Add( "_ExClientPlugsReady", function( ply )
-		hook.Call( "ExClientPluginsReady", nil, ply )
-	end )
-end
-
-hook.Add( "ExReceivedServerPlugSettings", "ExCheckPlugins", function()
-	exsto.LoadPlugins()
-	exsto.InitPlugins( launchInit )
-	hook.Call( "ExPluginsReady" )
-	RunConsoleCommand( "_ExClientPlugsReady" )
-end )
 
 --[[ -----------------------------------
 	Function: exsto.LoadPlugins

@@ -67,13 +67,24 @@ function plugin:SetInfo( tbl )
 	self.Info = tbl
 end
 
+function plugin:ServerStatus() return exsto.ServerPluginSettings[ self:GetID() ] end
+
+-- Checks and make sure we can be online after a server update poll.
+function plugin:CheckStatus()
+	if CLIENT and self:ServerStatus() == true and self.Initialized == false then -- Server says to reload.
+		self:Register();
+	elseif CLIENT and self:ServerStatus() == false and self.Initialized == true then -- Server says to unload.
+		self:Unload();
+	end
+end
+
 --[[ -----------------------------------
 	Function: plugin:Register
 	Description: Registers the plugin with Exsto.
      ----------------------------------- ]]
 function plugin:Register()
 
-	-- Register with Exsto. -- IF WE DONT ALREADY EXIST!!
+	-- Register with Exsto. 
 	if not exsto.GetPlugin( self:GetID() ) then
 		table.insert( exsto.Plugins, self )
 	end
@@ -182,6 +193,7 @@ function plugin:Unload()
 	end
 	
 	self.Disabled = true
+	self.Initialized = false
 end
 
 --[[ -----------------------------------
@@ -214,7 +226,6 @@ function plugin:Enable()
 		Enabled = 1;
 	} )
 	
-	self.Disabled = false;
 	self:Register()
 	
 	exsto.SendPluginSettings( player.GetAll() )

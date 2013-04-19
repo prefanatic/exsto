@@ -52,6 +52,7 @@ exsto.Net = {
 		"ExRecRankErr";
 		"ExCreateFlag";
 		"ExClientLoad";
+		"ExClientReady";
 	},
 	NotifiedNetStrings = {}
 }
@@ -90,6 +91,14 @@ if SERVER then
 		hook.Call( "ExClientLoading", nil, ply )
 	end
 	exsto.CreateReader( "ExClientLoad", exsto.InitializeClient )
+	
+	function exsto.ClientReady( reader )
+		local ply = reader:ReadSender()
+		
+		exsto.Debug( "Player '" .. ply:Nick() .. "' has finished load.", 1 )
+		hook.Call( "ExClientPluginsReady", nil, ply )
+	end
+	exsto.CreateReader( "ExClientReady", exsto.ClientReady )
 	
 --[[-----------------------------------
 	Function: exsto.SendRankErrors
