@@ -213,6 +213,18 @@ function exsto.InitQuickMenu( pnl )
 			lst:CreateContent()
 		end
 		
+		pnl.PlayerList._OLDTHINK = pnl.PlayerList.Think
+		pnl.PlayerList._OLDTHINKCOUNTER = CurTime()
+		pnl.PlayerList.Think = function( lst )
+			if ( #player.GetAll() != lst._OldPlayers ) or ( CurTime() > lst._OLDTHINKCOUNTER ) then
+				lst._OldPlayers = #player.GetAll() 
+				lst._OLDTHINKCOUNTER = CurTime() + 2;
+				lst:Update()
+			end
+			lst._OLDTHINK()
+		end
+				
+		
 	exsto.Animations.CreateAnimation( pnl.PlayerList )
 	qm.CreateCommandWindow( pnl )
 	
