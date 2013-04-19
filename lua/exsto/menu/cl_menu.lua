@@ -298,6 +298,11 @@ function exsto.Menu.OpenPage( obj ) -- I don't know if there is anything that we
 		exsto.Menu.ActivePage:Backstage()
 	end
 	
+	-- Close back button if its online and we're moving away from a child page.
+	if exsto.Menu.ActivePage and exsto.Menu.ActivePage._Hide == true and ( obj:GetID() == "pagelist" or obj._Hide == false ) then
+		exsto.Menu.DisableBackButton()
+	end
+	
 	obj:Showtime()
 end
 

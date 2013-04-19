@@ -72,6 +72,7 @@ function plugin:ServerStatus() return exsto.ServerPluginSettings[ self:GetID() ]
 -- Checks and make sure we can be online after a server update poll.
 function plugin:CheckStatus()
 	if CLIENT and self:ServerStatus() == true and self.Initialized == false then -- Server says to reload.
+		self.Disabled = false
 		self:Register();
 	elseif CLIENT and self:ServerStatus() == false and self.Initialized == true then -- Server says to unload.
 		self:Unload();
