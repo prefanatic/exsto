@@ -159,8 +159,6 @@ function exsto.Menu.EnableSearch()
 	exsto.Menu.Search:SetPos( 4, exsto.Menu.Frame:GetTall() - 28 )
 	exsto.Menu.Search:SetEditable( true )
 	exsto.Menu.Search._Disabled = false
-	
-	exsto.Menu.Search:RequestFocus()
 end
 
 function exsto.Menu.DisableSearch()
