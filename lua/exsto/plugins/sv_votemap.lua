@@ -88,6 +88,7 @@ function PLUGIN:Init()
 	self.Timeout:SetCategory( "Votes" )
 	self.Timeout:SetUnit( "Time (seconds" )
 	exsto.VotemapDB = FEL.CreateDatabase( "exsto_plugin_votemap" )
+		exsto.VotemapDB:SetDisplayName( "Votemap Statistics" )
 		exsto.VotemapDB:ConstructColumns( {
 			Map = "VARCHAR(255):primary:not_null";
 			Played = "INTEGER";

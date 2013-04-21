@@ -39,6 +39,7 @@ if SERVER then
 		
 		self.OldPlayers = {}
 		exsto.BanDB = FEL.CreateDatabase( "exsto_data_bans" )
+			exsto.BanDB:SetDisplayName( "Bans" )
 			exsto.BanDB:ConstructColumns( {
 				Name = "TEXT:not_null";
 				SteamID = "VARCHAR(50):primary:not_null";

@@ -37,7 +37,7 @@
 	exstoServer( "sv_access.lua" )
 	exstoShared( "sh_plugin_metatable.lua" )
 	exstoShared( "sh_plugins.lua" )
-	exstoShared( "sh_cloud.lua" )
+	--exstoShared( "sh_cloud.lua" )
 	
 	-- Clientside things we haven't sent yet.
 		-- Derma Controls!

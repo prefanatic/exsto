@@ -418,6 +418,7 @@ if CLIENT then
 			pnl.List.LineSelected = function( o, disp, data, obj )
 				pnl.RestoreSelected = data
 			end
+			pnl.List.OnMouseWheeled = nil
 			pnl.List.OnRowRightClick = function( o, id, l )
 				local menu = DermaMenu()
 					menu:AddOption( "Restore", function() restoreSelected( pnl ) end )

@@ -28,6 +28,7 @@ exsto.Cloud = {
 }
 
 exsto.CloudDB = FEL.CreateDatabase( "exsto_cloud_db", true )
+	exsto.CloudDB:SetDisplayName( "Cloud" )
 	exsto.CloudDB:ConstructColumns( {
 		Name = "TEXT:not_null";
 		Author = "TEXT:not_null";

@@ -17,6 +17,7 @@ if SERVER then
 	
 	-- Create the table.
 	exsto.HeadDB = FEL.CreateDatabase( "exsto_headtitle" )
+		exsto.HeadDB:SetDisplayName( "Head Titles" )
 		exsto.HeadDB:ConstructColumns( {
 			SteamID = "VARCHAR(50):primary:not_null";
 			Title = "TEXT";

@@ -113,6 +113,7 @@ function exsto.InitPlugins()
 		-- Create the settings database.
 		exsto.Debug( "Plugins --> Creating settings table.", 2 );
 		exsto.PluginDB = FEL.CreateDatabase( "exsto_plugin_settings" )
+			exsto.PluginDB:SetDisplayName( "Plugin Settings" )
 			exsto.PluginDB:ConstructColumns( {
 				ID = "TEXT:not_null:primary";
 				Enabled = "TINYINT:not_null";

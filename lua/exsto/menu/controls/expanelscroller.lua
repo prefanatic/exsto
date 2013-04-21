@@ -123,7 +123,7 @@ function PANEL:CreateCategory( catName )
 				spacer:SetTall( 1 )
 		end
 		
-	cat:DockPadding( 4, 8, 4, 8 )
+	cat:DockPadding( 4, 0, 4, 0 )
 	
 		
 	self.Categories[ catName ] = cat

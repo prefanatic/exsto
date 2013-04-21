@@ -13,6 +13,7 @@ PLUGIN:SetInfo({
 if SERVER then
 
 	exsto.TimeDB = FEL.CreateDatabase( "exsto_plugin_time" )
+		exsto.TimeDB:SetDisplayName( "Time Log" )
 		exsto.TimeDB:ConstructColumns( {
 			Player = "TEXT";
 			SteamID = "VARCHAR(50):primary:not_null";

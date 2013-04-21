@@ -48,6 +48,7 @@ if SERVER then
 		end
 		
 		exsto.RestrictDB = FEL.CreateDatabase( "exsto_data_restrictions" )
+			exsto.RestrictDB:SetDisplayName( "Restrictions" )
 			exsto.RestrictDB:ConstructColumns( {
 				Rank = "VARCHAR(100):primary:not_null";
 				Props = "TEXT";
