@@ -323,7 +323,7 @@ if CLIENT then
 			pnl.BackupRestore:Dock( TOP )
 			pnl.BackupRestore:SetQuickMenu()
 			pnl.BackupRestore.DoClick = function()
-				exsto.Menu.OpenPage( PLUGIN.BackupPage )
+				exsto.Menu.OpenPage( PLUGIN.BackupRestorePage )
 			end
 			
 		pnl.Recover = vgui.Create( "ExQuickButton", pnl.Cat )
@@ -357,7 +357,7 @@ if CLIENT then
 	end
 	
 	local function backBackupFunction( obj )
-		exsto.Menu.OpenPage( PLUGIN.DetailsPage )
+		exsto.Menu.OpenPage( PLUGIN.BackupRestorePage )
 	end
 	
 	local function refreshBackupList( dbs )
@@ -369,8 +369,10 @@ if CLIENT then
 		for _, data in ipairs( dbs ) do
 			pnl.List:AddRow( { data.db, data.time }, data )
 		end
-		print( "BACKUP ", PLUGIN.WorkingDB.autoBackup )
-		pnl.AutoBackup:SetValue( PLUGIN.WorkingDB.autoBackup )
+		
+		if PLUGIN.BackupRestorePage:IsActive() then
+			PLUGIN.BackupRestorePage.Content.AutoBackup:SetValue( PLUGIN.WorkingDB.autoBackup )
+		end
 
 		invalidate( PLUGIN.BackupPage )
 	end
@@ -440,7 +442,25 @@ if CLIENT then
 					-- We don't have anything selected.  TODO: Create a file browser to upload from computer.
 				end
 			end
-			
+
+		invalidate( PLUGIN.BackupPage )
+	end
+	
+	local function infoInit( pnl )
+	end
+	
+	local function infoBackupFunction( obj )
+		exsto.Menu.OpenPage( PLUGIN.DetailsPage )
+	end
+	
+	local function backupRestoreInit( pnl )
+		pnl.Cat = pnl:CreateCategory( "Backup / Restore" )
+		
+		pnl.Cat:CreateSpacer();
+		
+		pnl.BackupText = pnl.Cat:CreateTitle( "Backup" );
+		pnl.BackupHelp = pnl.Cat:CreateHelp( "Backups save to the server's 'data/exsto_db_backups' directory.  Files are saved with the date and time." )
+		
 		pnl.Backup = vgui.Create( "ExQuickButton", pnl.Cat )
 			pnl.Backup:Text( "Backup" )
 			pnl.Backup:Dock( TOP )
@@ -455,11 +475,16 @@ if CLIENT then
 				timer.Simple( 2, function() o:Text( "Backup" ) end )
 			end 
 			
+		pnl.Cat:CreateSpacer();
+		
+		pnl.AutoText = pnl.Cat:CreateTitle( "Automatic Backup" );
+		pnl.AutoHelp = pnl.Cat:CreateHelp( "Automatically backup databases on a pre-set time interval.  Set to 0 for never run.  Files saved in 'data/exsto_db_backups'" )
+		
 		pnl.AutoBackup = vgui.Create( "ExNumberChoice", pnl.Cat )
-			pnl.AutoBackup:Text( "Backup Rate" )
+			pnl.AutoBackup:Text( "Rate (hours)" )
 			pnl.AutoBackup:SetMinMax( 0, 100 )
 			pnl.AutoBackup:Dock( TOP )
-			pnl.AutoBackup:SetTall( 32 )
+			pnl.AutoBackup:SetTall( 40 )
 			pnl.AutoBackup.OnValueSet = function( o, val )
 				local sender = exsto.CreateSender( "ExBackupRate" )
 					sender:AddString( PLUGIN.WorkingDB.db )
@@ -467,16 +492,17 @@ if CLIENT then
 				sender:Send()
 			end
 			
-		invalidate( PLUGIN.BackupPage )
+		pnl.Cat:CreateSpacer();
+		
+		pnl.Restore = pnl.Cat:CreateButton( "Restore Previous Backup" );
+			pnl.Restore.DoClick = function( o )
+				exsto.Menu.OpenPage( PLUGIN.BackupPage );
+			end 
+
+		pnl.Cat:InvalidateLayout( true )
 	end
-	
-	local function infoInit( pnl )
-	end
-	
-	local function infoBackupFunction( obj )
-		exsto.Menu.OpenPage( PLUGIN.DetailsPage )
-	end
-	
+		
+		
 	function PLUGIN:Init()
 		self.MainPage = exsto.Menu.CreatePage( "felsettings", pageInit )
 			self.MainPage:SetTitle( "Databases" )
@@ -488,16 +514,17 @@ if CLIENT then
 			self.DetailsPage:OnShowtime( showtimeDetails )
 			self.DetailsPage:SetBackFunction( backFunction )
 			
+		self.BackupRestorePage = exsto.Menu.CreatePage( "felbackuprestore", backupRestoreInit )
+			self.BackupRestorePage:SetTitle( "Backup / Restore" )
+			self.BackupRestorePage:SetUnaccessable()
+			self.BackupRestorePage:OnShowtime( requestBackupList )
+			self.BackupRestorePage:SetBackFunction( function() exsto.Menu.OpenPage( self.DetailsPage ) end )
+			
 		self.BackupPage = exsto.Menu.CreatePage( "felbackup", backupInit )
 			self.BackupPage:SetTitle( "Backup" )
 			self.BackupPage:SetUnaccessable()
 			self.BackupPage:SetBackFunction( backBackupFunction )
 			self.BackupPage:OnShowtime( requestBackupList )
-			
-		self.MySQLInfoPage = exsto.Menu.CreatePage( "felmysqlinfo", infoInit )
-			self.MySQLInfoPage:SetTitle( "Account Information" )
-			self.MySQLInfoPage:SetUnaccessable()
-			self.MySQLInfoPage:SetBackFunction( infoBackupFunction )
 			
 	end
 	

@@ -77,6 +77,30 @@ local function categoryPaint( cat )
 	surface.DrawLine( w + 10, ( cat.Header:GetTall() / 2 ), cat.Header:GetWide() - 5, ( cat.Header:GetTall() / 2 ) )
 end
 
+local function createTitle( o, txt )
+	print( o )
+	local title = vgui.Create( "ExText", o )
+		title:SetText( txt )
+		title:SetFont( "ExGenericText18" )
+		title:SetTextColor( Color( 0, 180, 255, 255 ) )
+		title:Dock( TOP )
+	return title
+end
+
+local function createHelp( o, txt )
+	local help = vgui.Create( "ExText", o )
+		help:SetText( txt )
+		help:SetFont( "ExGenericText14" )
+		help:Dock( TOP )
+	return help
+end
+
+local function createButton( o, txt )
+	local button = vgui.Create( "ExQuickButton", o )
+		button:Text( txt )
+		button:Dock( TOP )
+	return button
+end
 
 function PANEL:CreateCategory( catName )
 	self.Categories = self.Categories or {}
@@ -90,13 +114,17 @@ function PANEL:CreateCategory( catName )
 		--end
 		cat.Paint = categoryPaint
 		
+		cat.CreateButton = createButton
+		cat.CreateTitle = createTitle
+		cat.CreateHelp = createHelp
 		cat.CreateSpacer = function( c )
 			local spacer = vgui.Create( "ExSpacer", c )
 				spacer:Dock( TOP )
 				spacer:SetTall( 1 )
 		end
 		
-	cat:DockPadding( 0, 0, 0, 4 )
+	cat:DockPadding( 4, 8, 4, 8 )
+	
 		
 	self.Categories[ catName ] = cat
 	

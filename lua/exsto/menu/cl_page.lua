@@ -132,6 +132,8 @@ function page:SetFrameSize( w, h )
 	self._SizeH = h
 end
 
+function page:IsActive() return exsto.Menu.ActivePage == self end
+
 function page:Backstage() -- Time to sleep him
 	-- Leave to the right.  We should already be at 0, 0?
 	self:SetPos( self:GetParent():GetWide() + 2, 0 )
@@ -141,6 +143,7 @@ function page:Backstage() -- Time to sleep him
 	
 	-- Call OnBackstage
 	if self._OnBackstage then self:_OnBackstage() end
+
 end
 
 function page:Showtime( noAnim ) -- Wake him up!
