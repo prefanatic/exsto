@@ -77,6 +77,7 @@ local function categoryPaint( cat )
 	surface.DrawLine( w + 10, ( cat.Header:GetTall() / 2 ), cat.Header:GetWide() - 5, ( cat.Header:GetTall() / 2 ) )
 end
 
+
 function PANEL:CreateCategory( catName )
 	self.Categories = self.Categories or {}
 
@@ -88,6 +89,12 @@ function PANEL:CreateCategory( catName )
 			--cat:Toggle() -- Fuck you garry.
 		--end
 		cat.Paint = categoryPaint
+		
+		cat.CreateSpacer = function( c )
+			local spacer = vgui.Create( "ExSpacer", c )
+				spacer:Dock( TOP )
+				spacer:SetTall( 1 )
+		end
 		
 	cat:DockPadding( 0, 0, 0, 4 )
 		

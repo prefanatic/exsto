@@ -28,6 +28,7 @@ exsto.aLoader = {
 -- Heres our database.
 exsto.Debug( "aLoader --> Constructing exsto_data_ranks", 3 );
 exsto.RankDB = FEL.CreateDatabase( "exsto_data_ranks" );
+	exsto.RankDB:SetDisplayName( "Ranks" )
 	exsto.RankDB:ConstructColumns( {
 		Name = "TEXT:not_null"; 				-- Used as a nice display ID.
 		Description = "TEXT";   				-- Description, obviously.
@@ -42,6 +43,7 @@ exsto.RankDB = FEL.CreateDatabase( "exsto_data_ranks" );
 -- And our user database.
 exsto.Debug( "aLoader --> Constructing exsto_data_users", 3 );
 exsto.UserDB = FEL.CreateDatabase( "exsto_data_users" );
+	exsto.UserDB:SetDisplayName( "Users" )
 	exsto.UserDB:ConstructColumns( {
 		SteamID = "VARCHAR(50):primary:not_null";	-- SteamID of the player
 		Name = "TEXT:not_null";						-- Display name of the player

@@ -16,13 +16,18 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- Exsto Default Button
+-- Exsto List View
 
 PANEL = {}
 
 function PANEL:Init()
-	self:SetQuickMenu()
-	self:SetTall( 40 )
+	self:DockMargin( 4, 4, 4, 4 )
+
 end
 
-derma.DefineControl( "ExQuickButton", "Exsto Button", PANEL, "ExButton" )
+function PANEL:Paint()
+	surface.SetDrawColor( 195, 195, 195, 195 )
+	surface.DrawLine( 0, 0, self:GetWide(), 0 )
+end
+
+derma.DefineControl( "ExSpacer", "Exsto ListView", PANEL, "DPanel" )

@@ -16,6 +16,7 @@ if SERVER then
 	util.AddNetworkString( "ExRecBan" )
 	util.AddNetworkString( "ExRecBanRemove" )
 	util.AddNetworkString( "ExRequestBans" )
+	util.AddNetworkString( "ExUnbanPlayer" )
 	
 	
 	local function setRefresh( old, val )
@@ -53,6 +54,19 @@ if SERVER then
 		gameevent.Listen( "player_connect" )
 		gameevent.Listen( "player_disconnect" )
 	end 
+	
+	function PLUGIN:ExUnbanPlayer( reader )
+		return reader:ReadSender():IsAllowed( "banlist" ) 
+	end
+	
+	function PLUGIN:MenuUnbanPlayer( reader )
+		local ply = reader:ReadSender()
+		local steamid = reader:ReadString()
+		
+		self:Debug( "Unbanning player '" .. steamid .. "' triggered by '" .. ply:GetName() .. "'", 1 )
+		self:UnBan( "console", steamid )
+	end
+	PLUGIN:CreateReader( "ExUnbanPlayer", PLUGIN.MenuUnbanPlayer )
 	
 	function PLUGIN:Drop( uid, reason )
 		game.ConsoleCommand( string.format( "kickid %d %s\n", uid, reason:gsub( ";|\n", "" ) ) ) -- Taken from Map in a box - http://facepunch.com/showthread.php?t=695636&p=38514535&viewfull=1#post38514535
@@ -263,6 +277,7 @@ if SERVER then
 		end 
 		
 		exsto.BanDB:DropRow( steamid )
+		self:ResendBans()
 		
 		return { 
 			Activator = owner, 
@@ -375,6 +390,13 @@ if SERVER then
 		return string.format( str.."%02i hour(s) %02i minute(s) %02i second(s)", h, m, s )
 	end	  
 	
+	function PLUGIN:ResendBans()
+		local plys = player.GetAll()
+		for _, data in pairs( exsto.BanDB:GetAll() ) do
+			self:SendBan( v, plys )
+		end
+	end
+	
 	function PLUGIN:SendBan( tbl, ply )
 		local sender = exsto.CreateSender( "ExRecBan", ply )
 			sender:AddString( tbl.SteamID )
@@ -392,16 +414,6 @@ if SERVER then
 		for k,v in pairs( exsto.BanDB:GetAll() ) do 
 			self:SendBan( v, ply )
 		end 
-		
-		self:SendBan( {
-			SteamID = ply:SteamID();
-			Name = ply:Nick();
-			Reason = "Testing.";
-			BannedBy = ply:Nick();
-			Length = 0;
-			BannedAt = os.time();
-			BannerID = ply:SteamID();
-		}, ply )
 	end 
 	PLUGIN:CreateReader( "ExRequestBans", PLUGIN.RequestBans )
 
@@ -426,8 +438,7 @@ elseif CLIENT then
 		local time = os.date( "%c", tbl.BannedAt + tbl.Length*60 )
 		if tbl.Length == 0 then time = "permanent" end 
 		
-		local line = pnl.List:AddLine( tbl.Name, time )
-			line.Data = tbl
+		local line = pnl.List:AddRow( { tbl.Name, time }, tbl )
 		
 		invalidate()
 	end
@@ -441,8 +452,7 @@ elseif CLIENT then
 			addBan( tbl );
 		end
 		invalidate()
-		
-		PrintTable( PLUGIN.Bans )
+
 	end
 	
 	local function redBanRemove( reader )
@@ -469,8 +479,8 @@ elseif CLIENT then
 	end
 	exsto.CreateReader( "ExRecBan", recBanAdd )
 	
-	local function onRowSelected( lst, id, line )
-		PLUGIN.WorkingBan = line.Data
+	local function onRowSelected( lst, disp, data, line )
+		PLUGIN.WorkingBan = data
 		exsto.Menu.EnableBackButton()
 		
 		exsto.Menu.OpenPage( PLUGIN.Details )
@@ -485,9 +495,11 @@ elseif CLIENT then
 			pnl.List:DisableScrollbar()
 			pnl.List:AddColumn( "" )
 			pnl.List:AddColumn( "" )
+			pnl.List.OnMouseWheeled = nil
 			pnl.List:SetHideHeaders( true )
+			pnl.List:SetQuickList()
 			
-			pnl.List.OnRowSelected = onRowSelected
+			pnl.List.LineSelected = onRowSelected
 			
 		-- This needs to be run after a list has been filled with contents.
 		invalidate()
@@ -501,15 +513,71 @@ elseif CLIENT then
 	
 	local function banDetailsInit( pnl )
 		pnl.Cat = pnl:CreateCategory( "Details" )
+		pnl.Cat:DockPadding( 4, 4, 4, 4 )
 		
-		pnl.PlayerInfo = vgui.Create( "ExPlayerView", pnl.Cat )
-			pnl.PlayerInfo:Dock( TOP )
+		pnl.SteamIDText = vgui.Create( "ExText", pnl.Cat )
+			pnl.SteamIDText:SetText( "Steam ID" )
+			pnl.SteamIDText:Dock( TOP )
+			pnl.SteamIDText:SetFont( "ExGenericText16" )
+		
+		pnl.SteamIDEntry = vgui.Create( "DTextEntry", pnl.Cat )
+			pnl.SteamIDEntry:Dock( TOP )
+			pnl.SteamIDEntry:SetTall( 40 )
+			pnl.SteamIDEntry:SetFont( "ExGenericText16" )
 			
-		pnl.Unban = vgui.Create( "ExButton", pnl.Cat )
+		pnl.Cat:CreateSpacer();
+		
+		pnl.Reason = vgui.Create( "ExText", pnl.Cat )
+			pnl.Reason:SetText( "Reason: " )
+			pnl.Reason:Dock( TOP )
+			pnl.Reason:SetFont( "ExGenericText16" )
+			
+		pnl.Length = vgui.Create( "ExNumberChoice", pnl.Cat )
+			pnl.Length:Dock( TOP )
+			pnl.Length:SetValue( 0 )
+			pnl.Length:SetMin( 0 )
+			pnl.Length:SetMax( 24 * 60 )
+			pnl.Length:SetTall( 40 )
+			pnl.Length:Text( "Length (min)" )
+			
+		pnl.Cat:CreateSpacer();
+		
+		pnl.BannedBy = vgui.Create( "ExText", pnl.Cat )
+			pnl.BannedBy:Dock( TOP )
+			pnl.BannedBy:SetText( "Banned By: " )
+			pnl.BannedBy:SetFont( "ExGenericText16" )
+			
+		pnl.BannedBySteamIDText = vgui.Create( "ExText", pnl.Cat )
+			pnl.BannedBySteamIDText:Dock( TOP )
+			pnl.BannedBySteamIDText:SetText( "Steam ID" )
+			pnl.BannedBySteamIDText:SetFont( "ExGenericText16" )
+			
+		pnl.BannedBySteamIDEntry = vgui.Create( "DTextEntry", pnl.Cat )
+			pnl.BannedBySteamIDEntry:Dock( TOP )
+			pnl.BannedBySteamIDEntry:SetTall( 40 )
+			pnl.BannedBySteamIDEntry:SetFont( "ExGenericText16" )
+			
+		pnl.Cat:CreateSpacer();
+		
+		pnl.BannedAt = vgui.Create( "ExText", pnl.Cat )
+			pnl.BannedAt:Dock( TOP )
+			pnl.BannedAt:SetText( "Banned at: " )
+			pnl.BannedAt:SetFont( "ExGenericText16" )
+			
+		pnl.Cat:CreateSpacer();
+		
+		pnl.Unban = vgui.Create( "ExQuickButton", pnl.Cat )
 			pnl.Unban:Text( "Unban Player" )
-			pnl.Unban:MaxFontSize( 24 )
+			pnl.Unban:SetEvil()
+			pnl.Unban:SetTall( 40 )
 			pnl.Unban:Dock( TOP )
-			
+			pnl.Unban.OnClick = function( b )
+				local sender = exsto.CreateSender( "ExUnbanPlayer" )
+					sender:AddString( PLUGIN.WorkingBan.SteamID )
+				sender:Send()
+				
+				exsto.Menu.OpenPage( PLUGIN.Page )
+			end
 	end
 	
 	local function backFunction( obj )
@@ -521,10 +589,20 @@ elseif CLIENT then
 	
 	local function detailOnShowtime( obj )
 		if !PLUGIN.WorkingBan then obj:Error( "Unable to load details." ) end
+		local pnl = obj.Content
+		local tbl = PLUGIN.WorkingBan
 		
-		PrintTable( PLUGIN.WorkingBan )
+		pnl.Cat.Header:SetText( tbl.Name )
+		pnl.SteamIDEntry:SetText( tbl.SteamID )
+		pnl.Reason:SetText( "Reason: " .. tbl.Reason )
+		pnl.Length:SetValue( tbl.Length )
+		pnl.BannedBy:SetText( "Banned By: " .. tbl.BannedBy )
+		pnl.BannedBySteamIDEntry:SetText( tbl.BannerID )
 		
-		obj.Content.PlayerInfo:GrabInformation( PLUGIN.WorkingBan.SteamID64 )
+		local date = os.date( "%m-%d-%y", tbl.BannedAt )
+		local time = tostring( os.date( "%H:%M:%S", tbl.BannedAt ) )
+	
+		pnl.BannedAt:SetText( "Banned at: " .. date .. " " .. time )
 	end
 	
 	function PLUGIN:Init()

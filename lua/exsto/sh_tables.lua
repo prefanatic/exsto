@@ -379,7 +379,7 @@ exsto.DefaultRanks = {
 			"rankeditor", "addadvert", "allowentity", "allowprop", "allowstool", "allowswep", "ban", "banid", "deladvert",
 			"denyentity", "denyprop", "denystool", "denyswep", "entspawn", "felbackup", "feldetails", "felsettings", "immunity",
 			"rank", "rankid", "settingsdetails", "settings", "banlistdetails", "afkkickignore", "command", "findghosts",
-			"playerpickup", "setconvar", "unban", 
+			"playerpickup", "setconvar", "unban", "pluginpage"
 		} );
 		FlagsDeny = von.serialize( {
 		} );
@@ -414,7 +414,7 @@ exsto.DefaultRanks = {
 		Immunity = 9,
 		FlagsAllow = von.serialize( {
 			"getrank", "search", "menu", "gettotaltime", "title", "displayheadtags", "mytitle", "togglechatanim", "updateownerrank",
-			"helppage", "review", "round", "voteban", "votekick", "voteno", "voteyes"
+			"helppage", "review", "round", "voteban", "votekick", "voteno", "voteyes", "quickmenu",
 		} );
 		FlagsDeny = von.serialize( {
 		} );

@@ -68,6 +68,9 @@ if SERVER then
 			sender:AddShort( #FEL.GetDatabases() )
 		for _, obj in ipairs( FEL.GetDatabases() ) do
 			sender:AddString( obj:GetName() )
+			sender:AddString( obj:GetDisplayName() )
+			sender:AddShort( obj:GetLastBackupTime() )
+			sender:AddShort( obj:GetLastUpdateTime() )
 			sender:AddBoolean( obj:IsMySQL() )
 		end
 		
@@ -193,7 +196,7 @@ if CLIENT then
 		
 		pnl.List:Clear()
 		for _, data in ipairs( dbs ) do
-			pnl.List:AddRow( { data.db }, data )
+			pnl.List:AddRow( { data.niceDisplay }, data )
 		end
 		
 		invalidate( PLUGIN.MainPage )
@@ -203,11 +206,11 @@ if CLIENT then
 		PLUGIN:Debug( "Requesting database list from server.", 1 )
 		exsto.CreateSender( "ExRequestDatabaseList" ):Send()
 	end
-	
+
 	local function receiveDatabaseList( reader )
 		local tbl = {}
 		for I = 1, reader:ReadShort() do
-			table.insert( tbl, { db = reader:ReadString(), mysql = reader:ReadBoolean() } )
+			table.insert( tbl, { db = reader:ReadString(), niceDisplay = reader:ReadString(), backupTime = reader:ReadShort(), updateTime = reader:ReadShort(), mysql = reader:ReadBoolean() } )
 		end
 		refreshDatabaseList( tbl )
 	end
@@ -235,33 +238,66 @@ if CLIENT then
 	
 	local function showtimeDetails( page )
 		local pnl = page.Content
+		local data = PLUGIN.WorkingDB
 		
-		pnl.Cat.Header:SetText( PLUGIN.WorkingDB.db )
-		pnl.MySQL:SetValue( PLUGIN.WorkingDB.mysql )
+		PrintTable( data )
 		
-		if PLUGIN.WorkingDB.db == "Global" then
-			pnl.MySQL:SetValue( FEL.AllDatabasesMySQL() )
-		end
+		pnl.Cat.Header:SetText( data.niceDisplay )
+		pnl.MySQL:SetValue( data.mysql )
+		pnl.HardName:SetText( data.db )
+		
+		local date = os.date( "%m-%d-%y", data.updateTime )
+		local time = tostring( os.date( "%H:%M:%S", data.updateTime ) )
+		if data.updateTime == -1 then date = "never" time = "" end
+		pnl.LastUpdated:SetText( "Last Updated: " .. date .. " " .. time )
+		
+		local date = os.date( "%m-%d-%y", data.backupTime )
+		local time = tostring( os.date( "%H:%M:%S", data.backupTime ) )
+		if data.backupTime == -1 then date = "never" time = "" end
+		pnl.LastBackup:SetText( "Last Backup: " .. date .. " " .. time )
+
 	end
 	
 	local function detailsInit( pnl )
 		pnl.Cat = pnl:CreateCategory( "%DATABASE" )
+		pnl.Cat:DockPadding( 4, 4, 4, 4 )
 		
-		-- Our options.
-		pnl.BackupRestore = vgui.Create( "ExQuickButton", pnl.Cat )
-			pnl.BackupRestore:Text( "Backup/Restore" )
-			pnl.BackupRestore:Dock( TOP )
-			pnl.BackupRestore:SetQuickMenu()
-			pnl.BackupRestore:SetTall( 32 )
-			pnl.BackupRestore.DoClick = function()
-				exsto.Menu.OpenPage( PLUGIN.BackupPage )
-			end
+		pnl.Cat:CreateSpacer()
+		
+		pnl.HardName = vgui.Create( "ExText", pnl.Cat )
+			pnl.HardName:Dock( TOP )
+			pnl.HardName:SetText( "" )
+			pnl.HardName:SetTextColor( Color( 0, 180, 255, 255 ) )
+			pnl.HardName:SetFont( "ExGenericText18" )
+			
+		pnl.LastUpdated = vgui.Create( "ExText", pnl.Cat )
+			pnl.LastUpdated:Dock( TOP )
+			pnl.LastUpdated:SetText( "" )
+			pnl.LastUpdated:SetFont( "ExGenericText14" )
+			
+		pnl.LastBackup = vgui.Create( "ExText", pnl.Cat )
+			pnl.LastBackup:Dock( TOP )
+			pnl.LastBackup:SetText( "" )
+			pnl.LastBackup:SetFont( "ExGenericText14" )
+			
+		pnl.Cat:CreateSpacer();
+		
+		pnl.MySQLText = vgui.Create( "ExText", pnl.Cat )
+			pnl.MySQLText:Dock( TOP )
+			pnl.MySQLText:SetText( "MySQL" )
+			pnl.MySQLText:SetTextColor( Color( 0, 180, 255, 255 ) )
+			pnl.MySQLText:SetFont( "ExGenericText18" )
+		
+		pnl.MySQLHelp = vgui.Create( "ExText", pnl.Cat )
+			pnl.MySQLHelp:Dock( TOP )
+			pnl.MySQLHelp:SetText( "Enables or disables the use of MySQL for this database.  This allows you to share data across servers.  Make sure your MySQL settings are correct before attempting to enable." )
+			pnl.MySQLHelp:SetFont( "ExGenericText14" )
 			
 		pnl.MySQL = vgui.Create( "ExBooleanChoice", pnl.Cat )
-			pnl.MySQL:Text( "MySQL Enabled" )
+			pnl.MySQL:Text( "Status: " )
 			pnl.MySQL:Dock( TOP )
 			pnl.MySQL:SetQuickMenu()
-			pnl.MySQL:SetTall( 32 )
+			pnl.MySQL:SetTall( 40 )
 			pnl.MySQL.OnClick = function( o, val )
 				if PLUGIN.WorkingDB.db == "Global" then
 					pnl:GetObject():Alert( string.format( "This will set EVERY database to %s.  Any %s data will not transfer over, and the server will need to be restarted in order for this to take effect.  Are you sure?", val and "MySQL" or "SQLite", val and "SQLite" or "MySQL" ),
@@ -279,23 +315,26 @@ if CLIENT then
 				end
 			end
 			
-		--[[pnl.Edit = vgui.Create( "ExQuickButton", pnl.Cat )
-			pnl.Edit:Text( "Edit" )
-			pnl.Edit:Dock( TOP )
-			pnl.Edit:SetQuickMenu()
-			pnl.Edit:SetTall( 32 )]]
+		pnl.Cat:CreateSpacer()
+		
+		-- Our options.
+		pnl.BackupRestore = vgui.Create( "ExQuickButton", pnl.Cat )
+			pnl.BackupRestore:Text( "Backup / Restore" )
+			pnl.BackupRestore:Dock( TOP )
+			pnl.BackupRestore:SetQuickMenu()
+			pnl.BackupRestore.DoClick = function()
+				exsto.Menu.OpenPage( PLUGIN.BackupPage )
+			end
 			
 		pnl.Recover = vgui.Create( "ExQuickButton", pnl.Cat )
 			pnl.Recover:Text( "Recover" )
 			pnl.Recover:Dock( TOP )
 			pnl.Recover:SetQuickMenu()
-			pnl.Recover:SetTall( 32 )
 			
 		pnl.Reset = vgui.Create( "ExQuickButton", pnl.Cat )
 			pnl.Reset:Text( "Reset" )
 			pnl.Reset:Dock( TOP )
 			pnl.Reset:SetQuickMenu()
-			pnl.Reset:SetTall( 32 )
 			pnl.Reset:SetEvil()
 			pnl.Reset.OnClick = function( o )
 				pnl:GetObject():Alert( "Warning!  This will completely delete all the data in the table.  A server restart is required to complete this action.  Are you sure you want to continue?", 

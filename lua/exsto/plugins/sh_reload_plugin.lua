@@ -17,6 +17,8 @@ if SERVER then
 		util.AddNetworkString( "ExRecPluginList" )
 		util.AddNetworkString( "ExRequestPluginList" )
 		util.AddNetworkString( "ExTogglePlugin" )
+		
+		exsto.CreateFlag( "pluginpage", "Allows access to the plugin page." )
 	
 	end
 	function PLUGIN:ExRequestPluginList( reader )
@@ -116,6 +118,11 @@ elseif CLIENT then
 		end
 		
 		pnl.List.LineSelected = function( o, disp, data, line )
+			if data.ID == "pluginpage" then
+				--PLUGIN.Page:Alert( "Sorry!  You cannot disable this plugin, as if you would, you wouldn't be able to renable it :(" )
+				return
+			end
+			
 			if data.CleanUnload == 0 and tobool( data.Enabled ) == true then
 				PLUGIN.Page:Alert( "Warning!  This plugin cannot unload cleanly due to developmental error.  A server restart is RECOMMENDED in order to disable.",
 					function()

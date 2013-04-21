@@ -27,7 +27,11 @@ FEL = {}
 		mysql_host = "localhost";
 		debug_level = 0;
 		mysql_databases = {};
-		backup_rates = {}
+		backup_rates = {};
+		time = {
+			update = {};
+			backup = {};
+		};
 	}
 	FEL.ConfigFile = "fel_settings.txt";
 	FEL.TableCache = "fel_tablecache/"
@@ -217,12 +221,39 @@ function FEL.CreateDatabase( dbName, forceLocal )
 		table.insert( FEL.Config.backup_rates, { obj:GetName(), 0 } )
 	end
 	
+	-- Insert into our statistic time if not already there.
+	local f = false
+	for _, tbl in ipairs( FEL.Config.time.update ) do
+		if tbl[1] == obj:GetName() then 
+			obj:SetLastBackupTime( FEL.Config.time.backup[ _ ][ 2 ] )
+			obj:SetLastUpdateTime( tbl[ 2 ] )
+			f = true 
+		end
+	end
+	
+	if !f then
+		table.insert( FEL.Config.time.update, { obj:GetName(), -1 } )
+		table.insert( FEL.Config.time.backup, { obj:GetName(), -1 } )
+	end
+	
 	-- Create backup directory
 	file.CreateDir( FEL.BackupDirectory .. obj:GetName() .. "/" )
 	
 	FEL.SaveSettings()
 	
 	return obj
+end
+
+function db:GetLastBackupTime()	return self._LastBackupTime or -1 end
+function db:GetLastUpdateTime() return self._LastUpdateTime or -1 end
+
+function db:SetLastBackupTime( t )
+	self._LastBackupTime = t;
+	FEL.SaveSettings();
+end
+function db:SetLastUpdateTime( t )
+	self._LastUpdateTime = t;
+	FEL.SaveSettings();
 end
 
 function db:GetBackups()
@@ -256,6 +287,8 @@ function db:Disable( msg )
 end
 
 function db:GetName() return self.dbName end
+function db:GetDisplayName() return self.displayName or self:GetName() end
+function db:SetDisplayName( txt ) self.displayName = txt end
 
 function db:Error( msg )
 	exsto.ErrorNoHalt( "[" .. self.dbName .. "-Error] " .. msg )
@@ -649,6 +682,8 @@ function db:PushSaves()
 		
 		self.Cache._new = {}
 	end
+	
+	self._LastUpdateTime = os.time()
 end
 
 function db:Think()
@@ -851,6 +886,8 @@ function db:Backup()
 	file.Write( loc, von.serialize( data ) )
 	
 	self:Debug( "Backed up database to: " .. loc, 1 )
+	
+	self._LastBackupTime = os.time()
 end
 	
 function db:Restore( data )

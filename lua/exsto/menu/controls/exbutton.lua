@@ -28,6 +28,8 @@ function PANEL:Init()
 	self:SetTextColor( Color( 133, 133, 133, 255 ) )
 	self:SetAlignX( TEXT_ALIGN_CENTER )
 	self:SetAlignY( TEXT_ALIGN_CENTER )
+	
+	self.Material = Material( "exsto/buttonsettings.png" )
 end
 
 function PANEL:SetEvil()
@@ -36,6 +38,7 @@ end
 
 function PANEL:SetQuickMenu()
 	self._QuickMenu = true
+	self:SetTall( 40 )
 end
 
 function PANEL:TextPadding( num )
@@ -159,13 +162,9 @@ function PANEL:Paint()
 
 	-- Background
 	if self._QuickMenu then
-		if ( self.Depressed || self:IsSelected() || self:GetToggle() ) then
-			self:GetSkin().tex.Input.ComboBox.Down( 0, 0, w, h )
-		elseif self.Hovered then
-			self:GetSkin().tex.Input.ComboBox.Hover( 0, 0, w, h )
-		else
-			self:GetSkin().tex.Input.ComboBox.Normal( 0, 0, w, h )
-		end
+		surface.SetDrawColor( 255, 255, 255, 255 )
+		surface.SetMaterial( self.Material )
+		surface.DrawTexturedRect( 0, 0, w, h )
 	else
 		if ( self.Depressed || self:IsSelected() || self:GetToggle() ) then
 			self:GetSkin().tex.Button_Down( 0, 0, w, h );	
