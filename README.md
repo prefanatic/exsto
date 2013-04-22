@@ -14,9 +14,9 @@ Install the addon in ````/addons```` as usual. Next, open the server console and
 
 ### Essential Commands
 
-'ExQuickToggle' - Opens the menu in a toggle based format.
-'+ExQuick' - Opens the menu in a hold based format.
-'exsto commands OR !commands' - Lists all the other stuff you'll probably use at some point.
+* 'ExQuickToggle' - Opens the menu in a toggle based format.
+* '+ExQuick' - Opens the menu in a hold based format.
+* 'exsto commands OR !commands' - Lists all the other stuff you'll probably use at some point.
 
 ### Things to keep in mind
 
