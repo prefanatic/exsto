@@ -238,6 +238,21 @@ end
 -- Checks to see if a value is possible.
 function var:PossibleCheck( val )
 	if !self.Possible then return true end
+	if type( val ) == "table" then -- Our value is coming as a table!
+		local g = {}
+		for _, value in ipairs( val ) do
+			g[ value ] = false;
+			for _, entry in ipairs( self.Possible ) do
+				if value == entry then g[ value ] = true break end
+			end
+		end
+		
+		-- Final check
+		for _, value in ipairs( val ) do
+			if g[ value ] == false then return false end
+		end
+		return true
+	end
 	for _, entry in ipairs( self.Possible ) do
 		if val == entry then return true end
 	end

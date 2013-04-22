@@ -21,7 +21,10 @@ function PLUGIN:Init()
 	self.Printing = exsto.CreateVariable( "ExPrintLogs", "Print to Console", "none", "Selects the possible logs to print to the console." )
 		self.Printing:SetMultiChoice()
 		self.Printing:SetCategory( "Logging" )
-		self.Printing:SetPossible( unpack( self.Types ), "none" )
+		
+		local pos = self.Types
+		table.insert( pos, "none" )
+		self.Printing:SetPossible( unpack( pos ) )
 		
 	self.SaveDebug = exsto.CreateVariable( "ExSaveDebugLogs", "Save Debug", 0, "Saves debugging information as a log." )
 		self.SaveDebug:SetBoolean()

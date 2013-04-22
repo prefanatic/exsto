@@ -67,7 +67,7 @@ function PANEL:GetMaxFontSize()
 end
 
 function PANEL:GetText()
-	return self.__TEXT
+	return self.__TEXT or ""
 end
 
 function PANEL:SetFontSize( num )

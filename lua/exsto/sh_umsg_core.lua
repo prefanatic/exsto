@@ -96,6 +96,9 @@ function sender:AddVariable( var )
 	elseif t == "Entity" or t == "Player" then
 		self:AddChar( 5 )
 		self:AddEntity( var )
+	elseif t == "table" then
+		self:AddChar( 6 )
+		self:AddTable( var )
 	elseif t == "nil" then
 		self:AddChar( 0 )
 	end
@@ -165,6 +168,8 @@ function reader:ReadVariable()
 		return self:ReadColor()
 	elseif t == 5 then -- ent
 		return self:ReadEntity()
+	elseif t == 6 then -- table
+		return self:ReadTable()
 	elseif t == 0 then -- nil
 		return nil
 	end

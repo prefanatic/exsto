@@ -111,13 +111,12 @@ elseif CLIENT then
 				obj:SetBoolean()
 			elseif  #data.Possible > 0 then
 				obj:SetMultiChoice()
+				-- Enable multi selecting if we can do that.
+				if data.Multi then PrintTable( data ) obj:SetMultipleOptions() end
 				
 				for i, possible in ipairs( data.Possible ) do
 					obj:AddChoice( possible, possible )
 				end
-				
-				-- Enable multi selecting if we can do that.
-				if data.Multi then obj:SetMultipleOptions() end
 			elseif data.Type == "string" then -- We're a text box
 				obj:SetTextEntry()
 			elseif data.Type == "number" then -- We're a number!
