@@ -28,7 +28,7 @@ Then remove it.  You have a plugin list, settings page, right-click delete funct
 
 ### MySQL
 
-You DO NOT NEED MySQL in order to use Exsto.  It is completely optional.  I had so many people three years ago thinking it was required.  If you want to use MySQL for external acess, server data sharing, or other reasons, install the mysqloo module.  Otherwise, you should have no reason to use it - its optional.  Exsto has support for it, doesn't mean you should use it.
+You DO NOT NEED MySQL in order to use Exsto.  It is completely optional.  I had so many people three years ago thinking it was required.  If you want to use MySQL for external access, server data sharing, or other reasons, install the mysqloo module.  Otherwise, you should have no reason to use it - its optional.  Exsto has support for it, doesn't mean you should use it.
 
 ### Feature 'x' isn't working / I want feature 'x'
 
