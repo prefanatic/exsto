@@ -36,6 +36,7 @@ local function constructMeta( obj )
 		Close = obj.Close;
 		IsVisible = obj.IsVisible;
 		SetVisible = obj.SetVisible;
+		SetAlpha = obj.SetAlpha;
 	}
 	
 	-- Sizing
@@ -171,17 +172,21 @@ local function constructMeta( obj )
 		return o._AnimClose
 	end
 	
-	--[[
 	obj.SetVisible = function( o, val )
-		o:GetAnimationData().ProgAlpha = ( val and 255 ) or 0;
+		if val then
+			o:GetAnimationData()[3][1][1] = 10
+			o._Old.SetAlpha( o, 10 )
+			o._Old.SetVisible( o, val )
+		end
+		o:GetAnimationData()[3][1][2] = ( val and 255 or 0 )
 	end
 	
 	obj.IsVisible = function( o )
-		return o:GetAnimationData().ProgAlpha > 0
+		return o:GetAnimationData()[3][1][1] > 0;
 	end
 	
 	
-	obj.Close = function( o )
+	--[[obj.Close = function( o )
 		if o:GetAnimationClose() == ANIM_BLIND_UP then
 			o:SetTall( 0 )
 		end
@@ -204,17 +209,24 @@ local function constructMeta( obj )
 		return o:GetAnimationTable().__ANIMDATA
 	end
 	
-	obj.GetAnimationDelta = function( o, a, b )
-		return RealFrameTime() * ( ( b - a ) / o:GetAnimationMul()  ) * 40
+	obj.GetAnimationDelta = function( o, a, b, c )
+		return RealFrameTime() * ( ( b - a ) / o:GetAnimationMul( c )  ) * 40
 	end
 	
 	obj.SetAnimationMul = function( o, mul )
 		o.__ANIMMUL = mul
 	end
 	
-	obj.GetAnimationMul = function( o )
+	obj.GetAnimationMul = function( o, c )
+		if c == 3 then return o.__ANIMFADEMUL end
 		return o.__ANIMMUL
 	end
+	
+	obj.SetAnimFadeMul = function( o, mul )
+		o.__ANIMFADEMUL = mul
+	end
+	
+	obj.GetAnimFadeMul = function( o ) return o.__ANIMFADEMUL end
 
 end
 
@@ -249,13 +261,16 @@ function exsto.Animations.Create( obj )
 		};
 		
 		-- Alpha
-		--[[{
+		{
 			{ a, a, OnUpdate = function( val ) obj:SetAnimationAlpha( val ) end };
-			OnComplete = function() end;
-		};]]
+			OnComplete = function( val )
+				obj._Old.SetVisible( obj, ( val > 200 ) and true or false )
+			end;
+		};
 	} )
 	
 	obj:SetAnimationMul( 2 )
+	obj:SetAnimFadeMul( 1 )
 	
 end
 
@@ -272,7 +287,7 @@ function exsto.Animations.Think()
 			if !obj:IsVisible() then return end
 			
 			-- Loop through our supported animation styles.
-			for _, content in ipairs( obj:GetAnimationData() ) do
+			for style, content in ipairs( obj:GetAnimationData() ) do
 				
 				-- Go through the values that need changing.
 				for _, segment in ipairs( content ) do
@@ -281,10 +296,8 @@ function exsto.Animations.Think()
 						content._COMPLETED = true
 					elseif math.floor( segment[ 1 ] + 0.5 ) != math.floor( segment[ 2 ] + 0.5 ) then
 						content._COMPLETED = false
-						
-						--print( "modifying segment", segment[ 1 ], segment[ 2 ] )
 
-						segment.OnUpdate( segment[ 1 ] + obj:GetAnimationDelta( segment[ 1 ], segment[ 2 ] ) )
+						segment.OnUpdate( segment[ 1 ] + obj:GetAnimationDelta( segment[ 1 ], segment[ 2 ], style ) )
 					end
 				end
 			end
