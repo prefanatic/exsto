@@ -25,10 +25,36 @@ if SERVER then
 	
 	hook.Add( "ExVariableInit", "ExFELIntegration", function()	
 		exsto.FELDebug = exsto.CreateVariable( "ExFelDebug", "FEL Debugging", 0, "Sets the level of debug FEL will print.  0 being nothing, 3 being every debug message." )
-		exsto.FELDebug:SetMinimum( 0 )
-		exsto.FELDebug:SetMaximum( 3 )
-		exsto.FELDebug:SetCategory( "Debug" )
-		exsto.FELDebug:SetUnit( "Level" )
+			exsto.FELDebug:SetMinimum( 0 )
+			exsto.FELDebug:SetMaximum( 3 )
+			exsto.FELDebug:SetCategory( "Debug" )
+			exsto.FELDebug:SetUnit( "Level" )
+			
+		-- MySQL!!!!
+		exsto.MySQLUsername = exsto.CreateVariable( "ExMySQLUser", "Username", FEL.Config.mysql_user, "Username login for the MySQL server." )
+			exsto.MySQLUsername:SetCategory( "MySQL" )
+			exsto.MySQLUsername:SetCallback( function( old, new )
+				FEL.SetMySQLInformation( new )
+			end )
+			
+		exsto.MySQLPassword = exsto.CreateVariable( "ExMySQLPass", "Password", FEL.Config.mysql_pass, "Password for the MySQL server.  This will always reset to '******' after entry, for security reasons.", { FCVAR_PROTECTED } )
+			exsto.MySQLPassword:SetCategory( "MySQL" )
+			exsto.MySQLPassword:SetProtected()
+			exsto.MySQLPassword:SetCallback( function( old, new )
+				FEL.SetMySQLInformation( nil, new )
+			end )
+			
+		exsto.MySQLDatabase = exsto.CreateVariable( "ExMySQLDB", "Database", FEL.Config.mysql_database, "Database for the server to use when saving." )
+			exsto.MySQLDatabase:SetCategory( "MySQL" )
+			exsto.MySQLDatabase:SetCallback( function( old, new )
+				FEL.SetMySQLInformation( nil, nil, new )
+			end )
+			
+		exsto.MySQLHost = exsto.CreateVariable( "ExMySQLHost", "Host", FEL.Config.mysql_host, "The IP address of the MySQL server." )
+			exsto.MySQLHost:SetCategory( "MySQL" )
+			exsto.MySQLHost:SetCallback( function( old, new ) 
+				FEL.SetMySQLInformation( nil, nil, nil, new )
+			end )
 	end )
 	
 end

@@ -27,7 +27,7 @@ end
 
 function PANEL:Paint()
 	surface.SetDrawColor( 195, 195, 195, 195 )
-	surface.DrawLine( 0, 0, self:GetWide(), 0 )
+	surface.DrawLine( 0, self:GetTall() / 2, self:GetWide(), self:GetTall() / 2 )
 end
 
 derma.DefineControl( "ExSpacer", "Exsto ListView", PANEL, "DPanel" )

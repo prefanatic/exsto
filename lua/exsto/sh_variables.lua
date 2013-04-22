@@ -41,7 +41,7 @@ if SERVER then
 			sender:AddString( obj:GetID() )
 			sender:AddString( obj:GetDisplay() )
 			sender:AddString( obj:GetHelp() )
-			sender:AddVariable( obj:GetValue() )
+			sender:AddVariable( obj:Protected() == true and "*******" or obj:GetValue() )
 			sender:AddString( obj:GetType() )
 			sender:AddShort( obj.NumMax )
 			sender:AddShort( obj.NumMin )
@@ -101,7 +101,7 @@ local var = {}
 	MultiChoice -- DComboBox!
 ]]
 	
-function exsto.CreateVariable( id, display, default, help )
+function exsto.CreateVariable( id, display, default, help, eVars )
 	local obj = {}
 	setmetatable( obj, var )
 
@@ -138,7 +138,9 @@ function exsto.CreateVariable( id, display, default, help )
 	exsto.Debug( "Variables --> Creating variable '" .. id .. "' with default value '" .. default .. "' (" .. obj.Type .. ")", 3 )
 	
 	-- Create the convar for GMODE
-	obj.CVar = CreateConVar( id, default, FCVAR_ARCHIVE, help )
+	local fcvar = { FCVAR_ARCHIVE }
+	table.Merge( fcvar, eVars or {} )
+	obj.CVar = CreateConVar( id, default, fcvar, help )
 
 	-- Callback for the cvar.
 	cvars.AddChangeCallback( id, function( cid, oldval, newval )
@@ -195,6 +197,9 @@ function var:SetCategory( cat )
 end
 
 function var:GetCategory() return self.Category end
+
+function var:SetProtected() self._Protected = true end
+function var:Protected() return self._Protected end
 
 -- Extraneous settings for the settings page.
 function var:SetMaximum( num )

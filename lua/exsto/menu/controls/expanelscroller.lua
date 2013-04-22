@@ -74,11 +74,10 @@ local function categoryPaint( cat )
 	local w, h = surface.GetTextSize( cat.Header:GetValue() )
 	
 	surface.SetDrawColor( 195, 195, 195, 195 )
-	surface.DrawLine( w + 10, ( cat.Header:GetTall() / 2 ), cat.Header:GetWide() - 5, ( cat.Header:GetTall() / 2 ) )
+	surface.DrawLine( w + 15, ( cat.Header:GetTall() / 2 ), cat.Header:GetWide() - 5, ( cat.Header:GetTall() / 2 ) )
 end
 
 local function createTitle( o, txt )
-	print( o )
 	local title = vgui.Create( "ExText", o )
 		title:SetText( txt )
 		title:SetFont( "ExGenericText18" )
@@ -107,7 +106,7 @@ function PANEL:CreateCategory( catName )
 
 	local cat = self.List:Add( catName )
 		cat.Header:SetTextColor( Color( 0, 180, 255, 255 ) )
-		cat.Header:SetFont( "ExGenericText19" )
+		cat.Header:SetFont( "ExGenericText20" )
 		cat.Header.UpdateColours = function( self, skin ) end
 		--cat.Header.OnMousePressed = function( c )
 			--cat:Toggle() -- Fuck you garry.
@@ -120,7 +119,7 @@ function PANEL:CreateCategory( catName )
 		cat.CreateSpacer = function( c )
 			local spacer = vgui.Create( "ExSpacer", c )
 				spacer:Dock( TOP )
-				spacer:SetTall( 1 )
+				spacer:SetTall( 10 )
 		end
 		
 	cat:DockPadding( 4, 0, 4, 0 )

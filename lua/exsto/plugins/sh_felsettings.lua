@@ -415,6 +415,7 @@ if CLIENT then
 			pnl.List:AddColumn( "" )
 			pnl.List:AddColumn( "" )
 			pnl.List:SetHideHeaders( true )
+			pnl.List.Paint = function() end
 			pnl.List.LineSelected = function( o, disp, data, obj )
 				pnl.RestoreSelected = data
 			end

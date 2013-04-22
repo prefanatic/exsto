@@ -24,7 +24,7 @@ FEL = {}
 		mysql_user = "name";
 		mysql_pass = "pass";
 		mysql_database = "main_db";
-		mysql_host = "localhost";
+		mysql_host = "127.0.0.1";
 		debug_level = 0;
 		mysql_databases = {};
 		backup_rates = {};
@@ -61,7 +61,7 @@ function FEL.Init()
 	if !von then
 		local s, err = pcall( require, "von" )
 		if !s then
-			ErrorNoHalt( "FEL --> Unable to load 'von'.  FEL cannot operate without this!" )
+			Error( "FEL --> Unable to load 'von'.  FEL cannot operate without this!" )
 		end
 	end
 	
@@ -94,7 +94,7 @@ function FEL.ReadSettingsFile()
 	else
 	
 		FEL.Config = von.deserialize( file.Read( FEL.ConfigFile ) )
-
+		
 		if FEL.Config[ 1 ] == "TableToKeyValue" then -- We're probably on the old util.TableToKeys.  Remove, sorry!
 			file.Write( FEL.ConfigFile, von.serialize( FEL.DefaultConfig ) )
 			FEL.Config = FEL.DefaultConfig
@@ -104,10 +104,11 @@ function FEL.ReadSettingsFile()
 end
 
 function FEL.SetMySQLInformation( user, pass, db, host )
-	FEL.Config.mysql_user = user;
-	FEL.Config.mysql_pass = pass;
-	FEL.Config.mysql_database = db;
-	FEL.Config.mysql_host = host;
+	FEL.Debug( "Setting MySQL information: " .. tostring( user ) .. ", " .. tostring( pass ) .. ", " .. tostring( db ) .. ", " .. tostring( host ), 1 )
+	FEL.Config.mysql_user = user or FEL.Config.mysql_user;
+	FEL.Config.mysql_pass = pass or FEL.Config.mysql_pass;
+	FEL.Config.mysql_database = db or FEL.Config.mysql_database;
+	FEL.Config.mysql_host = host or FEL.Config.mysql_host;
 	FEL.SaveSettings();
 end	
 
@@ -147,7 +148,7 @@ function FEL.AllDatabasesMySQL()
 	return #FEL.GetMySQLDatabases() == #FEL.GetDatabases()
 end
 
-function FEL.HasMySQLCapacity()
+function FEL.HasMySQLCapacity()	
 	if FEL.Config.mysql_user and FEL.Config.mysql_pass and FEL.Config.mysql_database and FEL.Config.mysql_host and mysqloo then return true end
 end
 
@@ -207,8 +208,8 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	hook.Add( "Think", "FELDBTHINK_" .. dbName, function() obj:Think() end )
 	
 	-- Do we need to initiate a MySQL object?
-	if obj:RequiresMySQL() and FEL.HasMySQLCapacity() then obj:InitMySQL() end
-	if !FEL.HasMySQLCapacity() then obj:Error( "Assigned to use MySQL, but mysqloo is missing.  Please install properly." ) end
+	if obj:RequiresMySQL() and FEL.HasMySQLCapacity() then obj:InitMySQL()
+	elseif !FEL.HasMySQLCapacity() and obj:RequiresMySQL() then obj:Error( "We either are missing MySQLoo or key login settings.  Please check your configuration." ) end
 	
 	-- Set our backup rate.
 	local f = false
@@ -318,6 +319,12 @@ function db:OnMySQLConnectFail( err )
 	if err:find( "Access denied for user" ) then
 		self:Error( "MySQL login error.  Are you using the correct login information?" )
 		self._mysqlSucces = false
+		self._AttemptingMySQLReconnect = nil
+		self._forcedLocal = true
+		return
+	elseif err:find( "Unknown MySQL server" ) then
+		self:Error( "MySQL server location unknown.  You probably don't have the correct IP address!" )
+		self._mysqlSuccess = false
 		self._AttemptingMySQLReconnect = nil
 		self._forcedLocal = true
 		return

@@ -57,11 +57,11 @@ local function playerObjectRightClick( lst, lineID, line )
 end
 
 local function categoryPaint( cat )
-	surface.SetFont( "ExGenericText19" )
+	surface.SetFont( "ExGenericText20" )
 	local w, h = surface.GetTextSize( cat.Header:GetValue() )
 	
 	surface.SetDrawColor( 195, 195, 195, 195 )
-	surface.DrawLine( w + 10, ( cat.Header:GetTall() / 2 ), cat.Header:GetWide() - 5, ( cat.Header:GetTall() / 2 ) )
+	surface.DrawLine( w + 15, ( cat.Header:GetTall() / 2 ), cat.Header:GetWide() - 5, ( cat.Header:GetTall() / 2 ) )
 end
 
 local function buttonBackClick( btn )
@@ -193,7 +193,7 @@ function exsto.InitQuickMenu( pnl )
 				for _, data in ipairs( plyTbl ) do
 					if string.find( data.Ply:Nick():lower(), search or "" ) then
 						local obj = cat.PlyList:AddLine( data.Ply:Nick() )
-							obj.Columns[1]:SetFont( "ExGenericTextMidBold16" )
+							obj.Columns[1]:SetFont( "ExGenericText16" )
 							obj.Data = data
 					end
 				end
@@ -377,7 +377,7 @@ function qm.CreateCommandWindow( pnl )
 			for id, comdata in SortedPairsByMemberValue( exsto.Commands, "DisplayName", false ) do
 				if comdata.QuickMenu and string.find( comdata.DisplayName:lower(), search or "" ) and LocalPlayer():IsAllowed( id ) then
 					comboObj = pnl.CommandList:AddLine( comdata.DisplayName )
-						comboObj.Columns[1]:SetFont( "ExGenericTextMidBold16" )
+						comboObj.Columns[1]:SetFont( "ExGenericText16" )
 						comboObj.Type = "COMMAND"
 						comboObj.Data = comdata
 				end
@@ -414,7 +414,7 @@ function qm.CreateCommandWindow( pnl )
 
 			for _, fillData in ipairs( data.ExtraOptionals[ argName ] ) do
 				comboObj = comboPnl:AddLine( fillData.Display )
-					comboObj.Columns[1]:SetFont( "ExGenericTextMidBold16" )
+					comboObj.Columns[1]:SetFont( "ExGenericText16" )
 					comboObj.Type = t
 					comboObj.Data = tostring( fillData.Data or fillData.Display )
 			end

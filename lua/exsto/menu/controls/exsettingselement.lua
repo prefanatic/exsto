@@ -84,10 +84,12 @@ end
 function PANEL:SetTextEntry()
 	self.Active = self.Choice.TEXT;
 	
-	self.Button = self:Add( "ExTextChoice" )
+	self.Button = self:Add( "DTextEntry" )
 		self.Button:Dock( TOP )
 		self.Button:SetTall( 40 )
-		self.Button.OnValueSet = function( o, val ) self:OnValueSet( val ) end
+		self.Button:SetFont( "ExGenericText14" )
+		self.Button.OnValueChanged = function( o ) self:OnValueSet( o:GetValue() ) end
+		self.Button.OnEnter = function( o ) self:OnValueSet( o:GetValue() ) end
 end
 
 function PANEL:SetMultipleOptions() self.Button:SetMultipleOptions() end
