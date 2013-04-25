@@ -18,8 +18,16 @@
 
 -- Extension for FEL to work with some portions of Exsto.
 
-FEL.TableCache = "exsto_felcache/"
-FEL.BackupDirectory = "exsto_db_backups/";
+FEL.TableCache = "exsto/databases/cache/";
+FEL.BackupDirectory = "exsto/databases/backups/";
+FEL.ConfigFile = "exsto/databases/config.txt";
+
+-- Override to throw everything into exsto's folder.
+function FEL.ConstructLocation()
+	file.CreateDir( "exsto/databases" )
+	file.CreateDir( "exsto/databases/cache" )
+	file.CreateDir( "exsto/databases/backups" )
+end
 
 if SERVER then
 	

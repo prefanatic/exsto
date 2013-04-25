@@ -11,9 +11,9 @@ PLUGIN:SetInfo({
 function PLUGIN:Init()
 	self.Types = { "all", "commands", "player", "errors", "chat", "spawns", "debug" }
 	
-	file.CreateDir( "exsto_logs" )
+	file.CreateDir( "exsto/logs" )
 	for _, type in ipairs( self.Types ) do
-		file.CreateDir( "exsto_logs/" .. type )
+		file.CreateDir( "exsto/logs/" .. type )
 	end
 	
 	-- Create variables for console printing per request of Mors Quaedam

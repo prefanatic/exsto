@@ -26,15 +26,15 @@ if SERVER then
 	}
 
 	function PLUGIN:Init()
-		if !file.Exists( "exsto_gimps.txt", "DATA" ) then
-			file.Write( "exsto_gimps.txt", string.Implode( "\n", self.Sayings ) )
+		if !file.Exists( "exsto/gimps.txt", "DATA" ) then
+			file.Write( "exsto/gimps.txt", string.Implode( "\n", self.Sayings ) )
 		else
-			self.Sayings = string.Explode( "\n", file.Read( "exsto_gimps.txt" ) )
+			self.Sayings = string.Explode( "\n", file.Read( "exsto/gimps.txt" ) )
 		end
 	end
 
 	function PLUGIN:AddGimp( owner, message )
-		filex.Append( "exsto_gimps.txt", message .. "\n" )
+		filex.Append( "exsto/gimps.txt", message .. "\n" )
 		
 		return { owner, COLOR.NORM, "Adding message to ", COLOR.NAME, "gimp data!" }
 	end

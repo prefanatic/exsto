@@ -21,12 +21,12 @@ function PLUGIN:Init()
 	self.ForceDL = {}
 	
 	-- Create the default if it doesn't exist
-	if !file.Read( "exsto_downloads.txt", "DATA" ) then
-		file.Write( "exsto_downloads.txt", self.DefaultDownloadsText )
+	if !file.Read( "exsto/force_download.txt", "DATA" ) then
+		file.Write( "exsto/force_download.txt", self.DefaultDownloadsText )
 	end
 	
 	-- Read our little file.
-	local f = file.Read( "exsto_downloads.txt", "DATA" ):Trim()
+	local f = file.Read( "exsto/force_download.txt", "DATA" ):Trim()
 	
 	-- Clean it
 	local tbl = string.Explode( "\n", f )

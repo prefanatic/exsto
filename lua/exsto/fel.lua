@@ -71,6 +71,7 @@ function FEL.Init()
 		AddCSLuaFile( "fel_extensions/" .. f )
 	end
 	
+	FEL.ConstructLocation();
 	FEL.ReadSettingsFile()
 	
 	-- Check and see if we need MySQL to operate.
@@ -81,7 +82,10 @@ function FEL.Init()
 			ErrorNoHalt( "FEL --> Defaulting to SQLite.\n" )
 		end
 	end
-	
+end
+
+function FEL.ConstructLocation()
+	file.CreateDir( "fel" )
 	file.CreateDir( FEL.BackupDirectory )
 end
 
@@ -636,6 +640,11 @@ function db:OnQueryError( err, query )
 	end		
 end
 
+function db:QueryEnd()
+	self.qTEnd = SysTime();
+	self:Debug( "Took '" .. self.qTEnd - self.qTStart .. "' seconds to run this query.", 3 )
+end
+
 function db:Query( str, threaded, callback )
 	if self._Disabled then
 		self:Print( "Disabled! " .. self._DisabledMsg )
@@ -643,6 +652,8 @@ function db:Query( str, threaded, callback )
 	end
 	hook.Call( "FEL_OnQuery", nil, str, threaded )
 	
+	-- Debug reasons.
+	self.qTStart = SysTime();
 	self:Debug( "Query (mysql: " .. tostring( self._mysqlSuccess ) .. ", threaded: " .. tostring( threaded ) .. ") - " .. str, 3 )
 	
 	if self._mysqlSuccess == true and self._forcedLocal != true then -- We are MySQL baby
@@ -652,8 +663,10 @@ function db:Query( str, threaded, callback )
 		
 		if threaded == false then -- If we request not to be threaded.
 			self._mysqlQuery:wait()
+			self:QueryEnd()
 			return self._mysqlQuery:getData()
 		else
+			self:QueryEnd()
 			if callback then
 				self._mysqlQuery.onSuccess = callback
 			end
@@ -664,16 +677,19 @@ function db:Query( str, threaded, callback )
 		if result == false then
 			-- An error, holy buggers!
 			self:OnQueryError( sql.LastError() )
+			self:QueryEnd()
 		else
+			self:QueryEnd()
 			if callback then -- Call it.
 				callback( str, result )
 			end
 			return result
 		end
 	end
+
 end
 
-function db:PushSaves()
+function db:PushSaves()	
 	if #self.Cache._changed > 0 then -- Hoho we have some changes!
 		for _, rowData in ipairs( self.Cache._changed ) do
 			self:Query( self:ConstructQuery( "changed", rowData ), true )
@@ -715,7 +731,7 @@ function db:Think()
 end
 
 function db:Escape( str )
-	if FEL.Config.mysql_enabled == "true" and self._forcedLocal != true then return "\"" .. self._mysqlDB:escape( str ) .. "\"" end
+	if self:IsMySQL() then return "\"" .. self._mysqlDB:escape( str ) .. "\"" end
 	return SQLStr( str )
 end
 

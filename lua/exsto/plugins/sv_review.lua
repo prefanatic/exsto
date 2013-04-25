@@ -8,16 +8,14 @@ PLUGIN:SetInfo( {
 } )
 
 function PLUGIN:Init()
-	if !file.IsDir( "exsto_reviews", "DATA" ) then
-		file.CreateDir( "exsto_reviews", "DATA" )
-	end
+	file.CreateDir( "exsto/reviews" )
 end
 
 function PLUGIN:AddReview( owner, str )
 	local date = os.date( "%m-%d-%y" )
 	local time = tostring( os.date( "%H:%M:%S" ) )
 	
-	file.Write( "exsto_reviews/" .. owner:Nick() .. " " .. date .. ".txt", "[" .. time .. "]" .. str )
+	file.Write( "exsto/reviews/" .. owner:Nick() .. " " .. date .. ".txt", "[" .. time .. "]" .. str )
 	
 	return { COLOR.NORM, "Review added.  ", COLOR.NAME, "Thanks!" }
 end

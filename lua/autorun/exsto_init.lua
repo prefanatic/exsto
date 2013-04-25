@@ -107,6 +107,9 @@ function exstoInit( srvVer )
 	LoadVariables( srvVer )
 	PrintLoading( srvVer )
 	
+	-- Create our data directory.
+	file.CreateDir( "exsto", "DATA" )
+	
 	if SERVER then
 		exstoServer( "sv_init.lua" )
 		exstoClient( "cl_init.lua" )
