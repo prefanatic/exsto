@@ -120,6 +120,7 @@ function PANEL:CreateCategory( catName )
 			local spacer = vgui.Create( "ExSpacer", c )
 				spacer:Dock( TOP )
 				spacer:SetTall( 10 )
+			return spacer
 		end
 		
 	cat:DockPadding( 4, 0, 4, 0 )

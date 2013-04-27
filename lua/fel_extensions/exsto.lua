@@ -32,12 +32,7 @@ end
 if SERVER then
 	
 	hook.Add( "ExVariableInit", "ExFELIntegration", function()	
-		exsto.FELDebug = exsto.CreateVariable( "ExFelDebug", "FEL Debugging", 0, "Sets the level of debug FEL will print.  0 being nothing, 3 being every debug message." )
-			exsto.FELDebug:SetMinimum( 0 )
-			exsto.FELDebug:SetMaximum( 3 )
-			exsto.FELDebug:SetCategory( "Debug" )
-			exsto.FELDebug:SetUnit( "Level" )
-			
+		
 		-- MySQL!!!!
 		exsto.MySQLUsername = exsto.CreateVariable( "ExMySQLUser", "Username", FEL.Config.mysql_user, "Username login for the MySQL server." )
 			exsto.MySQLUsername:SetCategory( "MySQL" )
@@ -67,6 +62,14 @@ if SERVER then
 	
 end
 
+hook.Add( "ExVariableInit", "ExFelIntegration2", function()
+	exsto.FELDebug = exsto.CreateVariable( "ExFelDebug", "FEL Debugging", 0, "Sets the level of debug FEL will print.  0 being nothing, 3 being every debug message." )
+		exsto.FELDebug:SetMinimum( 0 )
+		exsto.FELDebug:SetMaximum( 3 )
+		exsto.FELDebug:SetCategory( "Debug" )
+		exsto.FELDebug:SetUnit( "Level" )
+end )
+
 hook.Add( "ExPrintingInit", "ExFELIntegration", function()
 	function FEL.Print( msg )
 		exsto.Print( exsto_CONSOLE, msg )
@@ -75,20 +78,6 @@ hook.Add( "ExPrintingInit", "ExFELIntegration", function()
 	function FEL.Debug( msg, level )
 		if exsto.FELDebug:GetValue() >= level then
 			exsto.Debug( msg, 0 )
-		end
-	end
-end )
-
-hook.Add( "FEL_OnQuery", "ExFELQueryDebug", function( str, threaded )
-	if CLIENT then return end
-	if exsto and exsto.FELDebug and exsto.FELDebug:GetValue() == true then
-		if str != "SELECT 1 + 1" then
-			for _, ply in ipairs( player.GetAll() ) do
-				if ply:IsSuperAdmin() then
-					--exsto.Print( exsto_CLIENT, ply, "FEL QUERY: " .. str )
-				end
-			end
-			--exsto.Debug( "FEL QUERY --> " .. str, 0 )
 		end
 	end
 end )

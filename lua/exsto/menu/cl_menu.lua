@@ -117,20 +117,13 @@ function exsto.Menu.Initialize()
 	exsto.Animations.Create( exsto.Menu.Search )
 		
 	-- Create the default quick menu.
-	exsto.Menu.QM = exsto.Menu.CreatePage( "quickmenu", exsto.InitQuickMenu )
-		exsto.Menu.QM:SetTitle( "Quick Menu" )
-		exsto.Menu.QM:SetPanelStyle( "DPanel" )
-		exsto.Menu.QM:Build()
-		
-		-- Override our quick menu skin
-		exsto.Menu.QM.Content:SetSkin( "ExstoQuick" )
+	exsto.InitQuickMenu()
 		
 	-- Now create our page icon list.
 	exsto.Menu.PageList = exsto.Menu.CreatePage( "pagelist", exsto.InitPageList )
 		exsto.Menu.PageList:SetTitle( "Pages" )
 		exsto.Menu.PageList:SetUnaccessable()
 		exsto.Menu.PageList:OnShowtime( exsto.BuildPageListIcons )
-		--exsto.Menu.PageList:SetPanelStyle( "DPanel" )
 
 	exsto.Menu.BuildPages()
 
