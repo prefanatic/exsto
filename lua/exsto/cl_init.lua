@@ -20,31 +20,34 @@
 	Category:  Script Loading
      ----------------------------------- ]]
 	
+		-- Modules
 	exstoClient( "fel.lua" )
-	
-	-- Load our derma controls
+
+		-- Load our derma controls
 	exstoClientFolder( "menu/controls" )
-	
-	exstoClient( "sh_enums.lua" )
-	exstoClient( "menu/cl_menu_skin_main.lua" )
-	exstoClient( "menu/cl_menu_skin_quick.lua" )
+
+		-- Menu
+	exstoClient( "menu/cl_skin.lua" )
 	exstoClient( "menu/cl_derma.lua" )
 	exstoClient( "menu/cl_anim.lua" )
-	exstoClient( "sh_tables.lua" )
-	exstoClient( "sh_umsg_core.lua" )
-	exstoClient( "sh_umsg.lua" )
-	exstoClient( "sh_print.lua" )
-	exstoClient( "sh_variables.lua" )
 	exstoClient( "menu/cl_menu.lua" )
 	exstoClient( "menu/cl_page.lua" )
 	exstoClient( "menu/cl_quickmenu.lua" )
 	exstoClient( "menu/cl_pagelist.lua" )
-	exstoClient( "cl_menu.lua" )
-	exstoClient( "sh_access.lua" )
-	exstoClient( "sh_plugin_metatable.lua" )
-	exstoClient( "sh_plugins.lua" )
-	--exstoClient( "sh_cloud.lua" )
-	
+
+		-- Core
+	exstoClient( "shared/sh_enums.lua" )
+
+	exstoClient( "shared/sh_tables.lua" )
+	exstoClient( "shared/sh_net_metatable.lua" )
+	exstoClient( "shared/sh_net.lua" )
+	exstoClient( "shared/sh_print.lua" )
+	exstoClient( "shared/sh_variables.lua" )
+
+	exstoClient( "shared/sh_access.lua" )
+	exstoClient( "shared/sh_plugin_metatable.lua" )
+	exstoClient( "shared/sh_plugins.lua" )
+
 	-- I don't know why or how, but sometimes LocalPlayer is completely valid BEFORE clientside actually finishes a load....
 	-- SO!  Lets check.  If we're good, we good.  If not, lets make sure we GET good.
 	if LocalPlayer() and IsValid( LocalPlayer() ) then

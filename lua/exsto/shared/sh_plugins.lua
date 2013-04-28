@@ -24,6 +24,11 @@ exsto.Plugins = {}
 exsto.LoadedPlugins = {}
 exsto.Hooks = {}
 exsto.PlugLocation = "exsto/plugins/"
+exsto.PluginLocations = {
+	cl = "exsto/plugins/client/";
+	sh = "exsto/plugins/shared/";
+	sv = "exsto/plugins/server/";
+}
 
 if SERVER then
 
@@ -99,7 +104,7 @@ end
 	Description: Reads all the plugins from the plugin folder.
      ----------------------------------- ]]
 function exsto.LoadPlugins()
-	exsto.PluginLocations = file.Find( exsto.PlugLocation .. "*.lua", "LUA"	)
+	-- Do nothin nomore
 end
 
 --[[ -----------------------------------
@@ -121,22 +126,26 @@ function exsto.InitPlugins()
 	end
 
 	exsto.Debug( "Plugins --> Looping into load process.", 2 );
-	local prefix, prefixFind
-	for k,v in pairs( exsto.PluginLocations ) do
-		prefixFind = string.find( v, "_" )
-		if prefixFind then
-			prefix = string.Left( v, prefixFind - 1 )
-			
-			-- If we are running as the client, only exstoInclude plugins that are shared or clientside
-			if CLIENT and ( prefix == "sh" or prefix == "cl" ) then
-				exstoClient( "plugins/" .. v )
-			elseif SERVER then
-			
-				-- If the prefix is shared, exstoInclude and add please.
-				if prefix == "sh" or prefix == "cl" then exstoClient( "plugins/" .. v ) end
-				if prefix == "sh" or prefix == "sv" then exstoServer( "plugins/" .. v ) end
-				
-			end
+	
+	-- Client
+	local loc = file.Find( exsto.PluginLocations.cl .. "*.lua", "LUA" )
+	for _, name in pairs( loc ) do
+		exsto.Debug( "Plugins --> Including client: " .. name, 3 )
+		exstoClient( "plugins/client/" .. name )
+	end
+	
+	-- Shared
+	local loc = file.Find( exsto.PluginLocations.sh .. "*.lua", "LUA" )
+	for _, name in pairs( loc ) do
+		exsto.Debug( "Plugins --> Including shared: " .. name, 3 )
+		exstoShared( "plugins/shared/" .. name )
+	end
+	
+	if SERVER then
+		local loc = file.Find( exsto.PluginLocations.sv .. "*.lua", "LUA" )
+		for _, name in pairs( loc ) do
+			exsto.Debug( "Plugins --> Including server: " .. name, 3 )
+			exstoServer( "plugins/server/" .. name )
 		end
 	end
 	

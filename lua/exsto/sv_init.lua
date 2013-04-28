@@ -19,25 +19,23 @@
 --[[ -----------------------------------
 	Category:  Script Loading/Resources
     ----------------------------------- ]]
-	resource.AddFile( "materials/gwenskin/exsto_quick.png" )
 	resource.AddFile( "materials/gwenskin/exsto_main.png")
 	exstoResources()
 	
 	-- Includes!
-	exstoShared( "fel.lua" ) -- The main data-saving backend.  Has no ties with Exsto.  Can be loaded first!
+	exstoShared( "shared/fel.lua" ) -- The main data-saving backend.  Has no ties with Exsto.  Can be loaded first!
 	
-	exstoShared( "sh_enums.lua" )
-	exstoShared( "sh_tables.lua" )
-	exstoShared( "sh_umsg_core.lua" )
-	exstoShared( "sh_umsg.lua" )
-	exstoShared( "sh_print.lua" )
-	exstoShared( "sh_variables.lua" )
-	exstoServer( "sv_commands.lua" )
-	exstoShared( "sh_access.lua" )
-	exstoServer( "sv_access.lua" )
-	exstoShared( "sh_plugin_metatable.lua" )
-	exstoShared( "sh_plugins.lua" )
-	--exstoShared( "sh_cloud.lua" )
+	exstoShared( "shared/sh_enums.lua" )
+	exstoShared( "shared/sh_tables.lua" )
+	exstoShared( "shared/sh_net_metatable.lua" )
+	exstoShared( "shared/sh_net.lua" )
+	exstoShared( "shared/sh_print.lua" )
+	exstoShared( "shared/sh_variables.lua" )
+	exstoServer( "server/sv_commands.lua" )
+	exstoShared( "shared/sh_groups.lua" )
+	exstoServer( "server/sv_groups.lua" )
+	exstoShared( "shared/sh_plugin_metatable.lua" )
+	exstoShared( "shared/sh_plugins.lua" )
 	
 	-- Clientside things we haven't sent yet.
 		-- Derma Controls!
@@ -46,20 +44,15 @@
 		-- Modules
 	AddCSLuaFile( "includes/modules/von.lua" )
 	AddCSLuaFile( "includes/modules/json.lua" )
-	exstoClient( "fel.lua" )
 	
 		-- Menu
 	exstoClient( "menu/cl_derma.lua" )
 	exstoClient( "menu/cl_quickmenu.lua" )
 	exstoClient( "menu/cl_pagelist.lua" )
 	exstoClient( "menu/cl_anim.lua" )
-	exstoClient( "menu/cl_menu_skin_main.lua" )
-	exstoClient( "menu/cl_menu_skin_quick.lua" )
+	exstoClient( "menu/cl_skin.lua" )
 	exstoClient( "menu/cl_page.lua" )
 	exstoClient( "menu/cl_menu.lua" )
-	
-		-- Misc
-	exstoClient( "cl_menu.lua" )
 
 --[[ -----------------------------------
 	Category:  Player Utils
