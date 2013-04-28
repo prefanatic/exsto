@@ -122,11 +122,21 @@ function PANEL:LineSelected( disp, data, lineobj )
 	
 end
 
+function PANEL:LineRightSelected( disp, data, lineobj )
+end
+
 function PANEL:OnRowSelected( lineID, line )
 	local disp = self.Data[ lineID ].Display
 	local data = self.Data[ lineID ].Data
 	
 	self:LineSelected( disp, data, line )
+end
+
+function PANEL:OnRowRightClick( lineID, line )
+	local disp = self.Data[ lineID ].Display
+	local data = self.Data[ lineID ].Data
+	
+	self:LineRightSelected( disp, data, line )
 end
 
 function PANEL:PerformLayout()

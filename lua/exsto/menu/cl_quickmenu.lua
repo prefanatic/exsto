@@ -18,8 +18,7 @@
 
 local qm = {
 	Main = nil;
-	TopList = nil;
-	MainList = nil;
+	List = nil;
 }
 
 local function clearContent( pnl )
@@ -56,7 +55,7 @@ local function mainOnShowtime( obj )
 			cat.List:SetHideHeaders( true )
 			cat.List:SetQuickList()
 			cat.List.LineSelected = function( l, disp, data, line )
-				exsto.Menu.OpenPage( qm.TopList )
+				exsto.Menu.OpenPage( qm.List )
 				exsto.Menu.EnableBackButton()
 			end
 			
@@ -80,48 +79,116 @@ end
 
 local function clearContent( pnl )
 	if !pnl.Objects then pnl.Objects = {} return end
-	for _, o in ipairs( pnl.Objects ) do
-		for _, object in ipairs( o ) do
-			object:Remove();
-		end
+	pnl.LastState = {}
+	for cat, o in pairs( pnl.Objects ) do
+		pnl.LastState[ cat ] = o:GetExpanded();
+		o:Remove()
 	end
 	pnl.Objects = {}
 end
 
-local function listOnShowtime( obj )
-	local pnl = obj.Content
-	
-	-- Remove all our old stuff.
-	clearContent( pnl )
-	
-	-- We want to abide only by the commands we have in the top list.  So lets localize some variables.
-	local tops = qm.Data:ReadAll();
-	for id, comData in SortedPairsByMemberValue( exsto.Commands, "DisplayName", false ) do
-		if comData.QuickMenu and LocalPlayer():IsAllowed( id ) then
-			local f = false
-			for _, data in ipairs( tops ) do if data.Command == id then f = true end end
-			
-			-- If we're apart of the top list, construc the layout.
-			if f then				
-				local holder = {
-					pnl.Cat:CreateSpacer();
-					pnl.Cat:CreateTitle( comData.DisplayName );
-					pnl.Cat:CreateHelp( "Placeholder help." );
-					pnl.Cat:CreateButton( "Run" );
-				}
-				table.insert( pnl.Objects, holder )
-			end
-		end
+local function starredCommand( id )
+	local starred = qm.Data:ReadAll()
+	for _, data in ipairs( starred ) do
+		if data.Command == id then return true end
+	end
+	return false
+end
+
+local function commandClicked( list, display, data, line )
+
+end
+
+local function commandRightClicked( list, display, data, line )
+	if starredCommand( data.ID ) then -- We're starred.  Unstar us.
+		qm.Data:DropRow( data.ID )
+		qm.List.Content:Populate()
+	else
+		qm.Data:AddRow( {
+			Command = data.ID;
+			TimesUsed = 1;
+		} )
+		qm.List.Content:Populate()
 	end
 end
 
-local function initTopList( pnl )
-	pnl.Cat = pnl:CreateCategory( "Top Used" )
-	
-	pnl.More = vgui.Create( "ExQuickButton", pnl )
-		pnl.More:Dock( BOTTOM )
-		pnl.More:Text( "More..." )
-		pnl.More:SetEvil()
+local function listOnShowtime( obj )
+	local pnl = obj.Content
+	pnl:Populate();	
+end
+
+local function initList( pnl )
+
+	-- Throw this into a populate just because we need to run it when we change starred commands.
+	pnl.Populate = function()
+		-- Remove all our old stuff.
+		clearContent( pnl )
+		
+		-- Create the categories and the commands we want to mess with.
+		local tbl = {}
+		for id, comData in pairs( exsto.Commands ) do
+			if !tbl[ comData.Category ] and comData.QuickMenu then tbl[ comData.Category ] = {} end
+			if comData.QuickMenu then table.insert( tbl[ comData.Category ], id ) end
+		end
+		
+		-- Create the starred category.
+		local cat = pnl:CreateCategory( "Starred" )
+		
+		cat.List = vgui.Create( "ExListView", cat )
+			cat.List:DockMargin( 4, 0, 4, 0 )
+			cat.List:Dock( TOP )
+			cat.List:DisableScrollbar()
+			cat.List:AddColumn( "" )
+			cat.List.OnMouseWheeled = nil
+			cat.List:SetHideHeaders( true )
+			cat.List:SetQuickList()
+			cat.List.LineSelected = commandClicked
+			cat.List.LineRightSelected = commandRightClicked
+			
+		-- Add the starred to this list.
+		for _, data in ipairs( qm.Data:ReadAll() ) do
+			local command = exsto.Commands[ data.Command ]
+			cat.List:AddRow( { command.DisplayName }, command )
+		end
+		
+		cat.List:SetDirty( true )
+		cat.List:InvalidateLayout( true )
+		cat.List:SizeToContents()
+		
+		cat:InvalidateLayout( true )
+		cat:SetHideable( true )
+		table.insert( pnl.Objects, cat )
+		
+		-- Now we want to add in the rest of the commands, categorized.
+		for cat, commands in pairs( tbl ) do
+			local cat = pnl:CreateCategory( cat )
+			cat.List = vgui.Create( "ExListView", cat )
+				cat.List:DockMargin( 4, 0, 4, 0 )
+				cat.List:Dock( TOP )
+				cat.List:DisableScrollbar()
+				cat.List:AddColumn( "" )
+				cat.List.OnMouseWheeled = nil
+				cat.List:SetHideHeaders( true )
+				cat.List:SetQuickList()
+				cat.List.LineSelected = commandClicked
+				cat.List.LineRightSelected = commandRightClicked
+				
+			for _, id in ipairs( commands ) do
+				local command = exsto.Commands[ id ]
+				cat.List:AddRow( { command.DisplayName }, command )
+			end
+			
+			cat.List:SetDirty( true )
+			cat.List:InvalidateLayout( true )
+			cat.List:SizeToContents()
+			
+			cat:InvalidateLayout( true )
+			cat:SetHideable( true )
+			
+			cat:SetExpanded( pnl.LastState[ cat ] or false )
+			table.insert( pnl.Objects, cat )
+		end
+	end
 end
 
 function exsto.InitQuickMenu()
@@ -147,11 +214,12 @@ function exsto.InitQuickMenu()
 	exsto.Menu.QM = exsto.Menu.CreatePage( "quickmenu", initQuickMenu )
 		exsto.Menu.QM:SetTitle( "Quick Menu" )
 		exsto.Menu.QM:OnShowtime( mainOnShowtime )
+		exsto.Menu.QM:SetIcon( "exsto/quickmenu.png" )
 		exsto.Menu.QM:Build()
 		
-	qm.TopList = exsto.Menu.CreatePage( "quicktoplist", initTopList )
-		qm.TopList:SetTitle( "Top Used" )
-		qm.TopList:SetBackFunction( function() exsto.Menu.OpenPage( exsto.Menu.QM ) exsto.Menu.DisableBackButton() end )
-		qm.TopList:OnShowtime( listOnShowtime )
+	qm.List = exsto.Menu.CreatePage( "quicklist", initList )
+		qm.List:SetTitle( "Commands" )
+		qm.List:SetBackFunction( function() exsto.Menu.OpenPage( exsto.Menu.QM ) exsto.Menu.DisableBackButton() end )
+		qm.List:OnShowtime( listOnShowtime )
 		
 end

@@ -509,6 +509,7 @@ if CLIENT then
 		self.MainPage = exsto.Menu.CreatePage( "felsettings", pageInit )
 			self.MainPage:SetTitle( "Databases" )
 			self.MainPage:OnShowtime( requestDatabaseList )
+			self.MainPage:SetIcon( "exsto/database.png" )
 	
 		self.DetailsPage = exsto.Menu.CreatePage( "feldetails", detailsInit )
 			self.DetailsPage:SetTitle( "Details" )

@@ -55,7 +55,7 @@ local function constructMeta( obj )
 	end
 	
 	obj.SetTall = function( o, h )
-		--print( "Setting tall ", h )
+		print( "Setting tall ", h )
 		o:SetAnimSizeProgH( h or 0 );
 	end
 	
@@ -66,13 +66,13 @@ local function constructMeta( obj )
 	
 	obj.SetAnimationSizeW = function( o, w )
 		o:SetAnimSizeCurW( w or 0 );
-		o._Old.SetWide( o, w )
+		o._Old.SetSize( o, w, o:GetAnimSizeCurH() )
 	end
 	
 	obj.SetAnimationSizeH = function( o, h )
 		o:SetAnimSizeCurH( h or 0 );
-		--print( "updating animation size", h )
-		o._Old.SetTall( o, h )
+		print( "updating animation size", h )
+		o._Old.SetSize( o, o:GetAnimSizeCurW(), h )
 	end
 	
 	obj.SetAnimationSize = function( o, w, h )
@@ -84,13 +84,13 @@ local function constructMeta( obj )
 	obj.SetAnimSizeProgW = function( o, w ) o:GetAnimationData()[2][1][2] = w end
 	
 	obj.GetAnimSizeProgH = function( o ) return o:GetAnimationData()[2][2][2] end
-	obj.SetAnimSizeProgH = function( o, h ) o:GetAnimationData()[2][2][2] = h end
+	obj.SetAnimSizeProgH = function( o, h ) print( "Setting progress to ", h, "current is", o:GetAnimSizeCurH() ) o:GetAnimationData()[2][2][2] = h end
 	
 	obj.GetAnimSizeCurW = function( o ) return o:GetAnimationData()[2][1][1] end
 	obj.SetAnimSizeCurW = function( o, w ) o:GetAnimationData()[2][1][1] = w end
 	
 	obj.GetAnimSizeCurH = function( o ) return o:GetAnimationData()[2][2][1] end
-	obj.SetAnimSizeCurH = function( o, h ) o:GetAnimationData()[2][2][1] = h end
+	obj.SetAnimSizeCurH = function( o, h ) print( "Setting current to ", h ) o:GetAnimationData()[2][2][1] = h end
 	
 	-- Positioning
 	
@@ -185,12 +185,6 @@ local function constructMeta( obj )
 		return o:GetAnimationData()[3][1][1] > 0;
 	end
 	
-	
-	--[[obj.Close = function( o )
-		if o:GetAnimationClose() == ANIM_BLIND_UP then
-			o:SetTall( 0 )
-		end
-	end]]
 	-- Misc
 	
 	obj.ForceAnimationRefresh = function( o )
@@ -256,8 +250,8 @@ function exsto.Animations.Create( obj )
 		-- Size
 		{
 			{ w, w, OnUpdate = function( val )  obj:SetAnimationSizeW( val ) end };
-			{ h, h, OnUpdate = function( val )  obj:SetAnimationSizeH( val ) end };
-			OnComplete = function()  end;
+			{ h, h, OnUpdate = function( val ) print( "updating h ", val )  obj:SetAnimationSizeH( val ) end };
+			OnComplete = function() print( "Complete" ) end;
 		};
 		
 		-- Alpha

@@ -115,7 +115,36 @@ function PANEL:CreateCategory( catName )
 		cat.Header.UpdateColours = function( self, skin ) end
 		cat.Header._OldDoClick = cat.Header.DoClick
 		cat.Header.DoClick = function() end
+		cat.Think = function() end -- To prevent gmod's derma animations
 		cat.Paint = categoryPaint
+		
+		-- Animation overrides
+		cat.animSlide.Start = function() end
+		cat.animSlide.Run = function() end
+		
+		cat.Toggle = function( s )
+			if s:GetExpanded() then -- We need to close.
+				print( "Goign to header" )
+				s:SetTall( s.Header:GetTall() )
+			else -- Need to open
+				print( "Going to children" )
+				
+				-- This is stupid, but I think we have to do it.
+				local t = 0
+				for _, obj in ipairs( s:GetChildren() ) do
+					t = t + obj:GetTall() + 4 -- 4 padding?
+				end
+				print( t )
+				s:SetTall( t )
+			end
+			print( "RUNNING :))))))))))))))" )
+			s:SetExpanded( !s:GetExpanded() )
+			s:InvalidateLayout( true )
+		end
+		
+		cat.animSlide.Func = function( s, anim, delta, data )
+			print( "Doing something?" )
+		end 
 		
 		cat.SetHideable = setHideable
 		cat.CreateButton = createButton
@@ -130,7 +159,7 @@ function PANEL:CreateCategory( catName )
 		
 	cat:DockPadding( 4, 0, 4, 0 )
 	
-		
+	exsto.Animations.Create( cat )
 	self.Categories[ catName ] = cat
 	
 	return cat

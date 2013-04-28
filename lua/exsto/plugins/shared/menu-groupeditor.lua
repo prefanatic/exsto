@@ -489,6 +489,7 @@ elseif CLIENT then
 		self.Page = exsto.Menu.CreatePage( "rankeditor", editorInit )
 			self.Page:SetTitle( "Rank Editor" )
 			self.Page:OnBackstage( pushUpdate )
+			self.Page:SetIcon( "exsto/rank.png" )
 			
 		self.ImmunityPage = exsto.Menu.CreatePage( "immunity", immunityInit )
 			self.ImmunityPage:SetTitle( "Immunity" )

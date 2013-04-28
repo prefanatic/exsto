@@ -25,9 +25,11 @@ function PANEL:Init()
 
 end
 
+-- TODO: Fade the line into the background w/ alpha 0.
+
 function PANEL:Paint()
-	surface.SetDrawColor( 195, 195, 195, 195 )
-	surface.DrawLine( 0, self:GetTall() / 2, self:GetWide(), self:GetTall() / 2 )
+	surface.SetDrawColor( 228, 228, 228, 195 )
+	surface.DrawLine( ( self:GetWide() / 2 ) - ( self:GetWide() / 3 ), self:GetTall() / 2, ( self:GetWide() / 2 ) + ( self:GetWide() / 3 ), self:GetTall() / 2 )
 end
 
 derma.DefineControl( "ExSpacer", "Exsto ListView", PANEL, "DPanel" )

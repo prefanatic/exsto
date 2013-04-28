@@ -611,6 +611,7 @@ elseif CLIENT then
 		self.Page = exsto.Menu.CreatePage( "banlist", banInit )
 			self.Page:SetTitle( "Bans" )
 			self.Page:SetSearchable( true )
+			self.Page:SetIcon( "exsto/ban.png" )
 			self.Page:OnShowtime( onShowtime )
 		self.Details = exsto.Menu.CreatePage( "banlistdetails", banDetailsInit )
 			self.Details:SetTitle( "Details" )

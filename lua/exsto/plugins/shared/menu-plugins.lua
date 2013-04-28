@@ -165,6 +165,7 @@ elseif CLIENT then
 			self.Page:SetTitle( "Plugins" )
 			self.Page:SetSearchable( true )
 			self.Page:OnShowtime( onShowtime )
+			self.Page:SetIcon( "exsto/plugins.png" )
 			self.Page:OnSearchTyped( onSearch )
 			
 		self.Materials = {
