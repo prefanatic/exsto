@@ -52,6 +52,7 @@ function exstoShared( fl )
 end
 
 function exstoServer( fl )
+	if not SERVER then return end
 	include( "exsto/" .. fl )
 end
 

@@ -21,7 +21,7 @@
      ----------------------------------- ]]
 	
 		-- Modules
-	exstoClient( "fel.lua" )
+	exstoClient( "shared/fel.lua" )
 
 		-- Load our derma controls
 	exstoClientFolder( "menu/controls" )
@@ -44,7 +44,7 @@
 	exstoClient( "shared/sh_print.lua" )
 	exstoClient( "shared/sh_variables.lua" )
 
-	exstoClient( "shared/sh_access.lua" )
+	exstoClient( "shared/sh_groups.lua" )
 	exstoClient( "shared/sh_plugin_metatable.lua" )
 	exstoClient( "shared/sh_plugins.lua" )
 

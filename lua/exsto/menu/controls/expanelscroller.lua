@@ -101,6 +101,11 @@ local function createButton( o, txt )
 	return button
 end
 
+local function setHideable( o, b )
+	if b then o.Header.DoClick = o.Header._OldDoClick return end
+	o.Header.DoClick = function() end
+end
+
 function PANEL:CreateCategory( catName )
 	self.Categories = self.Categories or {}
 
@@ -108,11 +113,11 @@ function PANEL:CreateCategory( catName )
 		cat.Header:SetTextColor( Color( 0, 180, 255, 255 ) )
 		cat.Header:SetFont( "ExGenericText20" )
 		cat.Header.UpdateColours = function( self, skin ) end
-		--cat.Header.OnMousePressed = function( c )
-			--cat:Toggle() -- Fuck you garry.
-		--end
+		cat.Header._OldDoClick = cat.Header.DoClick
+		cat.Header.DoClick = function() end
 		cat.Paint = categoryPaint
 		
+		cat.SetHideable = setHideable
 		cat.CreateButton = createButton
 		cat.CreateTitle = createTitle
 		cat.CreateHelp = createHelp
