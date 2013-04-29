@@ -362,7 +362,7 @@ function exsto.Menu.Open()
 		posInfo = von.deserialize( f )
 	end
 	
-	if !exsto.Menu.QM then
+	if !exsto.Menu.Frame then
 		exsto.Menu.Initialize() 
 	else
 		exsto.Menu.BuildPages()

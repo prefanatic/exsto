@@ -101,6 +101,14 @@ local function createButton( o, txt )
 	return button
 end
 
+local function createMultichoice( o )
+	local button = vgui.Create( "ExVarMultiChoice", o )
+		button:Dock( TOP )
+		button:SetTall( 40 )
+		button:SetHeaderSize( 40 )
+	return button
+end
+
 local function setHideable( o, b )
 	if b then o.Header.DoClick = o.Header._OldDoClick return end
 	o.Header.DoClick = function() end
@@ -146,6 +154,7 @@ function PANEL:CreateCategory( catName )
 			print( "Doing something?" )
 		end 
 		
+		cat.CreateMultiChoice = createMultichoice
 		cat.SetHideable = setHideable
 		cat.CreateButton = createButton
 		cat.CreateTitle = createTitle

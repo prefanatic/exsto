@@ -96,7 +96,8 @@ local function starredCommand( id )
 end
 
 local function commandClicked( list, display, data, line )
-
+	qm.WorkingData = data
+	exsto.Menu.OpenPage( qm.Argument )
 end
 
 local function commandRightClicked( list, display, data, line )
@@ -148,7 +149,12 @@ local function initList( pnl )
 		-- Add the starred to this list.
 		for _, data in ipairs( qm.Data:ReadAll() ) do
 			local command = exsto.Commands[ data.Command ]
-			cat.List:AddRow( { command.DisplayName }, command )
+			local line = cat.List:AddRow( { command.DisplayName }, command )
+			
+			-- Overlay our quick button
+			line.Quick = vgui.Create( "ExQuickOverlay", line )
+			
+			exsto.Animations.Create( line.Quick )
 		end
 		
 		cat.List:SetDirty( true )
@@ -175,7 +181,12 @@ local function initList( pnl )
 				
 			for _, id in ipairs( commands ) do
 				local command = exsto.Commands[ id ]
-				cat.List:AddRow( { command.DisplayName }, command )
+				local line = cat.List:AddRow( { command.DisplayName }, command )
+				
+				-- Overlay our quick button
+				line.Quick = vgui.Create( "ExQuickOverlay", line )
+				
+				exsto.Animations.Create( line.Quick )
 			end
 			
 			cat.List:SetDirty( true )
@@ -185,10 +196,51 @@ local function initList( pnl )
 			cat:InvalidateLayout( true )
 			cat:SetHideable( true )
 			
-			cat:SetExpanded( pnl.LastState[ cat ] or false )
+			--cat:SetExpanded( pnl.LastState[ cat ] or false )
 			table.insert( pnl.Objects, cat )
 		end
 	end
+end
+
+local function clearContent( pnl )
+	for _, o in ipairs( pnl.Objects or {} ) do
+		for _, object in ipairs( o ) do object:Remove() end
+	end
+	pnl.Objects = {}
+end
+
+local function argOnShowtime( obj )
+	local pnl = obj.Content
+	local data = qm.WorkingData
+	
+	-- Clear old set
+	clearContent( pnl )
+	
+	pnl.Cat.Header:SetText( data.DisplayName )
+	
+	-- We need to construct our little cool things based on the return order of this command.
+	for count, argument in pairs( data.ReturnOrder ) do
+		if count != 1 then -- 1 is going to be the victim for us.  No need to look at it.
+			local spacer = pnl.Cat:CreateSpacer();
+			local title = pnl.Cat:CreateTitle( argument );
+			local multi = pnl.Cat:CreateMultiChoice();
+			
+			for count, data in pairs( data.ExtraOptionals[ argument ] ) do
+				multi:AddChoice( data.Display, data.Data or data.Display )
+			end
+			
+			multi:SetValue( data.Optional[ argument ] )
+			
+			table.insert( pnl.Objects, { title, multi, spacer } )
+		end
+	end
+	
+	pnl.Cat:InvalidateLayout( true )
+end
+
+local function initArgs( pnl )
+	pnl.Cat = pnl:CreateCategory( "%COMMAND_ID" )
+	
 end
 
 function exsto.InitQuickMenu()
@@ -221,5 +273,12 @@ function exsto.InitQuickMenu()
 		qm.List:SetTitle( "Commands" )
 		qm.List:SetBackFunction( function() exsto.Menu.OpenPage( exsto.Menu.QM ) exsto.Menu.DisableBackButton() end )
 		qm.List:OnShowtime( listOnShowtime )
+		qm.List:SetUnaccessable()
+		
+	qm.Argument = exsto.Menu.CreatePage( "quickargument", initArgs )
+		qm.Argument:SetTitle( "Arguments" )
+		qm.Argument:SetBackFunction( function() exsto.Menu.OpenPage( qm.List ) end )
+		qm.Argument:OnShowtime( argOnShowtime )
+		qm.Argument:SetUnaccessable()
 		
 end

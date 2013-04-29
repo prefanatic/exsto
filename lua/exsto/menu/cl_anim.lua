@@ -16,6 +16,61 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+local anim = {}
+	anim.__index = anim;
+
+function exsto.CreateAnimation( panel, onUpdate, onFinished )
+	local obj = {}
+	setmetatable( obj, anim )
+	
+	obj.Panel = panel;
+	obj.OnUpdate = onUpdate;
+	obj.OnFinished = onFinished or function() end;
+	
+	obj:SetMultiplier( 2 )
+
+	return obj
+end
+
+function anim:SetMultiplier( m ) self.Multiplier = m end
+
+function anim:Run()
+	if not self.Running then
+		return
+	end
+	
+	local delta = RealFrameTime() * ( ( self.To - self.Current ) / self.Multiplier ) * 40
+	print( self.From, self.Current, self.To, delta )
+	self.Current = self.Current + delta
+	
+	local percent = math.floor( self.Current / self.To )
+	if percent == 1 or percent == 0 then
+		self.Running = false
+		self.OnFinished( self.Panel, self.Current )
+		print( "Stopped" )
+	end
+	
+	self.OnUpdate( self.Panel, self.Current )
+end
+
+function anim:Stop()
+	self.Running = false
+end
+
+function anim:Start( from, to )
+	if self.Running then -- Oh no.
+		self.From = from
+		self.To = to
+		return
+	end
+	
+	self.Running = true
+	self.From = from
+	self.To = to
+	self.Current = from
+	
+end
+
 exsto.Animations = {
 	Handle = {};
 	Styles = {};
@@ -55,8 +110,12 @@ local function constructMeta( obj )
 	end
 	
 	obj.SetTall = function( o, h )
-		print( "Setting tall ", h )
+		--print( "Setting tall ", h )
 		o:SetAnimSizeProgH( h or 0 );
+	end
+	
+	obj.SetWide = function( o, w )
+		o:SetAnimSizeProgW( w or 0 )
 	end
 	
 	obj.ForceSize = function( o, w, h )
@@ -71,7 +130,7 @@ local function constructMeta( obj )
 	
 	obj.SetAnimationSizeH = function( o, h )
 		o:SetAnimSizeCurH( h or 0 );
-		print( "updating animation size", h )
+		--print( "updating animation size", h )
 		o._Old.SetSize( o, o:GetAnimSizeCurW(), h )
 	end
 	
@@ -84,13 +143,13 @@ local function constructMeta( obj )
 	obj.SetAnimSizeProgW = function( o, w ) o:GetAnimationData()[2][1][2] = w end
 	
 	obj.GetAnimSizeProgH = function( o ) return o:GetAnimationData()[2][2][2] end
-	obj.SetAnimSizeProgH = function( o, h ) print( "Setting progress to ", h, "current is", o:GetAnimSizeCurH() ) o:GetAnimationData()[2][2][2] = h end
+	obj.SetAnimSizeProgH = function( o, h ) o:GetAnimationData()[2][2][2] = h end
 	
 	obj.GetAnimSizeCurW = function( o ) return o:GetAnimationData()[2][1][1] end
 	obj.SetAnimSizeCurW = function( o, w ) o:GetAnimationData()[2][1][1] = w end
 	
 	obj.GetAnimSizeCurH = function( o ) return o:GetAnimationData()[2][2][1] end
-	obj.SetAnimSizeCurH = function( o, h ) print( "Setting current to ", h ) o:GetAnimationData()[2][2][1] = h end
+	obj.SetAnimSizeCurH = function( o, h ) o:GetAnimationData()[2][2][1] = h end
 	
 	-- Positioning
 	
@@ -250,8 +309,8 @@ function exsto.Animations.Create( obj )
 		-- Size
 		{
 			{ w, w, OnUpdate = function( val )  obj:SetAnimationSizeW( val ) end };
-			{ h, h, OnUpdate = function( val ) print( "updating h ", val )  obj:SetAnimationSizeH( val ) end };
-			OnComplete = function() print( "Complete" ) end;
+			{ h, h, OnUpdate = function( val )  obj:SetAnimationSizeH( val ) end };
+			OnComplete = function()  end;
 		};
 		
 		-- Alpha
@@ -275,10 +334,7 @@ function exsto.Animations.Think()
 	-- Loop through our handled objects.
 	for _, obj in ipairs( exsto.Animations.Handle ) do
 		-- Make sure they're valid first.
-		if obj and obj:IsValid() and obj:GetAnimationData() then
-		
-			-- If we can't see it, fuck it.  Lowers our clientside processing power.  Thanks DBug!
-			if !obj:IsVisible() then return end
+		if IsValid( obj ) and obj:IsVisible() and obj:GetAnimationData() then
 			
 			-- Loop through our supported animation styles.
 			for style, content in ipairs( obj:GetAnimationData() ) do
@@ -298,7 +354,8 @@ function exsto.Animations.Think()
 
 		else
 			-- Remove invalid.
-			exsto.Debug( "Animations --> Invalid object caught in animation table.  Removing.", 1 )
+			exsto.Debug( "Animations --> Invalid object caught in animation table.", 1 )
+			
 			
 			obj:Remove()
 			exsto.Animations.Handle[ _ ] = nil
