@@ -42,7 +42,7 @@ local function LoadVariables( srvVer )
 	exsto.StartTime = SysTime()
 	exsto.Debug = function() end -- To prevent nil functions if something tries debugging before the print system handles it.
 	
-	exsto.VERSION = file.Read( "exversion.txt", "DATA" ) or "unknown"
+	exsto.VERSION = file.Read( "data/exsto/version.txt", "GAME" ) or "unknown"
 end
 
 -- Helpers

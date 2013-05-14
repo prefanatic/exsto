@@ -417,6 +417,11 @@ function exsto.AddUsersOnJoin( ply, steamid, uniqueid )
 		-- Its his first time here!  Welcome him to the beautiful environment of Exsto.
 		ply:Print( exsto_CHAT, COLOR.NORM, "Hello!  This server is proudly running ", COLOR.NAME, "Exsto", COLOR.NORM, "!  For more information, visit the !menu" )
 	end
+	
+	-- Warn about development version
+	if exsto.VERSION == EX_DEVELOPMENT then
+		ply:Print( exsto_CHAT, COLOR.NAME, "Warning! ", COLOR.NORM, "This server is running a developmental build of ", COLOR.NAME, "Exsto", COLOR.NORM, ".  Please be aware that bugs may present themselves." )
+	end
 
 	if !game.IsDedicated() then
 		if ply:IsListenServerHost() and not rank then

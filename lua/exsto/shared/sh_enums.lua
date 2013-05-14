@@ -36,3 +36,8 @@ ALOADER_NO_IMMUNITY = enum();
 	----------------------------------- ]]
 ANIM_BLIND_UP = enum();
 ANIM_POP_UP = enum();
+
+--[[ -----------------------------------
+	Misc
+	----------------------------------- ]]
+EX_DEVELOPMENT = "devlopment";
