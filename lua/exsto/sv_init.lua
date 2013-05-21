@@ -87,6 +87,30 @@ function exsto.MenuCall( id, func )
 	end )
 end
 
+function exsto.GetMenuPlayers()
+	return exsto.MenuPlayers or {}
+end
+
+function exsto.AddMenuPlayer( reader )
+	if not exsto.MenuPlayers then exsto.MenuPlayers = {} end
+	local ply = reader:ReadSender()
+	
+	exsto.Debug( "Player '" .. ply:Nick() .. "' is active in the menu.", 2 )
+	table.insert( exsto.MenuPlayers, ply )
+end
+exsto.CreateReader( "ExMenuUser", exsto.AddMenuPlayer )
+
+function exsto.RemoveMenuPlayer( reader )
+	if not exsto.MenuPlayers then exsto.MenuPlayers = {} return end
+	local ply = reader:ReadSender()
+	
+	exsto.Debug( "Player '" .. ply:Nick() .. "' has left the menu.", 2 )
+	for _, p in ipairs( exsto.MenuPlayers ) do
+		if ply:SteamID() == p:SteamID() then table.remove( exsto.MenuPlayers, _ ) end
+	end
+end
+exsto.CreateReader( "ExMenuUserLeft", exsto.RemoveMenuPlayer )
+
 function exsto.BuildPlayerNicks()
 	local tbl = {}
 	
@@ -172,14 +196,6 @@ function exsto.dbGetPlayerByID( id )
 	end
 	return nil
 end
-
---[[
-timer.Create( "Exsto_TagCheck", 1, 0, function()
-	if not GetConVar( "sv_tags" ) then CreateConVar( "sv_tags", "" ) end -- Why do we have to do this now?
-	if !string.find( GetConVar( "sv_tags" ):GetString(), "Exsto" ) then
-		RunConsoleCommand( "sv_tags", GetConVar( "sv_tags" ):GetString() .. ",Exsto" )
-	end
-end ) ]]
 
 local succ, err = pcall( require, "json" );
 if !succ then

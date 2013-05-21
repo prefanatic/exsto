@@ -21,85 +21,149 @@ PLUGIN.FileTypes = {
 if SERVER then
 
 	function PLUGIN:Init()
-		
-		-- Check to see if the server owners want to input their restrictions through the file library.
-		if !file.Exists( "exsto_restrictions/readme.txt", "DATA" ) then
-			file.CreateDir( "exsto_restrictions" )
-			file.Write( "exsto_restrictions/readme.txt", [[
-	Please read the following on how to restrict ranks through these files.
 	
-	1. Please create a file inside this folder with the following style.
-		-- exsto_*TYPE*_restrict_*RANK*.txt
+		util.AddNetworkString( "ExReqRestrict" )
+		util.AddNetworkString( "ExReceiveRestriction" )
+		util.AddNetworkString( "ExUpdateRestriction" )
 		
-		Replace *TYPE* with either props, entities, sweps, or stools.
-		Replace *RANK* with the short ID of the rank, such as admin or superadmin.
-		
-	2. Place the information you want inside, separated by lines.  For example,
-		weapon_tmp
-		weapon_glock
-		weapon_something
-		
-		Place them on each line, separate from each other.  If using models, please have the .mdl at the end.
-		
-	3. Load up Exsto, it should automatically load up your restriction file and integrate it with the database.
-	
-			]] )
-			
-		end
-		
-		exsto.RestrictDB = FEL.CreateDatabase( "exsto_data_restrictions" )
-			exsto.RestrictDB:SetDisplayName( "Restrictions" )
-			exsto.RestrictDB:ConstructColumns( {
-				Rank = "VARCHAR(100):primary:not_null";
+		self.RankDB = FEL.CreateDatabase( "exsto_restriction_ranks" )
+			self.RankDB:SetDisplayName( "Rank Restrictions" )
+			self.RankDB:ConstructColumns( {
+				ID = "VARCHAR(100):primary:not_null";
 				Props = "TEXT";
 				Stools = "TEXT";
 				Entities = "TEXT";
 				Sweps = "TEXT";
 			} )
-
-		local data = exsto.RestrictDB:GetAll()
-		
-		if #data == 0 then 
 			
-			for k,v in pairs( exsto.Ranks ) do
-				self.Restrictions[ v.ID ] = {
-					Rank = v.ID,
-					Props = {},
-					Stools = {},
-					Entities = {},
-					Sweps = {},
-				}
-				
-				self:SaveData( "all", v.ID )
-			end
-
-			self:LoadFileRestrictions()
-			return
+		self.PlayerDB = FEL.CreateDatabase( "exsto_restriction_players" )
+			self.PlayerDB:SetDisplayName( "Player Restrictions" )
+			self.PlayerDB:ConstructColumns( {
+				ID = "VARCHAR(50):primary:not_null";
+				Props = "TEXT";
+				Stools = "TEXT";
+				Entities = "TEXT";
+				Sweps = "TEXT";
+			} )
 			
-		end
-
-		for _, info in pairs( data ) do
-			self.Restrictions[ info.Rank ] = {
-				Rank = info.Rank,
-				Props = von.deserialize( info.Props ),
-				Stools = von.deserialize( info.Stools ),
-				Entities = von.deserialize( info.Entities ),
-				Sweps = von.deserialize( info.Sweps ),
-			}
-		end
-		
-		self:LoadFileRestrictions()
-		
-	end
-	
-	-- Reggh, this gets over-written after its created by SOMEONE.
-	timer.Simple( 1, function()
+		-- Override GetCount
 		local oldCount = exsto.Registry.Player.GetCount
 		function exsto.Registry.Player.GetCount( self, ... )
 			if self.ExNoLimits and PLUGIN:IsEnabled() then return -1 end
 			return oldCount( self, ... )
 		end
-	end )
+		
+		-- Quality of service on the ranks database.
+		local data = self.RankDB:ReadAll()
+		for rID, rank in pairs( exsto.Ranks ) do
+			local f = false
+			for _, d in ipairs( data ) do
+				if d.ID == rID then f = true end
+			end
+			
+			if not f then
+				self.RankDB:AddRow( {
+					ID = rID;
+					Props = von.serialize( {} );
+					Stools = von.serialize( {} );
+					Entities = von.serialize( {} );
+					Sweps = von.serialize( {} );
+				} )
+			end
+		end
+		
+		-- Restriction types
+		self.RestrictionTypes = {
+			"Sweps",
+			"Stools",
+			"Props",
+			"Entities",
+		}
+	
+	end
+	
+	function PLUGIN:GetRestrictionType( short )
+		return self.RestrictionTypes[ short ]
+	end
+	function PLUGIN:GetRestrictionList( short )
+		if short == 1 then return weapons.GetList()
+			elseif short == 2 then return
+			elseif short == 3 then return
+			elseif short == 4 then return list.Get( "SpawnableEntities" )
+		end
+	end
+	function PLUGIN:ConstructDataSave( short, id, data )
+		if short == 1 then return { ID = id, Sweps = data }
+			elseif short == 2 then return { ID = id, Stools = data }
+			elseif short == 3 then return { ID = id, Props = data }
+			elseif short == 4 then return { ID = id, Entities = data }
+		end
+	end
+	
+	-- Networking
+	function PLUGIN:ExReqRestrict( reader )
+		return reader:ReadSender():IsAllowed( "restrictions" )
+	end
+	function PLUGIN:SendRestrictions( reader )
+		local w = reader:ReadShort()
+		local t = reader:ReadBool()
+		local id = reader:ReadString()
+		local ply = reader:ReadSender()
+		self:SendRestrictionData( w, t, id, ply )
+	end
+	PLUGIN:CreateReader( "ExReqRestrict", PLUGIN.SendRestrictions )
+	
+	function PLUGIN:SendRestrictionData( w, t, id, ply )
+		local sender = exsto.CreateSender( "ExReceiveRestriction", ply )
+		local lst = self:GetRestrictionList( w )
+		local pn = "menu players"
+		if type( ply ) == "Player" then pn = ply:Nick() end
+		
+		local db = self.PlayerDB
+		if t then db = self.RankDB end
+
+		self:Debug( "Sending '" .. w .. "' restriction for '" .. id .. "' on player '" .. pn .. "'", 1 )
+		
+		local data = von.deserialize( db:GetData( id, self:GetRestrictionType( w ) ) or "" )
+
+		sender:AddShort( w )
+		sender:AddShort( table.Count( lst ) )
+		for _, ent in pairs( lst ) do
+			sender:AddString( ent.ClassName )
+			
+			if data and data[ ent.ClassName ] then
+				sender:AddBool( data[ ent.ClassName ] )
+			else
+				sender:AddBool( false )
+			end
+		end
+		sender:Send()
+	end
+	
+	function PLUGIN:ExUpdateRestriction( reader )
+		return reader:ReadSender():IsAllowed( "restrictions" )
+	end
+	function PLUGIN:UpdateRestriction( reader )
+		local w = reader:ReadShort()
+		local t = reader:ReadBool()
+		local id = reader:ReadString()
+		local class = reader:ReadString()
+		local enabled = reader:ReadBool()
+		local ply = reader:ReadSender()
+		local db = self.PlayerDB
+		if t then db = self.RankDB end
+		
+		self:Debug( "Restricting '" .. w .. "' class '" .. class .. "' under identifier '" .. id .. "' as value '" .. tostring( enabled ) .. "'", 1 )
+		
+		local data = von.deserialize( db:GetData( id, self:GetRestrictionType( w ) ) or "" )
+			data[ class ] = enabled;
+			
+		db:AddRow( self:ConstructDataSave( w, id, von.serialize( data ) ) )
+		
+		-- Resend
+		self:SendRestrictionData( w, t, id, exsto.GetMenuPlayers() )
+	end
+	PLUGIN:CreateReader( "ExUpdateRestriction", PLUGIN.UpdateRestriction )
 	
 	function PLUGIN:NoLimits( caller, ply )
 		local t = " has enabled limits on "
@@ -503,29 +567,276 @@ if SERVER then
 
 elseif CLIENT then
 
-	function PLUGIN.RecieveRestrictions( data )
-		PLUGIN.Restrictions = data
+	local function invalidate( cat, l )
+		l:SetDirty( true )
+		l:InvalidateLayout( true )
+		
+		l:SizeToContents()
+		
+		cat:InvalidateLayout( true )
 	end
-	//exsto.UMHook( "ExRecRestrict", PLUGIN.RecieveRestrictions )
 	
-	function PLUGIN.Build()
+	local function restrictLineSelected( lst, disp, data, line )
+		PLUGIN.WorkingItem = {
+			Name = disp[1];
+			Data = data;
+			Type = type( data ) == "string" and 1 or 0; -- Ranks are 1, players are 0
+		}
+		
+		exsto.Menu.EnableBackButton()
+		exsto.Menu.OpenPage( PLUGIN.Select )
 	end
 
-	function PLUGIN.Reload( panel )
-		PLUGIN.Restrictions = {}
-		RunConsoleCommand( "_SendRestrictions" )	
+	local function restrictInit( pnl )
+		
+		local rankCat = pnl:CreateCategory( "Ranks" )
+		pnl.RankList = vgui.Create( "ExListView", rankCat )
+			pnl.RankList:Dock( TOP )
+			pnl.RankList:DisableScrollbar()
+			pnl.RankList:SetQuickList()
+			pnl.RankList:AddColumn( "" )
+			pnl.RankList:SetHideHeaders( true )
+			pnl.RankList.LineSelected = restrictLineSelected
+			pnl.RankList.Populate = function( s, data )
+				s:Clear()
+				
+				for rID, rank in pairs( data ) do					
+					s:AddRow( { rank.Name }, rID )
+				end
+				
+				s:SortByColumn( 1 )
+				invalidate( rankCat, s )
+			end
+			
+		local playerCat = pnl:CreateCategory( "Players" )
+		pnl.PlayerList = vgui.Create( "ExListView", playerCat )
+			pnl.PlayerList:Dock( TOP )
+			pnl.PlayerList:DisableScrollbar()
+			pnl.PlayerList:SetQuickList()
+			pnl.PlayerList:AddColumn( "" )
+			pnl.PlayerList:SetHideHeaders( true )
+			pnl.PlayerList.LineSelected = restrictLineSelected
+			pnl.PlayerList.Populate = function( s, data )
+				s:Clear()
+				
+				for _, ply in ipairs( player.GetAll() ) do					
+					s:AddRow( { ply:Nick() }, ply:SteamID() )
+				end
+				
+				s:SortByColumn( 1 )
+				invalidate( playerCat, s )
+			end
+			
 	end
 
-	--[[
-	Menu.CreatePage( {
-		Title = "Rank Restrictor",
-		Short = "rankrestrictions",
-		Flag = "rankrestrictions",
-		}, 
-		function( panel )
-			PLUGIN.Reload( panel )
+	local function onRestrictShowtime( obj )
+		local pnl = obj.Content
+		pnl.RankList:Populate( exsto.Ranks )
+		pnl.PlayerList:Populate()
+	end
+	
+	local function selectInit( pnl )
+		pnl.Cat = pnl:CreateCategory( "%ITEM" )
+		
+		pnl.Cat:CreateTitle( "Weapons" )
+		pnl.Cat:CreateHelp( "Select SWEPS to restrict to users or ranks." )
+		local button = pnl.Cat:CreateButton( "Go" )
+			button.OnClick = function( b )
+				exsto.Menu.OpenPage( PLUGIN.WeaponPage )
+			end
+		
+		pnl.Cat:CreateSpacer()
+		
+		pnl.Cat:CreateTitle( "Props" )
+		pnl.Cat:CreateHelp( "View a list of all restricted props.  To add a prop, right click on it in the spawn menu." )
+		local button = pnl.Cat:CreateButton( "Go" )
+			button.OnClick = function( b )
+				exsto.Menu.OpenPage( PLUGIN.PropPage )
+			end
+		
+		pnl.Cat:CreateSpacer()
+		
+		pnl.Cat:CreateTitle( "Tools" )
+		pnl.Cat:CreateHelp( "Select STOOLS to restrict to users or ranks." )
+		local button = pnl.Cat:CreateButton( "Go" )
+			button.OnClick = function( b )
+				exsto.Menu.OpenPage( PLUGIN.ToolPage )
+			end
+		
+		pnl.Cat:CreateSpacer()
+		
+		pnl.Cat:CreateTitle( "Entities" )
+		pnl.Cat:CreateHelp( "Select entities to restrict to users or ranks." )
+		local button = pnl.Cat:CreateButton( "Go" )
+			button.OnClick = function( b )
+				exsto.Menu.OpenPage( PLUGIN.ENTPage )
+			end
+		
+		pnl.Cat:InvalidateLayout( true )
+	end
+	
+	local function onSelectShowtime( obj )
+		local pnl = obj.Content
+		
+		pnl.Cat.Header:SetText( PLUGIN.WorkingItem.Name )
+	end
+	
+	-- Reusables
+	
+	local function lineOver( line )
+		surface.SetDrawColor( 255, 255, 255, 255 )
+		-- When restricted, 2 == true. So we set red, other wise green.
+		if line.Info.Data[ 2 ] then surface.SetMaterial( PLUGIN.Materials.Red ) else surface.SetMaterial( PLUGIN.Materials.Green ) end
+		surface.DrawTexturedRect( 5, (line:GetTall() / 2 ) - 3, 8, 8 )
+	end
+	local function backToSelect( obj )
+		exsto.Menu.OpenPage( PLUGIN.Select )
+	end
+	local function request( w )
+		local sender = exsto.CreateSender( "ExReqRestrict" )
+			sender:AddShort( w )
+			sender:AddBool( PLUGIN.WorkingItem.Type ) -- What type this is
+			sender:AddString( PLUGIN.WorkingItem.Data ) -- What we're looking for
+		sender:Send()
+	end
+	local function update( w, data )
+		-- Push the change up to the server.
+		local sender = exsto.CreateSender( "ExUpdateRestriction" )
+			sender:AddShort( w )
+			sender:AddBool( PLUGIN.WorkingItem.Type )
+			sender:AddString( PLUGIN.WorkingItem.Data )
+			sender:AddString( data[ 1 ] )
+			sender:AddBool( not data[ 2 ] ) -- This "SHOULD" switch false to true and true to false :)
+		sender:Send()
+	end
+	local function recRestrict( reader )
+		local w = reader:ReadShort()
+		local pg = PLUGIN.WeaponPage
+		if w == 2 then pg = PLUGIN.ToolPage
+			elseif w == 3 then pg = PLUGIN.PropPage
+			elseif w == 4 then pg = PLUGIN.ENTPage
 		end
-	)]]
+		
+		if not pg:IsActive() then return end
+		
+		local tbl = {}
+		for I = 1, reader:ReadShort() do
+			table.insert( tbl, { reader:ReadString(), reader:ReadBool() } ) -- Name, restricted
+		end
+
+		pg.Content.List:Populate( tbl )
+	end
+	exsto.CreateReader( "ExReceiveRestriction", recRestrict )
+	
+	--[[ -----------------------
+		Weapon Restrictions ----
+		------------------------ ]]
+		
+	-- This is literally copy and pasted 3/4 times for the other restrictions.  Fuck making it clean.  I really just want to release exsto now.
+
+	local function weaponInit( pnl )
+		pnl.Cat = pnl:CreateCategory( "Weapons" )
+		
+		pnl.List = vgui.Create( "ExListView", pnl.Cat )
+			pnl.List:DockMargin( 4, 0, 4, 0 )
+			pnl.List:Dock( TOP )
+			pnl.List:DisableScrollbar()
+			pnl.List:AddColumn( "" )
+			pnl.List:SetHideHeaders( true )
+			pnl.List:SetQuickList()
+			pnl.List:LinePaintOver( lineOver )
+			pnl.List:SetTextInset( 25 )
+			pnl.List.Populate = function( o, data )
+				o:Clear()
+				for I = 1, #data do
+					o:AddRow( { data[ I ][ 1 ] }, data[ I ] )
+				end
+				o:SortByColumn( 1 )
+				invalidate( pnl.Cat, o )
+			end
+			
+			pnl.List.LineSelected = function( lst, disp, data, line )
+				update( 1, data )
+			end
+			
+		pnl.Cat:InvalidateLayout( true )
+	end
+
+	--[[ -----------------------
+		ENT Restrictions ----
+		------------------------ ]]
+	
+	local function ENTInit( pnl )
+		pnl.Cat = pnl:CreateCategory( "Entities" )
+		
+		pnl.List = vgui.Create( "ExListView", pnl.Cat )
+			pnl.List:DockMargin( 4, 0, 4, 0 )
+			pnl.List:Dock( TOP )
+			pnl.List:DisableScrollbar()
+			pnl.List:AddColumn( "" )
+			pnl.List:SetHideHeaders( true )
+			pnl.List:SetQuickList()
+			pnl.List:LinePaintOver( lineOver )
+			pnl.List:SetTextInset( 25 )
+			pnl.List.Populate = function( o, data )
+				o:Clear()
+				for I = 1, #data do
+					o:AddRow( { data[ I ][ 1 ] }, data[ I ] )
+				end
+				o:SortByColumn( 1 )
+				invalidate( pnl.Cat, o )
+			end
+			
+			pnl.List.LineSelected = function( lst, disp, data, line )
+				update( 4, data )
+			end
+			
+		pnl.Cat:InvalidateLayout( true )
+	end
+
+	function PLUGIN:Init()
+		self.List = exsto.Menu.CreatePage( "restrictions", restrictInit )
+			self.List:SetTitle( "Restrictions" )
+			self.List:SetSearchable( true )
+			self.List:OnShowtime( onRestrictShowtime )
+			self.List:OnSearchTyped( onRestrictTyped )
+			
+		self.Select = exsto.Menu.CreatePage( "restrictionselect", selectInit )
+			self.Select:SetTitle( "Restrictions" )
+			self.Select:OnShowtime( onSelectShowtime )
+			self.Select:SetUnaccessable()
+			self.Select:SetBackFunction( function( obj )
+				exsto.Menu.OpenPage( PLUGIN.List )
+				exsto.Menu.DisableBackButton()
+				
+				PLUGIN.WorkingItem = nil
+			end )
+			
+		self.WeaponPage = exsto.Menu.CreatePage( "restrictweapon", weaponInit )
+			self.WeaponPage:SetTitle( "Weapons" )
+			self.WeaponPage:OnShowtime( function( obj ) request( 1 ) end )
+			self.WeaponPage:SetBackFunction( backToSelect )
+			self.WeaponPage:SetUnaccessable()
+			
+		self.ToolPage = exsto.Menu.CreatePage( "restricttool", toolInit )
+			self.ToolPage:SetTitle( "Tools" )
+			self.ToolPage:OnShowtime( onToolShowtime )
+			self.ToolPage:SetBackFunction( backToSelect )
+			self.ToolPage:SetUnaccessable()
+			
+		self.ENTPage = exsto.Menu.CreatePage( "restrictent", ENTInit )
+			self.ENTPage:SetTitle( "Entities" )
+			self.ENTPage:OnShowtime( function( obj ) request( 4 ) end )
+			self.ENTPage:SetBackFunction( backToSelect )
+			self.ENTPage:SetUnaccessable()
+			
+		self.Materials = {
+			Red = Material( "exsto/red.png" );
+			Green = Material( "exsto/green.png" );
+		}
+	end
+	
+	
 	
 end
 

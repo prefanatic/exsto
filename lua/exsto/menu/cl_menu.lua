@@ -388,6 +388,9 @@ function exsto.Menu.Open()
 		gui.SetMousePos( pos.x, pos.y )
 	end
 	
+	-- Call up to the server to let them know that this crazy shit is happening.
+	exsto.CreateSender( "ExMenuUser" ):Send()
+	
 	exsto.Menu._Opened = true
 end
 
@@ -410,6 +413,9 @@ function exsto.Menu.Close()
 	
 	-- Backstage our open page.  Just for OnBackstage.
 	exsto.Menu.ActivePage:Backstage()
+	
+	-- Goodbye!
+	exsto.CreateSender( "ExMenuUserLeft" ):Send()
 end
 
 function exsto.Menu.Toggle()

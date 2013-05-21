@@ -67,6 +67,7 @@ function sender:SetFilter( filter )
 
 end
 
+function sender:AddBit( b ) net.WriteBit( b ) end
 function sender:AddChar( char ) net.WriteFloat( char ) end
 function sender:AddString( str ) net.WriteString( tostring( str ) ) end
 function sender:AddLong( num ) net.WriteDouble( num ) end
@@ -142,6 +143,7 @@ function exsto.CreateReader( id, func )
 	return obj
 end
 
+function reader:ReadBit() return net.ReadBit() end
 function reader:ReadSender() return self._Sender end
 function reader:ReadLength() return self._Len end
 function reader:ReadChar() return net.ReadFloat() end
@@ -176,4 +178,5 @@ function reader:ReadVariable()
 end
 
 	
-	
+print( "faggot" )
+hook.Call( "ExNetworkingReady" )

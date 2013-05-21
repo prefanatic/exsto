@@ -53,6 +53,8 @@ exsto.Net = {
 		"ExCreateFlag";
 		"ExClientLoad";
 		"ExClientReady";
+		"ExMenuUser";
+		"ExMenuUserLeft";
 	},
 	NotifiedNetStrings = {}
 }
