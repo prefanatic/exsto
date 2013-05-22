@@ -86,10 +86,22 @@ if SERVER then
 		return self.RestrictionTypes[ short ]
 	end
 	function PLUGIN:GetRestrictionList( short )
-		if short == 1 then return weapons.GetList()
-			elseif short == 2 then return
-			elseif short == 3 then return
-			elseif short == 4 then return list.Get( "SpawnableEntities" )
+		if short == 1 then 
+			local lst = table.Copy( weapons.GetList() )
+				lst[ "gmod_tool" ] = nil
+			return lst 
+		elseif short == 2 then 
+			for _, wep in pairs( weapons.GetList() ) do
+				if wep.ClassName == "gmod_tool" then 
+					local t = wep.Tool
+					for name, tool in pairs( t ) do
+						t[ name ].ClassName = name
+					end
+					return t
+				end
+			end
+		elseif short == 3 then return {}
+		elseif short == 4 then return list.Get( "SpawnableEntities" )
 		end
 	end
 	function PLUGIN:ConstructDataSave( short, id, data )
@@ -113,6 +125,16 @@ if SERVER then
 	end
 	PLUGIN:CreateReader( "ExReqRestrict", PLUGIN.SendRestrictions )
 	
+	function PLUGIN:SendPropRestrictionData( data, w, ply, sender )
+		sender:AddShort( w )
+		sender:AddShort( table.Count( data ) )
+		for _, model in ipairs( data ) do
+			sender:AddString( model )
+			sender:AddBool( true )
+		end
+		sender:Send()
+	end
+	
 	function PLUGIN:SendRestrictionData( w, t, id, ply )
 		local sender = exsto.CreateSender( "ExReceiveRestriction", ply )
 		local lst = self:GetRestrictionList( w )
@@ -125,6 +147,8 @@ if SERVER then
 		self:Debug( "Sending '" .. w .. "' restriction for '" .. id .. "' on player '" .. pn .. "'", 1 )
 		
 		local data = von.deserialize( db:GetData( id, self:GetRestrictionType( w ) ) or "" )
+		
+		if w == 3 then self:SendPropRestrictionData( data, w, ply, sender ) return end
 
 		sender:AddShort( w )
 		sender:AddShort( table.Count( lst ) )
@@ -263,7 +287,7 @@ if SERVER then
 		exsto.RestrictDB:AddRow( saveData )
 
 	end
-	
+	--[[
 	function PLUGIN:CanTool( ply, trace, tool )
 		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
 			self:Debug( "Unable to access rank restriction table.  Making one for: " .. ply:GetRank(), 1 )
@@ -321,7 +345,7 @@ if SERVER then
 			ply:Print( exsto_CHAT, COLOR.NORM, "The entity ", COLOR.NAME, class, COLOR.NORM, " is disabled for your rank!" )
 			return false
 		end
-	end
+	end]]
 	
 	function PLUGIN:AllowObject( owner, rank, object, data )
 		
@@ -793,6 +817,72 @@ elseif CLIENT then
 			
 		pnl.Cat:InvalidateLayout( true )
 	end
+	
+	--[[ -----------------------
+		Tools! ----
+		------------------------ ]]
+	
+	local function toolInit( pnl )
+		pnl.Cat = pnl:CreateCategory( "Tools" )
+		
+		pnl.List = vgui.Create( "ExListView", pnl.Cat )
+			pnl.List:DockMargin( 4, 0, 4, 0 )
+			pnl.List:Dock( TOP )
+			pnl.List:DisableScrollbar()
+			pnl.List:AddColumn( "" )
+			pnl.List:SetHideHeaders( true )
+			pnl.List:SetQuickList()
+			pnl.List:LinePaintOver( lineOver )
+			pnl.List:SetTextInset( 25 )
+			pnl.List.Populate = function( o, data )
+				o:Clear()
+				for I = 1, #data do
+					o:AddRow( { data[ I ][ 1 ] }, data[ I ] )
+				end
+				o:SortByColumn( 1 )
+				invalidate( pnl.Cat, o )
+			end
+			
+			pnl.List.LineSelected = function( lst, disp, data, line )
+				update( 2, data )
+			end
+			
+		pnl.Cat:InvalidateLayout( true )
+	end
+	
+	--[[ -----------------------
+		Props! ----
+		------------------------ ]]
+		
+	local function propInit( pnl )
+		pnl.Cat = pnl:CreateCategory( "Props" )
+		
+		pnl.List = vgui.Create( "ExListView", pnl.Cat )
+			pnl.List:DockMargin( 4, 0, 4, 0 )
+			pnl.List:Dock( TOP )
+			pnl.List:DisableScrollbar()
+			pnl.List:AddColumn( "" )
+			pnl.List:SetHideHeaders( true )
+			pnl.List:SetQuickList()
+			pnl.List:LinePaintOver( lineOver )
+			pnl.List:SetTextInset( 25 )
+			pnl.List.Populate = function( o, data )
+				o:Clear()
+				for I = 1, #data do
+					o:AddRow( { data[ I ][ 1 ] }, data[ I ] )
+				end
+				o:SortByColumn( 1 )
+				invalidate( pnl.Cat, o )
+			end
+			
+			pnl.List.LineSelected = function( lst, disp, data, line )
+				update( 3, data )
+			end
+			
+		pnl.Cat:CreateHelp( "This lists the props currently restricted to the item you're working on.  To restrict the props, go into the spawn menu and right click on the prop." )
+			
+		pnl.Cat:InvalidateLayout( true )
+	end
 
 	function PLUGIN:Init()
 		self.List = exsto.Menu.CreatePage( "restrictions", restrictInit )
@@ -820,7 +910,7 @@ elseif CLIENT then
 			
 		self.ToolPage = exsto.Menu.CreatePage( "restricttool", toolInit )
 			self.ToolPage:SetTitle( "Tools" )
-			self.ToolPage:OnShowtime( onToolShowtime )
+			self.ToolPage:OnShowtime( function( obj ) request( 2 ) end )
 			self.ToolPage:SetBackFunction( backToSelect )
 			self.ToolPage:SetUnaccessable()
 			
@@ -830,10 +920,52 @@ elseif CLIENT then
 			self.ENTPage:SetBackFunction( backToSelect )
 			self.ENTPage:SetUnaccessable()
 			
+		self.PropPage = exsto.Menu.CreatePage( "restrictprop", propInit )
+			self.PropPage:SetTitle( "Props" )
+			self.PropPage:OnShowtime( function( obj ) request( 3 ) end )
+			self.PropPage:SetBackFunction( backToSelect )
+			self.PropPage:SetUnaccessable()
+			
 		self.Materials = {
 			Red = Material( "exsto/red.png" );
 			Green = Material( "exsto/green.png" );
 		}
+		
+		properties.Add( "ExRestrictProp", {
+			MenuLabel = "Restrict to...",
+			Order = 2001,
+			Filter = function( s, ent, ply )
+				if not IsValid( ent ) or ent:IsPlayer() then return false end
+				return ply:IsAllowed( "restrictions" )
+			end,
+			
+			MenuOpen = function( s, option, ent, tr )
+				local sub = option:AddSubMenu()
+				
+				-- Ranks first, then players
+				for rID, rank in pairs( exsto.Ranks ) do
+					sub:AddOption( rank.Name, function()
+						PLUGIN.WorkingItem = {
+							Type = 1,
+							Data = rID,
+						}
+						update( 3, { ent:GetModel(), true } )
+					end )
+				end
+				
+				sub:AddSpacer()
+				
+				for _, ply in ipairs( player.GetAll() ) do
+					sub:AddOption( ply:Nick(), function()
+						PLUGIN.WorkingItem = {
+							Type = 0,
+							Data = ply:SteamID(),
+						}
+						update( 3, { ent:GetModel(), true } )
+					end )
+				end
+			end,
+		} )
 	end
 	
 	
