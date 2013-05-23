@@ -26,35 +26,26 @@ if SERVER then
 		util.AddNetworkString( "ExReceiveRestriction" )
 		util.AddNetworkString( "ExUpdateRestriction" )
 		
-		self.RankDB = FEL.CreateDatabase( "exsto_restriction_ranks" )
-			self.RankDB:SetDisplayName( "Rank Restrictions" )
-			self.RankDB:ConstructColumns( {
+		self.DB = FEL.CreateDatabase( "exsto_restriction" )
+			self.DB:SetDisplayName( "Restrictions" )
+			self.DB:ConstructColumns( {
 				ID = "VARCHAR(100):primary:not_null";
 				Props = "TEXT";
 				Stools = "TEXT";
 				Entities = "TEXT";
 				Sweps = "TEXT";
 			} )
-			
-		self.PlayerDB = FEL.CreateDatabase( "exsto_restriction_players" )
-			self.PlayerDB:SetDisplayName( "Player Restrictions" )
-			self.PlayerDB:ConstructColumns( {
-				ID = "VARCHAR(50):primary:not_null";
-				Props = "TEXT";
-				Stools = "TEXT";
-				Entities = "TEXT";
-				Sweps = "TEXT";
-			} )
-			
+
 		-- Override GetCount
 		local oldCount = exsto.Registry.Player.GetCount
 		function exsto.Registry.Player.GetCount( self, ... )
 			if self.ExNoLimits and PLUGIN:IsEnabled() then return -1 end
+			if table.HasValue( self.LimitHandler, self:GetRank() ) and PLUGIN:IsEnabled() then return -1 end
 			return oldCount( self, ... )
 		end
 		
 		-- Quality of service on the ranks database.
-		local data = self.RankDB:ReadAll()
+		local data = self.DB:ReadAll()
 		for rID, rank in pairs( exsto.Ranks ) do
 			local f = false
 			for _, d in ipairs( data ) do
@@ -62,7 +53,7 @@ if SERVER then
 			end
 			
 			if not f then
-				self.RankDB:AddRow( {
+				self.DB:AddRow( {
 					ID = rID;
 					Props = von.serialize( {} );
 					Stools = von.serialize( {} );
@@ -79,6 +70,8 @@ if SERVER then
 			"Props",
 			"Entities",
 		}
+		
+		self.LimitHandler = {}
 	
 	end
 	
@@ -118,48 +111,46 @@ if SERVER then
 	end
 	function PLUGIN:SendRestrictions( reader )
 		local w = reader:ReadShort()
-		local t = reader:ReadBool()
 		local id = reader:ReadString()
 		local ply = reader:ReadSender()
-		self:SendRestrictionData( w, t, id, ply )
+		self:SendRestrictionData( w, id, ply )
 	end
 	PLUGIN:CreateReader( "ExReqRestrict", PLUGIN.SendRestrictions )
 	
 	function PLUGIN:SendPropRestrictionData( data, w, ply, sender )
 		sender:AddShort( w )
+
 		sender:AddShort( table.Count( data ) )
-		for _, model in ipairs( data ) do
-			sender:AddString( model )
-			sender:AddBool( true )
+		for _, d in pairs( data ) do
+			sender:AddString( d.Class )
+			sender:AddBool( d.Enabled )
 		end
 		sender:Send()
 	end
 	
-	function PLUGIN:SendRestrictionData( w, t, id, ply )
+	function PLUGIN:SendRestrictionData( w, id, ply )
 		local sender = exsto.CreateSender( "ExReceiveRestriction", ply )
 		local lst = self:GetRestrictionList( w )
 		local pn = "menu players"
 		if type( ply ) == "Player" then pn = ply:Nick() end
-		
-		local db = self.PlayerDB
-		if t then db = self.RankDB end
 
 		self:Debug( "Sending '" .. w .. "' restriction for '" .. id .. "' on player '" .. pn .. "'", 1 )
 		
-		local data = von.deserialize( db:GetData( id, self:GetRestrictionType( w ) ) or "" )
+		local data = self:GetRestrictionData( id, w )
 		
 		if w == 3 then self:SendPropRestrictionData( data, w, ply, sender ) return end
-
+		
 		sender:AddShort( w )
 		sender:AddShort( table.Count( lst ) )
 		for _, ent in pairs( lst ) do
 			sender:AddString( ent.ClassName )
-			
-			if data and data[ ent.ClassName ] then
-				sender:AddBool( data[ ent.ClassName ] )
-			else
-				sender:AddBool( false )
+
+			local f
+			for _, d in ipairs( data ) do
+				if d.Class == ent.ClassName then f = true sender:AddBool( d.Enabled ) break end
 			end
+			
+			if not f then sender:AddBool( false ) end
 		end
 		sender:Send()
 	end
@@ -169,25 +160,68 @@ if SERVER then
 	end
 	function PLUGIN:UpdateRestriction( reader )
 		local w = reader:ReadShort()
-		local t = reader:ReadBool()
 		local id = reader:ReadString()
 		local class = reader:ReadString()
 		local enabled = reader:ReadBool()
 		local ply = reader:ReadSender()
-		local db = self.PlayerDB
-		if t then db = self.RankDB end
 		
 		self:Debug( "Restricting '" .. w .. "' class '" .. class .. "' under identifier '" .. id .. "' as value '" .. tostring( enabled ) .. "'", 1 )
 		
-		local data = von.deserialize( db:GetData( id, self:GetRestrictionType( w ) ) or "" )
-			data[ class ] = enabled;
-			
-		db:AddRow( self:ConstructDataSave( w, id, von.serialize( data ) ) )
+		local data = self:GetRestrictionData( id, w )
 		
-		-- Resend
-		self:SendRestrictionData( w, t, id, exsto.GetMenuPlayers() )
+		self:UpdateEntry( w, id, data, class, enabled )
 	end
 	PLUGIN:CreateReader( "ExUpdateRestriction", PLUGIN.UpdateRestriction )
+	
+	function PLUGIN:UpdateEntry( w, id, data, class, enabled )
+		local f
+		for k, d in pairs( data ) do
+			if d.Class == class then
+				f = true
+				data[ k ].Enabled = enabled
+			end
+		end
+		if not f then
+			table.insert( data, { Class = class, Enabled = enabled } )
+		end
+			
+		self.DB:AddRow( self:ConstructDataSave( w, id, von.serialize( data ) ) )
+		
+		-- Resend
+		self:SendRestrictionData( w, id, exsto.GetMenuPlayers() )
+	end
+	
+	function PLUGIN:ExNoLimit( reader )
+		return reader:ReadSender():IsAllowed( "restrictions" )
+	end
+	function PLUGIN:SetNoLimits( reader )
+		local id = reader:ReadString()
+		
+		self:Debug( "Inserting '" .. id .. "' into no limit handler from player '" .. reader:ReadSender() .. "'", 2 )
+		
+		if string.match( id, "STEAM_[0-5]:[0-9]:[0-9]+" ) then -- Nolimiting a player!
+			local ply = exsto.GetPlayerByID( id )
+			self:NoLimits( reader:ReadSender(), ply )
+			return
+		end
+		
+		-- Now it's a rank, so just insert it I GUESS IF IT DOESNT EXIST.
+		if not table.HasValue( self.LimitHandler, id ) then
+			table.insert( self.LimitHandler, id )
+		end
+		
+	end
+	PLUGIN:CreateReader( "ExNoLimit", PLUGIN.SetNoLimits )
+	
+	-- NOTE FOR THE FUTURE:  I believe that after saving into a database, either FEL or SQLite/MySQL automagically changes null entries to become NULL strings.
+	-- Which then von starts to deserialize because fuck it, and thats why this bug exists.
+	function PLUGIN:GetRestrictionData( id, w )
+		local data = self.DB:GetData( id, self:GetRestrictionType( w ) )
+			data = data or ""
+			
+		if data == "NULL" then data = "" end
+		return von.deserialize( data )
+	end
 	
 	function PLUGIN:NoLimits( caller, ply )
 		local t = " has enabled limits on "
@@ -216,332 +250,206 @@ if SERVER then
 	PLUGIN:RequestQuickmenuSlot( "nolimits" )
 	
 	function PLUGIN:ExOnRankCreate( ID )
-		if self.Restrictions[ ID ] then return end
-		
-		self.Restrictions[ ID ] = {
-			Rank = ID,
-			Props = {},
-			Stools = {},
-			Entities = {},
-			Sweps = {},
-		}
-					
-		self:SaveData( "all", ID )
+		-- TODO
 	end
 	
-	function PLUGIN:LoadFileRestrictions()
-		local load = ""
-		for style, format in pairs( self.FileTypes ) do
-			for ID, data in pairs( exsto.Ranks ) do
-				if file.Exists( "exsto_restrictions/exsto_" .. style .. "_restrict_" .. ID .. ".txt", "DATA" ) then
-					load = file.Read( "exsto_restrictions/exsto_" .. style .. "_restrict_" .. ID .. ".txt", "DATA" )
-					load = string.Explode( "\n", load )
-					
-					for k,v in ipairs( load ) do
-						table.insert( self.Restrictions[ ID ][format], v )
-					end				
-					
-					self:SaveData( style, ID )
-					file.Delete( "exsto_restrictions/exsto_" .. style .. "_restrict_" .. ID .. ".txt", "DATA" )
-				end
-			end
+	function PLUGIN:Allowed( ply, w, class )
+		-- Is the PLAYER allowed?
+		local data = self:GetRestrictionData( ply:SteamID(), w )
+		for _, d in pairs( data ) do
+			if d.Class == class then return not d.Enabled end
 		end
+		
+		-- If we passed the player, is the RANK allowed?
+		local data = self:GetRestrictionData( ply:GetRank(), w )
+		for _, d in pairs( data ) do
+			if d.Class == class then return not d.Enabled end
+		end
+	
+		return true
 	end
-	
-	function PLUGIN:SaveData( type, rank )
-	
-		local data = self.Restrictions[ rank ]
-		local saveData = {}
-		
-		if type == "all" then
-			saveData = {
-				Rank = rank,
-				Props = von.serialize( data.Props ),
-				Stools = von.serialize( data.Stools ),
-				Entities = von.serialize( data.Entities ),
-				Sweps = von.serialize( data.Sweps ),
-			}
-			
-		elseif type == "props" then
-			saveData = {
-				Rank = rank,
-				Props = von.serialize( data.Props ),
-			}
-		elseif type == "stools" then
-			saveData = {
-				Rank = rank,
-				Stools = von.serialize( data.Stools ),
-			}
-		elseif type == "entities" then
-			saveData = {
-				Rank = rank,
-				Entities = von.serialize( data.Entities ),
-			}
-		elseif type == "sweps" then
-			saveData = {
-				Rank = rank,
-				Sweps = von.serialize( data.Sweps ),
-			}
-		end
-		
-		exsto.RestrictDB:AddRow( saveData )
 
-	end
-	--[[
 	function PLUGIN:CanTool( ply, trace, tool )
-		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
-			self:Debug( "Unable to access rank restriction table.  Making one for: " .. ply:GetRank(), 1 )
-			self:ExOnRankCreate( ply:GetRank() )
-			return
-		end
-		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Stools, tool ) then
+		if not self:Allowed( ply, 2, tool ) then
 			ply:Print( exsto_CHAT, COLOR.NORM, "The tool ", COLOR.NAME, tool, COLOR.NORM, " is disabled for your rank!" )
 			return false
 		end
 	end
 	
 	function PLUGIN:PlayerGiveSWEP( ply, class, wep )
-		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
-			self:Debug( "Unable to access rank restriction table.  Making one for: " .. ply:GetRank(), 1 )
-			self:ExOnRankCreate( ply:GetRank() )
-			return
-		end
-		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Sweps, class ) then
+		if not self:Allowed( ply, 1, class ) then
 			ply:Print( exsto_CHAT, COLOR.NORM, "The weapon ", COLOR.NAME, class, COLOR.NORM, " is disabled for your rank!" )
 			return false
 		end
 	end
 	function PLUGIN:PlayerSpawnSWEP( ply, class, wep )
-		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
-			self:Debug( "Unable to access rank restriction table.  Making one for: " .. ply:GetRank(), 1 )
-			self:ExOnRankCreate( ply:GetRank() )
-			return
-		end
-		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Sweps, class ) then
+		if not self:Allowed( ply, 1, class ) then
 			ply:Print( exsto_CHAT, COLOR.NORM, "The weapon ", COLOR.NAME, class, COLOR.NORM, " is disabled for your rank!" )
 			return false
 		end
 	end
 	
 	function PLUGIN:PlayerSpawnProp( ply, prop )
-		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
-			self:Debug( "Unable to access rank restriction table.  Making one for: " .. ply:GetRank(), 1 )
-			self:ExOnRankCreate( ply:GetRank() )
-			return
-		end
-		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Props, prop ) then
+		if not self:Allowed( ply, 3, prop ) then
 			ply:Print( exsto_CHAT, COLOR.NORM, "The prop ", COLOR.NAME, prop, COLOR.NORM, " is disabled for your rank!" )
 			return false
 		end
 	end
 	
 	function PLUGIN:PlayerSpawnSENT( ply, class )
-		if !self.Restrictions or !self.Restrictions[ ply:GetRank() ] then
-			self:Debug( "Unable to access rank restriction table.  Making one for: " .. ply:GetRank(), 1 )
-			self:ExOnRankCreate( ply:GetRank() )
-			return
-		end
-		if self.Restrictions[ ply:GetRank() ] and table.HasValue( self.Restrictions[ ply:GetRank() ].Entities, class ) then
+		if not self:Allowed( ply, 4, class ) then
 			ply:Print( exsto_CHAT, COLOR.NORM, "The entity ", COLOR.NAME, class, COLOR.NORM, " is disabled for your rank!" )
 			return false
 		end
-	end]]
+	end
 	
-	function PLUGIN:AllowObject( owner, rank, object, data )
-		
-		if !self.Restrictions[ rank ] then
-			local closeRank = exsto.GetClosestString( rank, exsto.Ranks, "ID", owner, "Unknown rank" )
-			return
+	function PLUGIN:AllowObject( owner, id, object, data, enabled )
+		enabled = enabled or false
+	
+		self:Debug( "Attempting to set the status of '" .. object .. "', identifier '" .. id .. "' class name '" .. data .. "' to '" .. tostring( enabled ) .. "'", 2 )
+	
+		if not string.match( id, "STEAM_[0-5]:[0-9]:[0-9]+" ) and not exsto.Ranks[ id ] then
+			return { owner, COLOR.NAME, "Sorry, ", COLOR.NORM, "we can't find the ID you've requested to restrict.  Please either use a ", COLOR.NAME, "rank ID", COLOR.NORM, " or a ", COLOR.NAME, "SteamID" }
 		end
 
-		local tbl = self.Restrictions[ rank ]
-		local style = ""
-		
-		if object == "stools" then 
-			tbl = tbl.Stools
-			style = "STOOL"
-		elseif object == "sweps" then
-			tbl = tbl.Sweps
-			style = "SWEP"
-		elseif object == "props" then
-			tbl = tbl.Props
-			style = "Prop"
-		elseif object == "entities" then
-			tbl = tbl.Entities
-			style = "Entity"
-		end
+		local tbl = self:GetRestrictionData( id, object )
+		local lst = self:GetRestrictionList( object )
 		
 		if !data or data == "" then
-			return { owner, COLOR.NORM, "No ", COLOR.NAME, style, COLOR.NORM, " specified!" }
+			return { owner, COLOR.NORM, "No ", COLOR.NAME, "restricting class", COLOR.NORM, " specified!" }
 		end
 		
-		local id = exsto.GetTableID( tbl, data )
-		if !id then
-			if table.Count( tbl ) == 0 then	
-				return { owner, COLOR.NORM, "The " .. style .. " ", COLOR.NAME, data, COLOR.NORM, " doesn't exist in the deny table!" }
-			end
+		-- If we can find it in our table, or its a prop
+		if exsto.TableHasMemberValue( lst, "ClassName", data ) or object == 3 then -- We foundddd it!  Restrict
+			self:UpdateEntry( object, id, tbl, data, enabled )
+			return { owner, COLOR.NAME, data, COLOR.NORM, " is now " .. ( enabled and "restricted." or "unrestricted." ) }
 			
-			exsto.GetClosestString( data, tbl, nil, owner, "Unknown " .. style )
-			return
+		else
+			local str = exsto.GetClosestString( data, lst, "ClassName" )
+			return { owner, COLOR.NORM, "Unable to find ", COLOR.NAME, data, COLOR.NORM, ".  Are you looking for ", COLOR.NAME, str, COLOR.NORM, "?" }
 		end
-		
-		table.remove( tbl, id )
-		self:SaveData( object, rank )
-		
-		return { owner, COLOR.NORM, "Removing " .. style .. " ", COLOR.NAME, data, COLOR.NORM, " from ", COLOR.NAME, rank, COLOR.NORM, " restrictions!" }
 	
 	end
 	
-	function PLUGIN:DenyObject( owner, rank, object, data )
-	
-		if !self.Restrictions[ rank ] then
-			local closeRank = exsto.GetClosestString( rank, exsto.Ranks, "ID", owner, "Unknown rank" )
-			return
-		end
-		
-		local tbl = self.Restrictions[ rank ]
-		local style = ""
-		
-		if object == "stools" then 
-			tbl = tbl.Stools
-			style = "STOOL"
-		elseif object == "sweps" then
-			tbl = tbl.Sweps
-			style = "SWEP"
-		elseif object == "props" then
-			tbl = tbl.Props
-			style = "Prop"
-		elseif object == "entities" then
-			tbl = tbl.Entities
-			style = "Entity"
-		end
-		
-		if !data or data == "" then
-			return { owner, COLOR.NORM, "No ", COLOR.NAME, style, COLOR.NORM, " specified!" }
-		end
-		
-		table.insert( tbl, data )
-		self:SaveData( object, rank )
-	
-		return { owner, COLOR.NORM, "Inserting " .. style .. " ", COLOR.NAME, data, COLOR.NORM, " into ", COLOR.NAME, rank, COLOR.NORM, " restrictions!" }
-		
+	function PLUGIN:DenyObject( owner, id, object, data, enabled )
+		return self:AllowObject( owner, id, object, data, true )
 	end
 	
 --[[ -----------------------------------
 		ENTITIES
      ----------------------------------- ]]
-	function PLUGIN:AllowEntity( owner, rank, entity )
-		return self:AllowObject( owner, rank, "entities", entity )
+	function PLUGIN:AllowEntity( owner, id, entity )
+		return self:AllowObject( owner, id, 4, entity )
 	end
 	PLUGIN:AddCommand( "allowentity", {
 		Call = PLUGIN.AllowEntity,
-		Desc = "Allows users to remove disallowed entities from a rank.",
+		Desc = "Allows users to remove disallowed entities from an id.",
 		Console = { "allowentity" },
 		Chat = { "!allowentity" },
-		ReturnOrder = "Rank-Entity",
-		Args = { Rank = "STRING", Entity = "STRING" },
+		ReturnOrder = "ID-Entity",
+		Args = { ID = "STRING", Entity = "STRING" },
 		Category = "Restrictions",
 	})
 	
-	function PLUGIN:DenyEntity( owner, rank, entity )
-		return self:DenyObject( owner, rank, "entities", entity )
+	function PLUGIN:DenyEntity( owner, id, entity )
+		return self:DenyObject( owner, id, 4, entity )
 	end
 	PLUGIN:AddCommand( "denyentity", {
 		Call = PLUGIN.DenyEntity,
-		Desc = "Allows users to deny entities to ranks.",
+		Desc = "Allows users to deny entities to an id.",
 		Console = { "denyentity" },
 		Chat = { "!denyentity" },
-		ReturnOrder = "Rank-Entity",
-		Args = { Rank = "STRING", Entity = "STRING" },
+		ReturnOrder = "ID-Entity",
+		Args = { ID = "STRING", Entity = "STRING" },
 		Category = "Restrictions",
 	})
 	
 --[[ -----------------------------------
 		PROPS
      ----------------------------------- ]]
-	function PLUGIN:AllowProp( owner, rank, prop )
+	function PLUGIN:AllowProp( owner, id, prop )
 		if !string.Right( prop, 4 ) == ".mdl" then prop = prop .. ".mdl" end
-		return self:AllowObject( owner, rank, "props", prop )
+		return self:AllowObject( owner, id, 3, prop )
 	end
 	PLUGIN:AddCommand( "allowprop", {
 		Call = PLUGIN.AllowProp,
 		Desc = "Allows users to remove disallowed props from a rank.",
 		Console = { "allowprop" },
 		Chat = { "!allowprop" },
-		ReturnOrder = "Rank-Prop",
-		Args = { Rank = "STRING", Prop = "STRING" },
+		ReturnOrder = "ID-Prop",
+		Args = { ID = "STRING", Prop = "STRING" },
 		Category = "Restrictions",
 	})
 	
-	function PLUGIN:DenyProp( owner, rank, prop )
+	function PLUGIN:DenyProp( owner, id, prop )
 		if !string.Right( prop, 4 ) == ".mdl" then prop = prop .. ".mdl" end
-		return self:DenyObject( owner, rank, "props", prop )
+		return self:DenyObject( owner, id, 3, prop )
 	end
 	PLUGIN:AddCommand( "denyprop", {
 		Call = PLUGIN.DenyProp,
 		Desc = "Allows users to deny props to ranks.",
 		Console = { "denyprop" },
 		Chat = { "!denyprop" },
-		ReturnOrder = "Rank-Prop",
-		Args = { Rank = "STRING", Prop = "STRING" },
+		ReturnOrder = "ID-Prop",
+		Args = { ID = "STRING", Prop = "STRING" },
 		Category = "Restrictions",
 	})
 	
 --[[ -----------------------------------
 		SWEPS
      ----------------------------------- ]]
-	function PLUGIN:AllowSwep( owner, rank, swep )
-		return self:AllowObject( owner, rank, "sweps", swep )
+	function PLUGIN:AllowSwep( owner, id, swep )
+		return self:AllowObject( owner, id, 1, swep )
 	end
 	PLUGIN:AddCommand( "allowswep", {
 		Call = PLUGIN.AllowSwep,
 		Desc = "Allows users to remove disallowed sweps from a rank.",
 		Console = { "allowswep" },
 		Chat = { "!allowswep" },
-		ReturnOrder = "Rank-Swep",
-		Args = { Rank = "STRING", Swep = "STRING" },
+		ReturnOrder = "ID-Swep",
+		Args = { ID = "STRING", Swep = "STRING" },
 		Category = "Restrictions",
 	})
 	
-	function PLUGIN:DenySwep( owner, rank, swep )
-		return self:DenyObject( owner, rank, "sweps", swep )
+	function PLUGIN:DenySwep( owner, id, swep )
+		return self:DenyObject( owner, id, 1, swep )
 	end
 	PLUGIN:AddCommand( "denyswep", {
 		Call = PLUGIN.DenySwep,
 		Desc = "Allows users to deny sweps to ranks.",
 		Console = { "denyswep" },
 		Chat = { "!denyswep" },
-		ReturnOrder = "Rank-Swep",
-		Args = { Rank = "STRING", Swep = "STRING" },
+		ReturnOrder = "ID-Swep",
+		Args = { ID = "STRING", Swep = "STRING" },
 		Category = "Restrictions",
 	})
 	
 --[[ -----------------------------------
 		STOOLS
      ----------------------------------- ]]
-	function PLUGIN:AllowStool( owner, rank, stool )
-		return self:AllowObject( owner, rank, "stools", stool )
+	function PLUGIN:AllowStool( owner, id, stool )
+		return self:AllowObject( owner, id, 2, stool )
 	end
 	PLUGIN:AddCommand( "allowstool", {
 		Call = PLUGIN.AllowStool,
 		Desc = "Allows users to remove disallowed stools from a rank.",
 		Console = { "allowstool" },
 		Chat = { "!allowstool" },
-		ReturnOrder = "Rank-Stool",
-		Args = { Rank = "STRING", Stool = "STRING" },
+		ReturnOrder = "ID-Stool",
+		Args = { ID = "STRING", Stool = "STRING" },
 		Category = "Restrictions",
 	})
 	
-	function PLUGIN:DenyStool( owner, rank, stool )
-		return self:DenyObject( owner, rank, "stools", stool )
+	function PLUGIN:DenyStool( owner, id, stool )
+		return self:DenyObject( owner, id, 2, stool )
 	end
 	PLUGIN:AddCommand( "denystool", {
 		Call = PLUGIN.DenyStool,
 		Desc = "Allows users to deny stools to ranks.",
 		Console = { "denystool" },
 		Chat = { "!denystool" },
-		ReturnOrder = "Rank-Stool",
-		Args = { Rank = "STRING", Stool = "STRING" },
+		ReturnOrder = "ID-Stool",
+		Args = { ID = "STRING", Stool = "STRING" },
 		Category = "Restrictions",
 	})
 	
@@ -601,11 +509,14 @@ elseif CLIENT then
 	end
 	
 	local function restrictLineSelected( lst, disp, data, line )
+		print( data )
 		PLUGIN.WorkingItem = {
 			Name = disp[1];
-			Data = data;
-			Type = type( data ) == "string" and 1 or 0; -- Ranks are 1, players are 0
+			Data = data[ 1 ];
+			Type = data[ 2 ]; -- Ranks are 1, players are 0
 		}
+		
+		print( "MOTHER FUCKING", data[2] )
 		
 		exsto.Menu.EnableBackButton()
 		exsto.Menu.OpenPage( PLUGIN.Select )
@@ -625,7 +536,7 @@ elseif CLIENT then
 				s:Clear()
 				
 				for rID, rank in pairs( data ) do					
-					s:AddRow( { rank.Name }, rID )
+					s:AddRow( { rank.Name }, { rID, 1 } )
 				end
 				
 				s:SortByColumn( 1 )
@@ -644,7 +555,7 @@ elseif CLIENT then
 				s:Clear()
 				
 				for _, ply in ipairs( player.GetAll() ) do					
-					s:AddRow( { ply:Nick() }, ply:SteamID() )
+					s:AddRow( { ply:Nick() }, { ply:SteamID(), 0 } )
 				end
 				
 				s:SortByColumn( 1 )
@@ -719,7 +630,6 @@ elseif CLIENT then
 	local function request( w )
 		local sender = exsto.CreateSender( "ExReqRestrict" )
 			sender:AddShort( w )
-			sender:AddBool( PLUGIN.WorkingItem.Type ) -- What type this is
 			sender:AddString( PLUGIN.WorkingItem.Data ) -- What we're looking for
 		sender:Send()
 	end
@@ -727,7 +637,6 @@ elseif CLIENT then
 		-- Push the change up to the server.
 		local sender = exsto.CreateSender( "ExUpdateRestriction" )
 			sender:AddShort( w )
-			sender:AddBool( PLUGIN.WorkingItem.Type )
 			sender:AddString( PLUGIN.WorkingItem.Data )
 			sender:AddString( data[ 1 ] )
 			sender:AddBool( not data[ 2 ] ) -- This "SHOULD" switch false to true and true to false :)
@@ -949,7 +858,7 @@ elseif CLIENT then
 							Type = 1,
 							Data = rID,
 						}
-						update( 3, { ent:GetModel(), true } )
+						update( 3, { ent:GetModel(), false } )
 					end )
 				end
 				
@@ -961,7 +870,7 @@ elseif CLIENT then
 							Type = 0,
 							Data = ply:SteamID(),
 						}
-						update( 3, { ent:GetModel(), true } )
+						update( 3, { ent:GetModel(), false } )
 					end )
 				end
 			end,

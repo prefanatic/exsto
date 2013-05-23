@@ -472,6 +472,36 @@ exsto.AddChatCommand( "updateownerrank", {
 	Category = "Administration",
 })
 
+local steamIDCopy = exsto.CreateVariable( "ExCopySteamID",
+	"Copy SteamID with !steamid",
+	1,
+	"Sets if the !steamid command should automatically copy the SteamID to your clipboard, to be pasted elsewhere."
+)
+steamIDCopy:SetBoolean()
+steamIDCopy:SetCategory( "Exsto General" )
+
+function exsto.GetPlayerSteamID( self, ply )
+	if not ply then ply = self end
+	local sid = ply:SteamID()
+	
+	if steamIDCopy:GetValue() == 1 then
+		ply:SendLua( "SetClipboardText( \"" .. sid .. "\" )" )
+	end
+	
+	return { self, COLOR.NORM, ply:Nick() .. "'s SteamID is '", COLOR.NAME, ply:SteamID(), COLOR.NORM, "'" }
+end
+exsto.AddChatCommand( "getsteamid", {
+	Call = exsto.GetPlayerSteamID,
+	Desc = "Prints the SteamID of the selected player.",
+	Console = { "steamid" },
+	Chat = { "!steamid" },
+	Args = { Player = "PLAYER" },
+	ReturnOrder = "Player",
+	Optional = { Player = nil },
+	Category = "Administration",
+} )
+	
+
 --[[ -----------------------------------
 	Function: player:SetRank
 	Description: Sets a player's rank.

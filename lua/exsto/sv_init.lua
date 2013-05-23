@@ -111,6 +111,13 @@ function exsto.RemoveMenuPlayer( reader )
 end
 exsto.CreateReader( "ExMenuUserLeft", exsto.RemoveMenuPlayer )
 
+function exsto.TableHasMemberValue( tbl, member, value )
+	for k, v in pairs( tbl ) do
+		if v[ member ] == value then return k, v end
+	end
+	return false
+end
+
 function exsto.BuildPlayerNicks()
 	local tbl = {}
 	

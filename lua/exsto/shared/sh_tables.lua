@@ -162,22 +162,26 @@ local function StringDist( s, t )
 	return d[#d]
 end
 	
-function exsto.GetClosestString( str, possible, id, ply, text )
-	local data = { Max = 100, New = "" }
-	local dist
-
-	for k,v in pairs( possible ) do
-		if id then v = v[id] end
+function exsto.GetClosestString( str, possible, member, ply, text )
+	local max, new, dist = 100, ""
+	
+	for k, v in pairs( possible ) do
+		if member then v = v[ member ] end
+		
 		dist = StringDist( str, v )
-		if dist < data.Max then data.Max = dist data.New = v end
+		if dist < max then
+			max = dist
+			new = v
+		end
 	end
 	
 	if text and ply then
-		ply:Print( exsto_CHAT, COLOR.NORM, text .. " ", COLOR.NAME, str, COLOR.NORM, ".  Maybe you want ", COLOR.NAME, data.New, COLOR.NORM, "?" )
+		ply:Print( exsto_CHAT, COLOR.NORM, text .. " ", COLOR.NAME, str, COLOR.NORM, ".  Maybe you want ", COLOR.NAME, new, COLOR.NORM, "?" )
 	end
 	
-	return data.New
+	return new
 end
+
 --[[ -----------------------------------
 	Function: exsto.SmartNumber
 	Description: Returns the number in a table that has no index.
