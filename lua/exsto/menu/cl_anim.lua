@@ -325,6 +325,31 @@ function exsto.Animations.Create( obj )
 	obj:SetAnimationMul( 2 )
 	obj:SetAnimFadeMul( 1 )
 	
+	--[[
+		I AM DOING THIS BECAUSE FOR SOME REASON OBJECTS SEEM TO KILL THEMSELVES OVER TIME, AND IT ERRORS OUT EVERYTHING IF NOT DONE ON AN INDIVIDUAL OBJECT LEVEL.
+		ALL IN ALL, I HAVE NO IDEA WHY.  deal with it
+	]]
+	
+	local FUCK = obj.Think or function() end
+	obj.Think = function( obj )
+		-- Loop through our supported animation styles.
+		for style, content in ipairs( obj:GetAnimationData() ) do
+			
+			-- Go through the values that need changing.
+			for _, segment in ipairs( content ) do
+				if ( ( math.abs( segment[ 1 ] / segment[ 2 ] ) == ( 1 or 0 ) ) or ( math.floor( segment[ 1 ] + 0.5 ) == math.floor( segment[ 2 ] + 0.5 ) ) ) and !content._COMPLETED then
+					content.OnComplete( segment[ 1 ] )
+					content._COMPLETED = true
+				elseif math.floor( segment[ 1 ] + 0.5 ) != math.floor( segment[ 2 ] + 0.5 ) then
+					content._COMPLETED = false
+
+					segment.OnUpdate( segment[ 1 ] + obj:GetAnimationDelta( segment[ 1 ], segment[ 2 ], style ) )
+				end
+			end
+		end
+		FUCK( obj )
+	end
+	
 end
 
 -- TODO: DBug states this holds 10% of computational power.  Most likely due to the fact that it CONSTANTLY sets the object's position no matter what.
@@ -363,7 +388,7 @@ function exsto.Animations.Think()
 	end
 	
 end
-hook.Add( "Think", "ExAnimationThink", exsto.Animations.Think )
+--hook.Add( "Think", "ExAnimationThink", exsto.Animations.Think )
 
 local function storeOldFunctions( obj )
 	local getPos = obj.GetPos

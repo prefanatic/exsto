@@ -133,6 +133,9 @@ elseif CLIENT then
 			
 			table.insert( page.Objects, obj )
 			
+			-- Little hack
+			table.insert( page.Objects, page.Cat:CreateSpacer() )
+			
 		end
 
 	end

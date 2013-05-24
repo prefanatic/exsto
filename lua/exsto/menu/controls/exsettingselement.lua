@@ -110,9 +110,9 @@ function PANEL:SetMax( val ) self.Button:SetMax( val ) end
 function PANEL:OnValueSet( val ) end
 
 function PANEL:Paint()
-	surface.SetDrawColor( 195, 195, 195, 195 )
-	surface.DrawLine( 0, 0, self:GetWide(), 0 )
-	surface.DrawLine( 0, self:GetTall(), self:GetWide(), self:GetTall() )
+	--surface.SetDrawColor( 195, 195, 195, 195 )
+	--surface.DrawLine( 0, 0, self:GetWide(), 0 )
+	--surface.DrawLine( 0, self:GetTall(), self:GetWide(), self:GetTall() )
 end
 
 function PANEL:SetTitle( txt )
