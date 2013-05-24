@@ -29,6 +29,8 @@ function PANEL:Init()
 		self.List:SetDrawOnTop( true )
 		self.List.LineSelected = function( lst, disp, data, lineObj ) self:LineSelected( disp, data, lineObj ) end
 		
+	self.OnMouseWheeled = nil
+		
 	exsto.Animations.CreateAnimation( self.List )
 
 end

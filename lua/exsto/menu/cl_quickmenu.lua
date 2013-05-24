@@ -55,6 +55,7 @@ local function mainOnShowtime( obj )
 			cat.List:SetHideHeaders( true )
 			cat.List:SetQuickList()
 			cat.List.LineSelected = function( l, disp, data, line )
+				qm.WorkingPlayer = data.Player
 				exsto.Menu.OpenPage( qm.List )
 				exsto.Menu.EnableBackButton()
 			end
@@ -96,11 +97,16 @@ local function starredCommand( id )
 end
 
 local function commandClicked( list, display, data, line )
+	if line._OMGRIGHTCLICKED then return end
 	qm.WorkingData = data
+	qm.WorkingExecute = { }
 	exsto.Menu.OpenPage( qm.Argument )
 end
 
 local function commandRightClicked( list, display, data, line )
+	line._OMGRIGHTCLICKED = 1
+	timer.Simple( 0.1, function() line._OMGRIGHTCLICKED = 0 end ) -- Because gayre doesn't have any of this standard?
+	
 	if starredCommand( data.ID ) then -- We're starred.  Unstar us.
 		qm.Data:DropRow( data.ID )
 		qm.List.Content:Populate()
@@ -152,9 +158,9 @@ local function initList( pnl )
 			local line = cat.List:AddRow( { command.DisplayName }, command )
 			
 			-- Overlay our quick button
-			line.Quick = vgui.Create( "ExQuickOverlay", line )
+			--line.Quick = vgui.Create( "ExQuickOverlay", line )
 			
-			exsto.Animations.Create( line.Quick )
+			--exsto.Animations.Create( line.Quick )
 		end
 		
 		cat.List:SetDirty( true )
@@ -184,9 +190,9 @@ local function initList( pnl )
 				local line = cat.List:AddRow( { command.DisplayName }, command )
 				
 				-- Overlay our quick button
-				line.Quick = vgui.Create( "ExQuickOverlay", line )
+				--line.Quick = vgui.Create( "ExQuickOverlay", line )
 				
-				exsto.Animations.Create( line.Quick )
+				--exsto.Animations.Create( line.Quick )
 			end
 			
 			cat.List:SetDirty( true )
@@ -195,6 +201,7 @@ local function initList( pnl )
 			
 			cat:InvalidateLayout( true )
 			cat:SetHideable( true )
+			cat:Toggle()
 			
 			--cat:SetExpanded( pnl.LastState[ cat ] or false )
 			table.insert( pnl.Objects, cat )
@@ -209,6 +216,19 @@ local function clearContent( pnl )
 	pnl.Objects = {}
 end
 
+local function executeCommand()
+	local data = qm.WorkingData
+	local execTbl = { data.CallerID, qm.WorkingPlayer:Nick() }
+
+	for _, arg in ipairs( data.ReturnOrder ) do
+		if _ != 1 then
+			table.insert( execTbl, qm.WorkingExecute[ arg ] )
+		end
+	end
+	
+	RunConsoleCommand( unpack( execTbl ) )
+end
+
 local function argOnShowtime( obj )
 	local pnl = obj.Content
 	local data = qm.WorkingData
@@ -218,10 +238,12 @@ local function argOnShowtime( obj )
 	
 	pnl.Cat.Header:SetText( data.DisplayName )
 	
+	local help = pnl.Cat:CreateHelp( "Select the arguments you want to change, and click on execute to send it off." )
+	local spacer = pnl.Cat:CreateSpacer()
+	
 	-- We need to construct our little cool things based on the return order of this command.
 	for count, argument in pairs( data.ReturnOrder ) do
 		if count != 1 then -- 1 is going to be the victim for us.  No need to look at it.
-			local spacer = pnl.Cat:CreateSpacer();
 			local title = pnl.Cat:CreateTitle( argument );
 			local multi = pnl.Cat:CreateMultiChoice();
 			
@@ -229,11 +251,27 @@ local function argOnShowtime( obj )
 				multi:AddChoice( data.Display, data.Data or data.Display )
 			end
 			
+			multi.OnValueSet = function( s, d ) 
+				qm.WorkingExecute[ argument ] = d
+			end
+			
 			multi:SetValue( data.Optional[ argument ] )
+			qm.WorkingExecute[ argument ] = data.Optional[ argument ]
+			
+			local spacer = pnl.Cat:CreateSpacer();
 			
 			table.insert( pnl.Objects, { title, multi, spacer } )
 		end
 	end
+	
+	local b = pnl.Cat:CreateButton( "Execute" )
+		b.OnClick = function( s )
+			executeCommand()
+			exsto.Menu.OpenPage( qm.List )
+			exsto.Menu.DisableBackButton()
+		end
+		
+	table.insert( pnl.Objects, { b, help, spacer } )
 	
 	pnl.Cat:InvalidateLayout( true )
 end
