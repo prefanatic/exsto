@@ -59,7 +59,7 @@ function PANEL:SetMultiChoice()
 		self.Button:SetHeaderSize( 40 )
 		self.Button.OnValueSet = function( o, val ) self:OnValueSet( val ) end	
 		
-	exsto.Animations.Create( self.Button )
+	--exsto.Animations.Create( self.Button )
 end
 
 function PANEL:SetBoolean( )

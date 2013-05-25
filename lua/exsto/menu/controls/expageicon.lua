@@ -59,7 +59,7 @@ function PANEL:Paint()
 	
 	-- Name
 	if self.Hovered then
-		self.Colors.Text = self.Colors.Sad;
+		self.Colors.Text = self.Colors.White;
 	else
 		self.Colors.Text = self.Colors.Hover;
 	end

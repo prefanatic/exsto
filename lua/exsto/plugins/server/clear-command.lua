@@ -15,7 +15,7 @@ local function OnDCTimeChange(old, time)
 end
 
 function PLUGIN:Init()
-	self.ClearTime = exsto.CreateVariable( "ExClearTime", "Clean Disconnected Player's Objects", -1, "Clears a player's props after X minutes if they disconnect. (-1 is off)" )
+	self.ClearTime = exsto.CreateVariable( "ExClearTime", "Clean Disconnected", -1, "Clears a player's props after X minutes if they disconnect. (-1 is off)" )
 		self.ClearTime:SetCallback( OnDCTimeChange )
 		self.ClearTime:SetMin( -1 )
 		self.ClearTime:SetMax( 100 )

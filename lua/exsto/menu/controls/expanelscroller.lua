@@ -127,10 +127,10 @@ function PANEL:CreateCategory( catName )
 		cat.Paint = categoryPaint
 		
 		-- Animation overrides
-		cat.animSlide.Start = function() end
-		cat.animSlide.Run = function() end
+		--cat.animSlide.Start = function() end
+		--cat.animSlide.Run = function() end
 		
-		cat.Toggle = function( s )
+		--[[cat.Toggle = function( s )
 			if s:GetExpanded() then -- We need to close.
 				print( "Goign to header" )
 				s:SetTall( s.Header:GetTall() )
@@ -148,11 +148,11 @@ function PANEL:CreateCategory( catName )
 			print( "RUNNING :))))))))))))))" )
 			s:SetExpanded( !s:GetExpanded() )
 			s:InvalidateLayout( true )
-		end
+		end]]
 		
-		cat.animSlide.Func = function( s, anim, delta, data )
+		--[[cat.animSlide.Func = function( s, anim, delta, data )
 			print( "Doing something?" )
-		end 
+		end]] 
 		
 		cat.CreateMultiChoice = createMultichoice
 		cat.SetHideable = setHideable
@@ -168,7 +168,7 @@ function PANEL:CreateCategory( catName )
 		
 	cat:DockPadding( 4, 0, 4, 0 )
 	
-	exsto.Animations.Create( cat )
+	--exsto.Animations.Create( cat )
 	self.Categories[ catName ] = cat
 	
 	return cat

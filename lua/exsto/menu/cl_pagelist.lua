@@ -54,7 +54,7 @@ function exsto.BuildPageListIcons( obj )
 				button:SetSize( 95, 95 )
 				
 				if obj._Child then 
-					button:SetSize( ( 95 * 2 ) + 12, 95 ) 
+					--button:SetSize( ( 95 * 2 ) + 12, 95 ) 
 					
 					button.DoRightClick = function()
 						local lst = DermaMenu()

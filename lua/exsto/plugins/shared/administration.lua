@@ -35,7 +35,7 @@ if SERVER then
 		)
 		self.BanRefreshRate:SetCallback( setRefresh )
 		self.BanRefreshRate:SetCategory( "Administration" )
-		self.BanRefreshRate:SetUnit( "Time (minutes" )
+		self.BanRefreshRate:SetUnit( "Time (minutes)" )
 		
 		self.OldPlayers = {}
 		exsto.BanDB = FEL.CreateDatabase( "exsto_data_bans" )
