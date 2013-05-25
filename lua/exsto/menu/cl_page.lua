@@ -91,16 +91,19 @@ end
 
 function page:OnSearchTyped( func )
 	if type( func ) != "function" then self:Error( "OnSearchTyped supplied non-function!" ) return end
+	self:SetSearchable( true )
 	self._SearchOnTextChanged = func
 end
 
 function page:OnSearchEntered( func )
 	if type( func ) != "function" then self:Error( "OnSearchEntered supplied non-function!" ) return end
+	self:SetSearchable( true )
 	self._SearchOnEnter = func
 end
 
 function page:OnSearchClicked( func )
 	if type( func ) != "function" then self:Error( "OnSearchClicked supplied non-function!" ) return end
+	self:SetSearchable( true )
 	self._SearchDoClick = func
 end
 

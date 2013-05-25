@@ -53,7 +53,7 @@ COLOR = {}
 	COLOR.RED = Color( 200, 50, 50, 255 )
 	COLOR.GREEN = Color( 50, 200, 50, 255 )
 	COLOR.BLUE = Color( 50, 50, 200, 255 )
-	COLOR.EXSTO = Color( 146, 232, 136, 255 )
+	COLOR.EXSTO = Color( 116, 202, 254, 255 )
 	COLOR.NAME = Color( 255, 105, 105, 255 )
 	
 -- Complementary color generator.  Adapted from easyrgb.com

@@ -564,11 +564,14 @@ elseif CLIENT then
 			pnl.RankList:AddColumn( "" )
 			pnl.RankList:SetHideHeaders( true )
 			pnl.RankList.LineSelected = restrictLineSelected
-			pnl.RankList.Populate = function( s, data )
+			pnl.RankList.Populate = function( s, data, search )
 				s:Clear()
+				search = search or ""
 				
-				for rID, rank in pairs( data ) do					
-					s:AddRow( { rank.Name }, { rID, 1 } )
+				for rID, rank in pairs( data ) do
+					if string.find( rank.Name:lower(), search:lower() ) then
+						s:AddRow( { rank.Name }, { rID, 1 } )
+					end
 				end
 				
 				s:SortByColumn( 1 )
@@ -583,11 +586,14 @@ elseif CLIENT then
 			pnl.PlayerList:AddColumn( "" )
 			pnl.PlayerList:SetHideHeaders( true )
 			pnl.PlayerList.LineSelected = restrictLineSelected
-			pnl.PlayerList.Populate = function( s, data )
+			pnl.PlayerList.Populate = function( s, search )
 				s:Clear()
+				search = search or ""
 				
-				for _, ply in ipairs( player.GetAll() ) do					
-					s:AddRow( { ply:Nick() }, { ply:SteamID(), 0 } )
+				for _, ply in ipairs( player.GetAll() ) do		
+					if string.find( ply:Nick():lower(), search:lower() ) then
+						s:AddRow( { ply:Nick() }, { ply:SteamID(), 0 } )
+					end
 				end
 				
 				s:SortByColumn( 1 )
@@ -711,10 +717,14 @@ elseif CLIENT then
 			pnl.List:SetQuickList()
 			pnl.List:LinePaintOver( lineOver )
 			pnl.List:SetTextInset( 25 )
-			pnl.List.Populate = function( o, data )
+			pnl.List.Populate = function( o, data, search )
 				o:Clear()
+				if not data then data = o._LastData else o._LastData = data end
+				search = search or ""
 				for I = 1, #data do
-					o:AddRow( { data[ I ][ 1 ] }, data[ I ] )
+					if string.find( data[ I ][ 1 ]:lower(), search:lower() ) then
+						o:AddRow( { data[ I ][ 1 ] }, data[ I ] )
+					end
 				end
 				o:SortByColumn( 1 )
 				invalidate( pnl.Cat, o )
@@ -743,10 +753,14 @@ elseif CLIENT then
 			pnl.List:SetQuickList()
 			pnl.List:LinePaintOver( lineOver )
 			pnl.List:SetTextInset( 25 )
-			pnl.List.Populate = function( o, data )
+			pnl.List.Populate = function( o, data, search )
 				o:Clear()
+				if not data then data = o._LastData else o._LastData = data end
+				search = search or ""
 				for I = 1, #data do
-					o:AddRow( { data[ I ][ 1 ] }, data[ I ] )
+					if string.find( data[ I ][ 1 ]:lower(), search:lower() ) then
+						o:AddRow( { data[ I ][ 1 ] }, data[ I ] )
+					end
 				end
 				o:SortByColumn( 1 )
 				invalidate( pnl.Cat, o )
@@ -775,10 +789,14 @@ elseif CLIENT then
 			pnl.List:SetQuickList()
 			pnl.List:LinePaintOver( lineOver )
 			pnl.List:SetTextInset( 25 )
-			pnl.List.Populate = function( o, data )
+			pnl.List.Populate = function( o, data, search )
 				o:Clear()
+				if not data then data = o._LastData else o._LastData = data end
+				search = search or ""
 				for I = 1, #data do
-					o:AddRow( { data[ I ][ 1 ] }, data[ I ] )
+					if string.find( data[ I ][ 1 ]:lower(), search:lower() ) then
+						o:AddRow( { data[ I ][ 1 ] }, data[ I ] )
+					end
 				end
 				o:SortByColumn( 1 )
 				invalidate( pnl.Cat, o )
@@ -807,10 +825,14 @@ elseif CLIENT then
 			pnl.List:SetQuickList()
 			pnl.List:LinePaintOver( lineOver )
 			pnl.List:SetTextInset( 25 )
-			pnl.List.Populate = function( o, data )
+			pnl.List.Populate = function( o, data, search )
 				o:Clear()
+				if not data then data = o._LastData else o._LastData = data end
+				search = search or ""
 				for I = 1, #data do
-					o:AddRow( { data[ I ][ 1 ] }, data[ I ] )
+					if string.find( data[ I ][ 1 ]:lower(), search:lower() ) then
+						o:AddRow( { data[ I ][ 1 ] }, data[ I ] )
+					end
 				end
 				o:SortByColumn( 1 )
 				invalidate( pnl.Cat, o )
@@ -830,7 +852,10 @@ elseif CLIENT then
 			self.List:SetTitle( "Restrictions" )
 			self.List:SetSearchable( true )
 			self.List:OnShowtime( onRestrictShowtime )
-			self.List:OnSearchTyped( onRestrictTyped )
+			self.List:OnSearchTyped( function( e ) 
+				self.List.Content.RankList:Populate( exsto.Ranks, e:GetValue() )
+				self.List.Content.PlayerList:Populate( e:GetValue() )
+			end )
 			
 		self.Select = exsto.Menu.CreatePage( "restrictionselect", selectInit )
 			self.Select:SetTitle( "Restrictions" )
@@ -847,24 +872,28 @@ elseif CLIENT then
 			self.WeaponPage:SetTitle( "Weapons" )
 			self.WeaponPage:OnShowtime( function( obj ) request( 1 ) end )
 			self.WeaponPage:SetBackFunction( backToSelect )
+			self.WeaponPage:OnSearchTyped( function( e ) self.WeaponPage.Content.List:Populate( nil, e:GetValue() ) end )
 			self.WeaponPage:SetUnaccessable()
 			
 		self.ToolPage = exsto.Menu.CreatePage( "restricttool", toolInit )
 			self.ToolPage:SetTitle( "Tools" )
 			self.ToolPage:OnShowtime( function( obj ) request( 2 ) end )
 			self.ToolPage:SetBackFunction( backToSelect )
+			self.ToolPage:OnSearchTyped( function( e ) self.ToolPage.Content.List:Populate( nil, e:GetValue() ) end )
 			self.ToolPage:SetUnaccessable()
 			
 		self.ENTPage = exsto.Menu.CreatePage( "restrictent", ENTInit )
 			self.ENTPage:SetTitle( "Entities" )
 			self.ENTPage:OnShowtime( function( obj ) request( 4 ) end )
 			self.ENTPage:SetBackFunction( backToSelect )
+			self.ENTPage:OnSearchTyped( function( e ) self.ENTPage.Content.List:Populate( nil, e:GetValue() ) end )
 			self.ENTPage:SetUnaccessable()
 			
 		self.PropPage = exsto.Menu.CreatePage( "restrictprop", propInit )
 			self.PropPage:SetTitle( "Props" )
 			self.PropPage:OnShowtime( function( obj ) request( 3 ) end )
 			self.PropPage:SetBackFunction( backToSelect )
+			self.PropPage:OnSearchTyped( function( e ) self.PropPage.Content.List:Populate( nil, e:GetValue() ) end )
 			self.PropPage:SetUnaccessable()
 			
 		self.Materials = {

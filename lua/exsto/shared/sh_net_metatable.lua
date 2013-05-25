@@ -177,6 +177,4 @@ function reader:ReadVariable()
 	end
 end
 
-	
-print( "faggot" )
 hook.Call( "ExNetworkingReady" )
