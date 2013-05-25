@@ -198,6 +198,7 @@ local function initList( pnl )
 			cat.List:SetDirty( true )
 			cat.List:InvalidateLayout( true )
 			cat.List:SizeToContents()
+			cat.List:SortByColumn( 1 )
 			
 			cat:InvalidateLayout( true )
 			cat:SetHideable( true )

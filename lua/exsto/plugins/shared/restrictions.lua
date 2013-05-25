@@ -35,14 +35,6 @@ if SERVER then
 				Entities = "TEXT";
 				Sweps = "TEXT";
 			} )
-
-		-- Override GetCount
-		local oldCount = exsto.Registry.Player.GetCount
-		function exsto.Registry.Player.GetCount( self, ... )
-			if self.ExNoLimits and PLUGIN:IsEnabled() then return -1 end
-			if table.HasValue( self.LimitHandler, self:GetRank() ) and PLUGIN:IsEnabled() then return -1 end
-			return oldCount( self, ... )
-		end
 		
 		-- Quality of service on the ranks database.
 		local data = self.DB:ReadAll()
@@ -73,6 +65,23 @@ if SERVER then
 		
 		self.LimitHandler = {}
 	
+	end
+	
+	function PLUGIN:OverrideGetCount()
+		self.OldGetCount = exsto.Registry.Player.GetCount
+		function exsto.Registry.Player.GetCount( s, ... )
+			if s.ExNoLimits and self:IsEnabled() then return -1 end
+			if table.HasValue( self.LimitHandler, s:GetRank() ) and self:IsEnabled() then return -1 end
+			return self.OldGetCount( s, ... )
+		end
+		self.FuncTamperSeal = exsto.Registry.Player.GetCount
+	end
+	
+	function PLUGIN:Think()
+		if self.FuncTamperSeal != exsto.Registry.Player.GetCount then -- We've been overridden.
+			self:Debug( "GetCount has been tampered.  Over-riding.", 1 )
+			self:OverrideGetCount()
+		end
 	end
 	
 	function PLUGIN:GetRestrictionType( short )
@@ -223,6 +232,32 @@ if SERVER then
 		return von.deserialize( data )
 	end
 	
+	function PLUGIN:NoLimitRank( caller, rank )
+		if not exsto.Ranks[ rank ] then
+			local str = exsto.GetClosestString( rank, exsto.Ranks, "ID" )
+			return { caller, COLOR.NORM, "We couldn't find the rank ", COLOR.NAME, rank, COLOR.NORM, ".  Maybe you're looking for ", COLOR.NAME, str, COLOR.NORM, "?" }
+		end
+		
+		if not table.HasValue( self.LimitHandler, rank ) then
+			table.insert( self.LimitHandler, rank )
+			return { COLOR.NAME, caller, COLOR.NORM, " has disabled limits on the rank ", COLOR.NAME, rank }
+		else
+			for _, id in ipairs( self.LimitHandler ) do
+				if id == rank then table.remove( self.LimitHandler, _ ) break end
+			end
+			return { COLOR.NAME, caller, COLOR.NORM, " has re-enabled limits on the rank ", COLOR.NAME, rank }
+		end
+	end
+	PLUGIN:AddCommand( "nolimitrank", {
+		Call = PLUGIN.NoLimitRank,
+		Desc = "Allows users to set nolimits on a rank.",
+		Console = { "nolimitrank" },
+		Chat = { "!nolimitrank" },
+		ReturnOrder = "Rank",
+		Args = { Rank = "STRING" },
+		Category = "Restrictions",
+	})
+	
 	function PLUGIN:NoLimits( caller, ply )
 		local t = " has enabled limits on "
 		if !ply.ExNoLimits then
@@ -245,7 +280,7 @@ if SERVER then
 		Chat = { "!nolimits" },
 		ReturnOrder = "Player",
 		Args = { Player = "PLAYER" },
-		Category = "Fun",
+		Category = "Restrictions",
 	})
 	PLUGIN:RequestQuickmenuSlot( "nolimits" )
 	
@@ -509,15 +544,12 @@ elseif CLIENT then
 	end
 	
 	local function restrictLineSelected( lst, disp, data, line )
-		print( data )
 		PLUGIN.WorkingItem = {
 			Name = disp[1];
 			Data = data[ 1 ];
 			Type = data[ 2 ]; -- Ranks are 1, players are 0
 		}
-		
-		print( "MOTHER FUCKING", data[2] )
-		
+
 		exsto.Menu.EnableBackButton()
 		exsto.Menu.OpenPage( PLUGIN.Select )
 	end

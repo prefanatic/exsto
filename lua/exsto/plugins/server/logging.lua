@@ -113,6 +113,7 @@ end
 
 function PLUGIN:ExCommandCalled( id, plug, caller, ... )
 	local arg = {...}
+	
 	if type( plug ) == "Player" then caller = plug end
 	local text = self:Player( caller ) .. " has run command '" .. id .. "'"
 	local index = 1
@@ -134,7 +135,7 @@ function PLUGIN:ExCommandCalled( id, plug, caller, ... )
 end
 
 function PLUGIN:Player( ply )
-    if ply:EntIndex() == 0 then
+    if not IsValid( ply ) or ply:EntIndex() == 0 then
         return "CONSOLE"
     else
         return ply:Nick() .. "(" .. ply:SteamID() .. ")"
@@ -151,11 +152,11 @@ function PLUGIN:SaveEvent( text, type )
 	if type != "all" then obj = { type, "all" } end
 	
 	for _, type in ipairs( obj ) do
-		if !file.Exists( "exsto_logs/" .. type .. "/" .. date .. ".txt", "DATA" ) then
-			file.Write( "exsto_logs/" .. type .. "/" .. date .. ".txt", "[" .. time .. "] " .. text:gsub( "\n", "" ) .. "\n"  )
+		if !file.Exists( "exsto/logs/" .. type .. "/" .. date .. ".txt", "DATA" ) then
+			file.Write( "exsto/logs/" .. type .. "/" .. date .. ".txt", "[" .. time .. "] " .. text:gsub( "\n", "" ) .. "\n"  )
 		else
-			local data = file.Read( "exsto_logs/" .. type .. "/" .. date .. ".txt", "DATA" )
-			file.Write( "exsto_logs/" .. type .. "/" .. date .. ".txt", data .. "[" .. time .. "] " .. text:gsub( "\n", "" ) .. "\n" )
+			local data = file.Read( "exsto/logs/" .. type .. "/" .. date .. ".txt", "DATA" )
+			file.Write( "exsto/logs/" .. type .. "/" .. date .. ".txt", data .. "[" .. time .. "] " .. text:gsub( "\n", "" ) .. "\n" )
 		end
 	end
 	
