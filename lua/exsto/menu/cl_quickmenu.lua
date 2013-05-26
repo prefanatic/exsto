@@ -248,6 +248,16 @@ local function argOnShowtime( obj )
 			local title = pnl.Cat:CreateTitle( argument );
 			local multi = pnl.Cat:CreateMultiChoice();
 			
+			-- Little hack.  I think I inject "rank" in somewhere, so lets just populate our extraoptionals with the possible ranks.
+			if data.ID == "rank" then
+				local t = {}
+				for id, rank in pairs( exsto.Ranks ) do
+					table.insert( t, { Display = rank.Name, Data = rank.ID } )
+				end
+				data.ExtraOptionals[ argument ] = t
+				data.Optional[ argument ] = ""
+			end
+			
 			for count, data in pairs( data.ExtraOptionals[ argument ] ) do
 				multi:AddChoice( data.Display, data.Data or data.Display )
 			end
