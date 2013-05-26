@@ -282,7 +282,7 @@ function exsto.Menu.GetPages()
 end
 
 function exsto.Menu.OpenPage( obj ) -- I don't know if there is anything that we need to do.
-	if !LocalPlayer():IsAllowed( obj:GetID() ) and obj:GetID() != "quickmenu" and obj:GetID() != "pagelist" then obj:Debug( "Denied access." ) return end
+	if !LocalPlayer():IsAllowed( obj:GetFlag() ) and obj:GetID() != "quickmenu" and obj:GetID() != "pagelist" then obj:Debug( "Denied access." ) return end
 	
 	-- Slide our old page to the right, new comes in the left.
 	if exsto.Menu.ActivePage and exsto.Menu.ActivePage:IsValid() then
