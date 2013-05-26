@@ -96,6 +96,19 @@ local function starredCommand( id )
 	return false
 end
 
+local function executeCommand()
+	local data = qm.WorkingData
+	local execTbl = { data.CallerID, qm.WorkingPlayer:Nick() }
+
+	for _, arg in ipairs( data.ReturnOrder ) do
+		if _ != 1 then
+			table.insert( execTbl, qm.WorkingExecute[ arg ] )
+		end
+	end
+	
+	RunConsoleCommand( unpack( execTbl ) )
+end
+
 local function commandClicked( list, display, data, line )
 	if line._OMGRIGHTCLICKED then return end
 	
@@ -238,19 +251,6 @@ local function clearContent( pnl )
 		for _, object in ipairs( o ) do object:Remove() end
 	end
 	pnl.Objects = {}
-end
-
-local function executeCommand()
-	local data = qm.WorkingData
-	local execTbl = { data.CallerID, qm.WorkingPlayer:Nick() }
-
-	for _, arg in ipairs( data.ReturnOrder ) do
-		if _ != 1 then
-			table.insert( execTbl, qm.WorkingExecute[ arg ] )
-		end
-	end
-	
-	RunConsoleCommand( unpack( execTbl ) )
 end
 
 local function argOnShowtime( obj )
