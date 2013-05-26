@@ -189,10 +189,12 @@ local function initList( pnl )
 			local command = exsto.Commands[ data.Command ]
 			local line = cat.List:AddRow( { command.DisplayName }, command )
 			
-			-- Overlay our quick button
-			line.Quick = vgui.Create( "ExQuickOverlay", line )
-				line.Quick.OnClick = quickOnClick
-				line.Quick.CommandData = command
+			if #command.ExtraOptionals > 0 then
+				-- Overlay our quick button
+				line.Quick = vgui.Create( "ExQuickOverlay", line )
+					line.Quick.OnClick = quickOnClick
+					line.Quick.CommandData = command
+			end
 			
 			--exsto.Animations.Create( line.Quick )
 		end
@@ -223,10 +225,12 @@ local function initList( pnl )
 				local command = exsto.Commands[ id ]
 				local line = cat.List:AddRow( { command.DisplayName }, command )
 				
-				-- Overlay our quick button
-				line.Quick = vgui.Create( "ExQuickOverlay", line )
-					line.Quick.OnClick = quickOnClick
-					line.Quick.CommandData = command
+				if #command.ExtraOptionals > 0 then
+					-- Overlay our quick button
+					line.Quick = vgui.Create( "ExQuickOverlay", line )
+						line.Quick.OnClick = quickOnClick
+						line.Quick.CommandData = command
+				end
 				
 				--exsto.Animations.Create( line.Quick )
 			end
