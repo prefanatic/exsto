@@ -106,7 +106,7 @@ function exsto.RemoveMenuPlayer( reader )
 	
 	exsto.Debug( "Player '" .. ply:Nick() .. "' has left the menu.", 2 )
 	for _, p in ipairs( exsto.MenuPlayers ) do
-		if ply:SteamID() == p:SteamID() then table.remove( exsto.MenuPlayers, _ ) end
+		if IsValid( p ) and ( ply:SteamID() == p:SteamID() ) then table.remove( exsto.MenuPlayers, _ ) end
 	end
 end
 exsto.CreateReader( "ExMenuUserLeft", exsto.RemoveMenuPlayer )
