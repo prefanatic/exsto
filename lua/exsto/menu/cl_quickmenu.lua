@@ -134,8 +134,10 @@ local function initList( pnl )
 		-- Create the categories and the commands we want to mess with.
 		local tbl = {}
 		for id, comData in pairs( exsto.Commands ) do
-			if !tbl[ comData.Category ] and comData.QuickMenu then tbl[ comData.Category ] = {} end
-			if comData.QuickMenu then table.insert( tbl[ comData.Category ], id ) end
+			if LocalPlayer():IsAllowed( id ) then
+				if !tbl[ comData.Category ] and comData.QuickMenu then tbl[ comData.Category ] = {} end
+				if comData.QuickMenu then table.insert( tbl[ comData.Category ], id ) end
+			end
 		end
 		
 		-- Create the starred category.
