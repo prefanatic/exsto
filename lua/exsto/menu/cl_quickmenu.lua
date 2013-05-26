@@ -98,9 +98,19 @@ end
 
 local function commandClicked( list, display, data, line )
 	if line._OMGRIGHTCLICKED then return end
+	
+	-- We just want to execute with all dem optionals filled in for us.  SO DO THAT.
 	qm.WorkingData = data
 	qm.WorkingExecute = { }
-	exsto.Menu.OpenPage( qm.Argument )
+	
+	for count, arg in ipairs( data.ReturnOrder ) do
+		qm.WorkingExecute[ arg ] = data.Optional[ arg ]
+	end
+	
+	executeCommand()
+	exsto.Menu.OpenPage( qm.List )
+	exsto.Menu.DisableBackButton()
+
 end
 
 local function commandRightClicked( list, display, data, line )
@@ -122,6 +132,13 @@ end
 local function listOnShowtime( obj )
 	local pnl = obj.Content
 	pnl:Populate();	
+end
+
+local function quickOnClick( obj )
+	qm.WorkingData = obj.CommandData
+	qm.WorkingExecute = { }
+	
+	exsto.Menu.OpenPage( qm.Argument )
 end
 
 local function initList( pnl )
@@ -160,7 +177,9 @@ local function initList( pnl )
 			local line = cat.List:AddRow( { command.DisplayName }, command )
 			
 			-- Overlay our quick button
-			--line.Quick = vgui.Create( "ExQuickOverlay", line )
+			line.Quick = vgui.Create( "ExQuickOverlay", line )
+				line.Quick.OnClick = quickOnClick
+				line.Quick.CommandData = command
 			
 			--exsto.Animations.Create( line.Quick )
 		end
@@ -192,7 +211,9 @@ local function initList( pnl )
 				local line = cat.List:AddRow( { command.DisplayName }, command )
 				
 				-- Overlay our quick button
-				--line.Quick = vgui.Create( "ExQuickOverlay", line )
+				line.Quick = vgui.Create( "ExQuickOverlay", line )
+					line.Quick.OnClick = quickOnClick
+					line.Quick.CommandData = command
 				
 				--exsto.Animations.Create( line.Quick )
 			end
