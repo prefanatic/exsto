@@ -40,7 +40,6 @@ function exsto.Menu.CreatePage( id, func )
 	obj:SetFrameSize( 267, 430 )
 	obj:SetPanelStyle( "ExPanelScroller" )
 	obj:SetIcon( "exsto/unknown.png" )
-	obj:CreateFlag()
 	obj:SetFlag( id )
 	table.insert( exsto.Menu.Pages, obj )
 	
