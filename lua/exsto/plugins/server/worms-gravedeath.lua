@@ -12,6 +12,14 @@ PLUGIN:SetInfo({
 
 function PLUGIN:Init()
 
+	self.Enabled = exsto.CreateVariable( "ExGraveEnabled",
+		"Enabled",
+		0,
+		"Determines if graves fall on player deaths."
+	)
+	self.Enabled:SetCategory( "Graves" )
+	self.Enabled:SetBoolean()
+
 	self.Style = exsto.CreateVariable( "ExGraveStyle",
 		"Style",
 		"leaveonspawn",
@@ -28,12 +36,31 @@ function PLUGIN:Init()
 	self.SinkRate:SetCategory( "Graves" )
 	self.SinkRate:SetUnit( "Time (seconds)" )
 	
+	local function parse( old, new )
+		local f = string.Explode( ":", new )
+		if f[ 1 ] == "file" then -- We're a file ;D
+			local data = file.Read( f[ 2 ], "DATA" )
+			self.RandomDeathMessages = string.Explode( "\n", data )
+			self:Debug( "Loaded messages from file.", 1 )
+		else -- Assume HTTP.
+			http.Fetch( new, function( contents )
+				self.RandomDeathMessages = string.Explode( "\n", contents )
+				self:Debug( "Loaded messages from HTTP.", 1 )
+			end )
+		end
+	end
+	
+	self.Messages = exsto.CreateVariable( "ExGraveMessageLocation",
+		"Message Location",
+		"http://dl.dropbox.com/u/717734/Exsto/DO%20NOT%20DELETE/deathmessages.txt",
+		"Where the graves messages are located.  Can be HTTP or a file.  If a file, type file: before the location, like file:gravedeath.txt if located in the data folder."
+	)
+	self.Messages:SetCategory( "Graves" )
+	self.Messages:SetCallback( parse )
+	
 	self.RandomDeathMessages = { "He couldn't load the death messages file." }
-
-	http.Fetch( "http://dl.dropbox.com/u/717734/Exsto/DO%20NOT%20DELETE/deathmessages.txt", function( contents )
-		self.RandomDeathMessages = string.Explode( "\n", contents )
-		exsto.Print( exsto_CONSOLE, "PLUGINS --> Grave Death --> Retreived death messages!" )
-	end )
+	
+	parse( nil, self.Messages:GetValue() )
 	
 end
 
@@ -145,6 +172,7 @@ end
 
 function PLUGIN:PlayerDeath( victim, _, killer )
 
+	if self.Enabled:GetValue() == 0 then return end
 	if victim.HasGrave then return end
 	
 	local opos = victim:GetPos()
