@@ -161,6 +161,7 @@ elseif CLIENT then
 		updateDerives( rank.ID )
 		
 		pnl.RankSelect:SetValue( rank.Name )
+		pnl.RankSelect:SetToolTip( "Exsto Identifier: " .. rank.ID )
 		pnl.RankName:SetText( rank.Name )
 		pnl.Derive:SetValue( rank.Parent .. " (" .. parentName .. ")" )
 		pnl.RankColor:SetColor( rank.Color )
