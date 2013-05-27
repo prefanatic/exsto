@@ -844,19 +844,7 @@ function exsto.StringDist( s, t )
 end
 
 function exsto.OpenMenu( ply, _, args )
-
-	local menuAuthKey = math.random( -1000, 1000 )
-	ply.MenuAuthKey = menuAuthKey
-	
-	local bindPressed = false
-	if args then bindPressed = true end
-	
-	local sender = exsto.CreateSender( "ExOpenMenu", ply )
-		sender:AddShort( menuAuthKey )
-		sender:AddString( ply:GetRank() )
-		sender:AddShort( #exsto.GetRankData( ply:GetRank() ).FlagsAllow )
-		sender:AddBool( bindPressed )
-		sender:Send()
+	ply:ConCommand( "ExQuickToggle" )
 end
 exsto.AddChatCommand( "menu", {
 	Call = exsto.OpenMenu,
