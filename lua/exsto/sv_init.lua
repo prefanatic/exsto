@@ -207,10 +207,9 @@ end
 local succ, err = pcall( require, "json" );
 if !succ then
 	exsto.Debug( "Failed to load json.  Oh well.  No ping!", 1 )
-	return
 end
 
-timer.Create( "ExPing", 60, 0, function()
+local function ping()
 	if !json then return end
 
 	-- Ping up to our server that we've init.
@@ -235,9 +234,17 @@ timer.Create( "ExPing", 60, 0, function()
 		else
 			exsto.Debug( "Server ping failure!  Callback: " .. contents, 1 )
 		end
-	end )			
+	end )
+end	
 
-end )	
+local pingUpdate = exsto.CreateVariable( "ExPingInfo", "Ping Statistics", 1, "Pings statistical information to an offsite server for statistical purposes." )
+	pingUpdate:SetBoolean()
+	pingUpdate:SetCategory( "Exsto General" )
+	pingUpdate:SetCallback( function( old, new )
+		if new == 1 then timer.Create( "ExPing", 60, 0, ping ) else timer.Remove( "ExPing" ) end
+	end )
+
+if pingUpdate:GetValue() == 1 then timer.Create( "ExPing", 60, 0, ping ) end
 
 -- Init some items.
 	exsto.LoadPlugins()
