@@ -87,7 +87,6 @@ function PANEL:GetFont()
 end
 
 function PANEL:Text( txt )
-	print( "SETTING TEXT TO ", txt )
 	self:SetText( "" )
 	self.__TEXT = txt
 	self:InvalidateLayout( true )
