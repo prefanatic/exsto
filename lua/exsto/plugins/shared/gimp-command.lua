@@ -34,7 +34,8 @@ if SERVER then
 	end
 
 	function PLUGIN:AddGimp( owner, message )
-		filex.Append( "exsto/gimps.txt", message .. "\n" )
+		table.insert( self.Sayings, message )
+		file.Write( "exsto/gimps.txt", string.Implode( "\n", self.Sayings ) )
 		
 		return { owner, COLOR.NORM, "Adding message to ", COLOR.NAME, "gimp data!" }
 	end
