@@ -254,10 +254,20 @@ function db:GetLastUpdateTime() return self._LastUpdateTime or -1 end
 
 function db:SetLastBackupTime( t )
 	self._LastBackupTime = t;
+	
+	for _, tbl in ipairs( FEL.Config.time.backup ) do
+		if tbl[ 1 ] == self:GetName() then FEL.Config.time.backup[ _ ][ 2 ] = t break end
+	end
+	
 	FEL.SaveSettings();
 end
 function db:SetLastUpdateTime( t )
 	self._LastUpdateTime = t;
+	
+	for _, tbl in ipairs( FEL.Config.time.update ) do
+		if tbl[ 1 ] == self:GetName() then FEL.Config.time.update[ _ ][ 2 ] = t break end
+	end
+	
 	FEL.SaveSettings();
 end
 
@@ -706,7 +716,7 @@ function db:PushSaves()
 		self.Cache._new = {}
 	end
 	
-	self._LastUpdateTime = os.time()
+	self:SetLastUpdateTime( os.time() )
 end
 
 function db:Think()
@@ -910,7 +920,7 @@ function db:Backup()
 	
 	self:Debug( "Backed up database to: " .. loc, 1 )
 	
-	self._LastBackupTime = os.time()
+	self:SetLastBackupTime( os.time() )
 end
 	
 function db:Restore( data )
