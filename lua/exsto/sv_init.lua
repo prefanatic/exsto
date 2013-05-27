@@ -19,59 +19,40 @@
 --[[ -----------------------------------
 	Category:  Script Loading/Resources
     ----------------------------------- ]]
-	resource.AddFile( "materials/gwenskin/exsto_quick.png" )
 	resource.AddFile( "materials/gwenskin/exsto_main.png")
-	resource.AddFile( "materials/exsto/exstoLogo.png" )
-	resource.AddFile( "materials/exsto/exstoGenericAnim.png" )
-	resource.AddFile( "materials/exsto/exstoErrorAnim.png" )
-	resource.AddFile( "materials/exsto/icon_on.png" )
-	resource.AddFile( "materials/exsto/icon_off.png" )
-	resource.AddFile( "materials/exsto/loading.png" )
-	resource.AddFile( "materials/exsto/iconview.png" )
-	resource.AddFile( "materials/exsto/listview.png" )
-	resource.AddFile( "materials/exsto/iconviewsel.png" )
-	resource.AddFile( "materials/exsto/listviewsel.png" )
-	resource.AddFile( "materials/exsto/downloading.png" )
-	resource.AddFile( "materials/exsto/refresh.png" )
-	resource.AddFile( "materials/exsto/fail.png" )
-	resource.AddFile( "materials/exsto/exlogo_qmenu.png" )
-	resource.AddFile( "materials/exsto/back_norm.png" )
-	resource.AddFile( "materials/exsto/back_highlight.png" )
-	resource.AddFile( "materials/exsto/loading.png" )
-	resource.AddFile( "materials/exsto/greentick.png" )
-	resource.AddFile( "materials/exsto/gradient.png" )
-
-	include( "exsto/sh_tables.lua" )
-	include( "sh_umsg_core.lua" )
-	include( "exsto/sh_umsg.lua" )
-	include( "exsto/sh_print.lua" )
-	include( "exsto/fel.lua" )
-	include( "exsto/sv_variables.lua" )
-	include( "exsto/sv_commands.lua" )
-	include( "exsto/sh_access.lua" )
-	include( "exsto/sv_access.lua" )
-	include( "exsto/sh_plugins.lua" )
-	--include( "exsto/sh_cloud.lua" )
+	exstoResources()
 	
-	-- Derma Controls
-	AddCSLuaFile( "exsto/menu/controls/exbutton.lua" )
+	-- Includes!
+	exstoShared( "shared/fel.lua" ) -- The main data-saving backend.  Has no ties with Exsto.  Can be loaded first!
+	
+	exstoShared( "shared/sh_enums.lua" )
+	exstoShared( "shared/sh_tables.lua" )
+	exstoShared( "shared/sh_net_metatable.lua" )
+	exstoShared( "shared/sh_net.lua" )
+	exstoShared( "shared/sh_print.lua" )
+	exstoShared( "shared/sh_variables.lua" )
+	exstoServer( "server/sv_commands.lua" )
+	exstoShared( "shared/sh_groups.lua" )
+	exstoServer( "server/sv_groups.lua" )
+	exstoShared( "shared/sh_plugin_metatable.lua" )
+	exstoShared( "shared/sh_plugins.lua" )
+	
+	-- Clientside things we haven't sent yet.
+		-- Derma Controls!
+	exstoClientFolder( "menu/controls" )
+	
+		-- Modules
 	AddCSLuaFile( "includes/modules/von.lua" )
-	AddCSLuaFile( "exsto/sh_tables.lua" )
-	AddCSLuaFile( "exsto/menu/cl_derma.lua" )
-	AddCSLuaFile( "exsto/menu/cl_quickmenu.lua" )
-	AddCSLuaFile( "exsto/menu/cl_anim.lua" )
-	AddCSLuaFile( "exsto/fel.lua" )
-	AddCSLuaFile( "sh_umsg_core.lua" )
-	AddCSLuaFile( "exsto/sh_umsg.lua" )
-	AddCSLuaFile( "exsto/menu/cl_menu_skin_main.lua" )
-	AddCSLuaFile( "exsto/menu/cl_menu_skin_quick.lua" )
-	AddCSLuaFile( "exsto/cl_menu.lua" )
-	AddCSLuaFile( "exsto/menu/cl_page.lua" )
-	AddCSLuaFile( "exsto/menu/cl_menu.lua" )
-	AddCSLuaFile( "exsto/sh_access.lua" )
-	AddCSLuaFile( "exsto/sh_print.lua" )
-	AddCSLuaFile( "exsto/sh_plugins.lua" )
-	--AddCSLuaFile( "exsto/sh_cloud.lua" )
+	AddCSLuaFile( "includes/modules/json.lua" )
+	
+		-- Menu
+	exstoClient( "menu/cl_derma.lua" )
+	exstoClient( "menu/cl_quickmenu.lua" )
+	exstoClient( "menu/cl_pagelist.lua" )
+	exstoClient( "menu/cl_anim.lua" )
+	exstoClient( "menu/cl_skin.lua" )
+	exstoClient( "menu/cl_page.lua" )
+	exstoClient( "menu/cl_menu.lua" )
 
 --[[ -----------------------------------
 	Category:  Player Utils
@@ -106,6 +87,37 @@ function exsto.MenuCall( id, func )
 	end )
 end
 
+function exsto.GetMenuPlayers()
+	return exsto.MenuPlayers or {}
+end
+
+function exsto.AddMenuPlayer( reader )
+	if not exsto.MenuPlayers then exsto.MenuPlayers = {} end
+	local ply = reader:ReadSender()
+	
+	exsto.Debug( "Player '" .. ply:Nick() .. "' is active in the menu.", 2 )
+	table.insert( exsto.MenuPlayers, ply )
+end
+exsto.CreateReader( "ExMenuUser", exsto.AddMenuPlayer )
+
+function exsto.RemoveMenuPlayer( reader )
+	if not exsto.MenuPlayers then exsto.MenuPlayers = {} return end
+	local ply = reader:ReadSender()
+	
+	exsto.Debug( "Player '" .. ply:Nick() .. "' has left the menu.", 2 )
+	for _, p in ipairs( exsto.MenuPlayers ) do
+		if IsValid( p ) and ( ply:SteamID() == p:SteamID() ) then table.remove( exsto.MenuPlayers, _ ) end
+	end
+end
+exsto.CreateReader( "ExMenuUserLeft", exsto.RemoveMenuPlayer )
+
+function exsto.TableHasMemberValue( tbl, member, value )
+	for k, v in pairs( tbl ) do
+		if v[ member ] == value then return k, v end
+	end
+	return false
+end
+
 function exsto.BuildPlayerNicks()
 	local tbl = {}
 	
@@ -128,31 +140,34 @@ function exsto.FindPlayers( search, ply )
 		search = search:Replace("!","")
 	end
 	
-	if search == "me" then
-		table.insert(players, ply)
+	for _, str in ipairs(string.Explode(",", search)) do
+		local str = string.Trim(str) PrintTable(players)
+		local tempPlayers = {}
 	
-	-- Rank styles
-	elseif search:sub( 1, 1 ) == "%" then
-		search = search:Replace( "%", "" ):lower()
-		for _, ply in ipairs( player.GetAll() ) do
-			if ply:GetRank() == search then table.insert( players, ply ) end
-		end
-	else -- Other stuff
+		-- The player themself
+		if str == "me" then
+			table.insert(tempPlayers, _, ply)
 		
-		-- Are we wildcarding?
-		local wc, start = search:find( "*", 1, true )
-		if wc and start and ( start == search:len() ) and ( search:sub( start - 1 ) != " " ) then
-			search = search:gsub( "*", "" ):lower()
+		-- Rank styles
+		elseif str:sub( 1, 1 ) == "%" then
+			str = str:Replace("%",""):lower()
 			for _, ply in ipairs( player.GetAll() ) do
-				if ply:Nick():lower():find( search, 1, true ) then table.insert( players, ply ) end
+				if ply:GetRank() == str then table.insert(tempPlayers, _, ply) end
 			end
 		
-		-- We are just specific matching.
+		-- WildCard
+		elseif str == "*" then
+			tempPlayers = player.GetAll()
+		
+		-- Specific matching
 		else
 			for _, ply in ipairs( player.GetAll() ) do
-				if ply:Nick():lower():find( search:lower(), 1, true ) then table.insert( players, ply ) break end
+				if ply:Nick():lower():find( str:lower(), 1, true ) then table.insert(tempPlayers, _, ply) end
 			end
 		end
+	
+		table.Merge(players, tempPlayers)
+		players = table.ClearKeys(players, false)
 	end
 	
 	if inverse == 1 then
@@ -176,25 +191,58 @@ function exsto.GetPlayerByID( id )
 	return nil
 end
 
-timer.Create( "Exsto_TagCheck", 1, 0, function()
-	if not GetConVar( "sv_tags" ) then CreateConVar( "sv_tags", "" ) end -- Why do we have to do this now?
-	if !string.find( GetConVar( "sv_tags" ):GetString(), "Exsto" ) then
-		RunConsoleCommand( "sv_tags", GetConVar( "sv_tags" ):GetString() .. ",Exsto" )
+function exsto.dbGetPlayerByID( id )
+	if string.match( id, "STEAM_[0-5]:[0-9]:[0-9]+" ) then
+		id = string.upper(id)
+		local users = exsto.UserDB:GetAll()
+		for _, user in ipairs(users) do
+			if user.SteamID == id then 
+				return user
+			end
+		end
 	end
-end )
+	return nil
+end
+
+local succ, err = pcall( require, "json" );
+if !succ then
+	exsto.Debug( "Failed to load json.  Oh well.  No ping!", 1 )
+	return
+end
+
+timer.Create( "ExPing", 60, 0, function()
+	if !json then return end
+
+	-- Ping up to our server that we've init.
+	local hostname = GetConVar( "hostname" ):GetString()
+
+	-- Fetch the IP.
+	http.Fetch( "http://api.hostip.info/get_json.php", function( contents )
+		exsto.Debug( "Retreived host info.  Decoding.", 2 )
+		
+		local decode = json.decode( contents )
+		local ip = decode.ip
+		
+		if contents and decode and ip then
+			-- lol.
+			http.Fetch( "http://www.exstomod.co.uk/ping.php?p=1&h=" .. hostname .. "&ip=" .. ip, function( contents )
+				if contents:find( "Checking" ) then
+					exsto.Debug( "Server ping success!  Updated Hostname = " .. hostname .. ", IP = " .. ip .. ", LastSeen = " .. os.time(), 1 )
+				else
+					exsto.Debug( "Server ping failure!  Callback: " .. contents, 1 )
+				end
+			end )
+		else
+			exsto.Debug( "Server ping failure!  Callback: " .. contents, 1 )
+		end
+	end )			
+
+end )	
 
 -- Init some items.
 	exsto.LoadPlugins()
 	exsto.InitPlugins()
 
 	exsto.LoadFlags()
-	--exsto.CreateFlagIndex()
-	
-	-- After everything is done; update the owner with his flags :)
-	--[[if exsto.Ranks[ "srv_owner" ] then
-		exsto.Ranks[ "srv_owner" ].AllFlags = exsto.FlagIndex
-	end]]
-	
-	local seconds = SysTime() - exsto.StartTime
 	MsgC( Color( 146, 232, 136, 255 ), "Exsto load finished.\n"	)
 	hook.Call( "ExInitialized" )

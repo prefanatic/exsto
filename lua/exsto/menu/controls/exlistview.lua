@@ -22,6 +22,133 @@ PANEL = {}
 
 function PANEL:Init()
 
+	-- Data for OnRowSelected
+	self.Data = {}
+	self:SetTextInset( 5 )
+	self:SetDataHeight( 32 )
+	
+	self:SetTextColor( Color( 85, 85, 85, 255 ) )
+	self:SetTextHoverColor( Color( 255, 255, 255 ) )
+
 end
+
+function PANEL:Clear()
+	self.Data = {};
+	DListView.Clear( self )
+end
+
+function PANEL:SetQuickList()
+	self.Paint = function() end
+	self.OnMouseWheeled = nil
+end
+
+function PANEL:SetTextColor( col ) self._TextCol = col end
+function PANEL:SetTextHoverColor( col ) self._TextHover = col end
+
+function PANEL:NoHeaders()
+	self:SetHideHeaders( true )
+	self:AddColumn( "" )
+end
+
+function PANEL:SetFont( fnt )
+	self._Font = fnt
+end
+
+function PANEL:SetTextInset( x, y )
+	self._TINX = x or 0
+	self._TINY = y or 0
+end
+function PANEL:GetTextInset() return self._TINX, self._TINY end
+
+function PANEL:GetFont() return self._Font or "ExGenericTextNoBold14" end
+
+function PANEL:LinePaintOver( func )
+	self._LinePaintOver = func
+end
+
+function PANEL:AddRow( cols, data )
+	
+	local line = self:AddLine( unpack( cols ) )
+	table.insert( self.Data, { Data = data, Display = { unpack( cols ) }, Obj = line } ) -- It will match up with the lineID.  I think.  :I
+	
+	-- Reference so we don't have to search for the line's data
+	line.Info = self.Data[ #self.Data ]
+	
+	for i, label in ipairs( line.Columns ) do
+		label:SetTextInset( self:GetTextInset() )
+		label:SetFont( "ExGenericText16" )
+	end
+	
+	if self._LinePaintOver then
+		line.PaintOver = self._LinePaintOver
+	end
+	
+	-- I hate this :(
+	line.__OLDTHINK = line.Think
+	line.Think = function( l )
+		if !l.Hovered and l.HoverThinked then l.Columns[ 1 ]:SetTextColor( self._TextCol ) l.HoverThinked = false end
+		if l.Hovered and !l.HoverThinked then l.Columns[ 1 ]:SetTextColor( self._TextHover ) l.HoverThinked = true end
+		if l.__OLDTHINK then
+			return l.__OLDTHINK()
+		end
+	end
+	
+	return line
+
+end
+
+function PANEL:GetLineDataFromObj( obj )
+	for id, linedata in ipairs( self.Data ) do
+		if linedata.Obj == obj then return linedata.Data end
+	end
+	return nil
+end
+
+function PANEL:GetLineData( disp )
+	for id, linedata in ipairs( self.Data ) do
+		if linedata.Display == disp then return linedata.Data end
+	end
+	return nil
+end
+
+function PANEL:GetLineObj( disp )
+	for id, linedata in ipairs( self.Data ) do
+		if linedata.Display == disp then return self:GetLine( id ) end
+	end
+	return nil
+end	
+
+function PANEL:LineSelected( disp, data, lineobj )
+	
+end
+
+function PANEL:LineRightSelected( disp, data, lineobj )
+end
+
+function PANEL:OnRowSelected( lineID, line )
+	local disp = self.Data[ lineID ].Display
+	local data = self.Data[ lineID ].Data
+	
+	self:LineSelected( disp, data, line )
+end
+
+function PANEL:OnRowRightClick( lineID, line )
+	local disp = self.Data[ lineID ].Display
+	local data = self.Data[ lineID ].Data
+	
+	self:LineRightSelected( disp, data, line )
+end
+
+function PANEL:PerformLayout()
+	DListView.PerformLayout( self )
+	if IsValid( self.VBar ) then
+		self.VBar:SetPos( self:GetWide() - 3, 0 )
+		self.VBar:SetSize( 3, self:GetTall() )
+		self.VBar:SetUp( self.VBar:GetTall() - self:GetHeaderHeight(), self.pnlCanvas:GetTall() )
+		
+		self.pnlCanvas:SetWide( self:GetWide() )
+	end
+end
+
 
 derma.DefineControl( "ExListView", "Exsto ListView", PANEL, "DListView" )

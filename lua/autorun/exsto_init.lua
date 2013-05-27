@@ -17,7 +17,6 @@
 ]]
 
 if !von then require( "von" ) end
-//if !datastream then require( "datastream" ) end
 
 AddCSLuaFile( "autorun/exsto_init.lua" )
 
@@ -31,6 +30,8 @@ local function PrintLoading( srvVer )
 |   |___ |   _   | _____| |  |   |  |       |
 |_______||__| |__||_______|  |___|  |_______|
   Coded by Prefanatic.  Designed by Revanne
+  Version - ]] .. tostring( exsto.VERSION ) .. [[
+  
 ]] )
 end
 
@@ -39,16 +40,58 @@ local function LoadVariables( srvVer )
 	exsto = {}
 	exsto.DebugEnabled = true
 	exsto.StartTime = SysTime()
+	exsto.Debug = function() end -- To prevent nil functions if something tries debugging before the print system handles it.
 	
-	exsto.VERSION = 100
+	exsto.VERSION = file.Read( "data/exsto/version.txt", "GAME" ) or "unknown"
 end
 
-function exstoInclude( fl )
-	include( fl )
+-- Helpers
+function exstoShared( fl )
+	exstoServer( fl )
+	exstoClient( fl )
 end
-	
-function exstoAddCSLuaFile( fl )
-	AddCSLuaFile( fl )
+
+function exstoServer( fl )
+	if not SERVER then return end
+	include( "exsto/" .. fl )
+end
+
+function exstoClient( fl )
+	if SERVER then
+		AddCSLuaFile( "exsto/" .. fl )
+	elseif CLIENT then
+		include( "exsto/" .. fl )
+	end
+end
+
+function exstoServerFolder( loc )
+	local fs = file.Find( "exsto/" .. loc .. "/*.lua", "LUA" )
+	for _, fl in ipairs( fs ) do
+		exstoServer( loc .. "/" .. fl )
+	end
+end
+
+function exstoClientFolder( loc )
+	local fs = file.Find( "exsto/" .. loc .. "/*.lua", "LUA" )
+	for _, fl in ipairs( fs ) do
+		exstoClient( loc .. "/" .. fl )
+	end
+end
+
+function exstoResources()
+	local fs = file.Find( "materials/exsto/*", "GAME" )
+	for _, fl in ipairs( fs ) do
+		resource.AddFile( "materials/exsto/" .. fl )
+	end
+	local fs = file.Find( "resource/fonts/*.ttf", "GAME" )
+	for _, fl in ipairs( fs ) do
+		resource.AddFile( "resource/fonts/" .. fl )
+	end
+end
+
+function exstoModule( mod )
+	include( "includes/modules/" .. mod )
+	if SERVER then AddCSLuaFile( "includes/modules/" .. mod ) end
 end
 
 function exstoInit( srvVer )
@@ -65,11 +108,14 @@ function exstoInit( srvVer )
 	LoadVariables( srvVer )
 	PrintLoading( srvVer )
 	
+	-- Create our data directory.
+	file.CreateDir( "exsto", "DATA" )
+	
 	if SERVER then
-		exstoInclude( "exsto/sv_init.lua" )
-		exstoAddCSLuaFile( "exsto/cl_init.lua" )
+		exstoServer( "sv_init.lua" )
+		exstoClient( "cl_init.lua" )
 	elseif CLIENT then
-		exstoInclude( "exsto/cl_init.lua" )
+		exstoClient( "cl_init.lua" )
 	end
 end
 
@@ -104,7 +150,7 @@ elseif CLIENT then
 	end
 	usermessage.Hook( "clexsto_load", init )
 
-	function onEntCreated( ent )
+	local function onEntCreated( ent )
 		if LocalPlayer():IsValid() then
 			LocalPlayer():ConCommand( "exsto_cl_load\n" )
 			hook.Remove( "OnEntityCreated", "ExSystemLoad" )

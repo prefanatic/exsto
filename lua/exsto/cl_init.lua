@@ -20,29 +20,66 @@
 	Category:  Script Loading
      ----------------------------------- ]]
 	
-	-- Load our derma controls
-	include( "exsto/menu/controls/exbutton.lua" )
-	 
-	include( "exsto/menu/cl_derma.lua" )
-	include( "exsto/menu/cl_anim.lua" )
-	include( "exsto/sh_tables.lua" )
-	include( "exsto/sh_umsg_core.lua" )
-	include( "exsto/sh_umsg.lua" )
-	include( "exsto/sh_print.lua" )
-	include( "exsto/fel.lua" )
-	include( "exsto/menu/cl_menu_skin_main.lua" )
-	include( "exsto/menu/cl_menu_skin_quick.lua" )
-	include( "exsto/menu/cl_menu.lua" )
-	include( "exsto/menu/cl_page.lua" )
-	include( "exsto/menu/cl_quickmenu.lua" )
-	include( "exsto/cl_menu.lua" )
-	include( "exsto/sh_access.lua" )
-	include( "exsto/sh_plugins.lua" )
-	--include( "exsto/sh_cloud.lua" )
+		-- Modules
+	exstoClient( "shared/fel.lua" )
+
+		-- Load our derma controls
+	exstoClientFolder( "menu/controls" )
+
+		-- Menu
+	exstoClient( "menu/cl_skin.lua" )
+	exstoClient( "menu/cl_derma.lua" )
+	exstoClient( "menu/cl_anim.lua" )
+	exstoClient( "menu/cl_menu.lua" )
+	exstoClient( "menu/cl_page.lua" )
+	exstoClient( "menu/cl_quickmenu.lua" )
+	exstoClient( "menu/cl_pagelist.lua" )
+
+		-- Core
+	exstoClient( "shared/sh_enums.lua" )
+
+	exstoClient( "shared/sh_tables.lua" )
+	exstoClient( "shared/sh_net_metatable.lua" )
+	exstoClient( "shared/sh_net.lua" )
+	exstoClient( "shared/sh_print.lua" )
+	exstoClient( "shared/sh_variables.lua" )
+
+	exstoClient( "shared/sh_groups.lua" )
+	exstoClient( "shared/sh_plugin_metatable.lua" )
+	exstoClient( "shared/sh_plugins.lua" )
+
+	-- I don't know why or how, but sometimes LocalPlayer is completely valid BEFORE clientside actually finishes a load....
+	-- SO!  Lets check.  If we're good, we good.  If not, lets make sure we GET good.
+	if LocalPlayer() and IsValid( LocalPlayer() ) then
+		hook.Call( "ExClientLoading" )
+		exsto.CreateSender( "ExClientLoad" ):Send()
+	else
 	
-	-- Init clientside items.
-	exsto.LoadPlugins()
-	exsto.InitPlugins( launchInit )
+		hook.Add( "OnEntityCreated", "ExPlayerCheck", function( ent )
+			print( ent, ent == LocalPlayer() )
+			if ent == LocalPlayer() and IsValid( ent ) then
+				hook.Call( "ExClientLoading" )
+				exsto.CreateSender( "ExClientLoading" ):Send()
+				hook.Remove( "OnEntityCreated", "ExPlayerCheck" )
+			end
+		end )
+	end
+	
+	hook.Add( "ExReceivedPlugSettings", "ExInitCLPlugs", function()
+		if #exsto.Plugins == 0 then
+			exsto.LoadPlugins()
+			exsto.InitPlugins()
+			
+			-- Legacy
+			hook.Call( "ExPluginsReady" )
+			exsto.CreateSender( "ExClientReady" ):Send()
+		else
+			-- We just want to poll a reload of plugins if one changed or not.
+			for _, plug in ipairs( exsto.Plugins ) do
+				plug:CheckStatus()
+			end
+		end
+	end )
 	
 	local seconds = SysTime() - exsto.StartTime
-	MsgC( Color( 146, 232, 136, 255 ), "Exsto load finished.\n"	)
+	MsgC( Color( 146, 232, 136, 255 ), "Exsto load finished.  Waiting for server to initiate plugin load.\n"	)

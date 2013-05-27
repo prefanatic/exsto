@@ -16,470 +16,347 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
--- GOD DAMNITF
-
 local qm = {
-	Shadow = Material( "exsto/gradient.png" );
+	Main = nil;
+	List = nil;
 }
 
-local function playerObjectClick( lst, lineID, line )
-	timer.Simple( 0.01, function()
-		-- TODO: Multiselect.  For now, just go.
-		if line._PREVENTCLICK then return end
-				
-		qm.ExecTbl[ "PLAYER" ] = { line.Data.Ply }
-		
-		qm.Parent.ComWindow:Populate( "..." )
-		
-		qm.Parent.ComWindow:SetVisible( true )
-		qm.Parent.ComWindow:SetPos( 4, 28 )
-		
-		qm.Parent.PlayerListScroller:SetPos( -qm.Parent:GetWide() - 2, 28 )
-		
-		-- Button stuff
-		qm.Parent.BackButton._Disabled = false
-		qm.Parent.BackButton:SetImage( "exsto/back_highlight.png" )
-		qm.Parent.BackButton._WorkingIndex = -1
-	end )
+local function clearContent( pnl )
+	if !pnl.Categories then pnl.Categories = {} return end
+	for rank, cat in pairs( pnl.Categories ) do
+		cat:Remove()
+	end
+	pnl.Categories = {}
 end
 
-local function playerObjectRightClick( lst, lineID, line )
-	-- Breaks exsto's modular design, but I don't care.
-	if !exsto.Commands[ "kick" ] or !exsto.Commands[ "ban" ] then return end
+local function mainOnShowtime( obj )
+	local pnl = obj.Content
+	
+	clearContent( pnl )
+	
+	-- Loop through our players to construct the ranks table.
+	local tbl = {}
+	for _, ply in ipairs( player.GetAll() ) do
+		if !tbl[ ply:GetRank() ] then tbl[ ply:GetRank() ] = {} end;
+		table.insert( tbl[ ply:GetRank() ], { Player = ply, Immunity = exsto.Ranks[ ply:GetRank() ].Immunity } )
+	end
+	pnl.FormattedTable = tbl;
+	
+	-- And now we loop through that table to construct the categories n stuff.
+	for rank, players in SortedPairsByMemberValue( tbl, "Immunity", true ) do
+		local cat = pnl:CreateCategory( exsto.Ranks[ rank ].Name )
 		
-	-- Prevent playerObjectClick from running because OnRowRightClick gets called with OnRowClick.... What the fuck!
-	line._PREVENTCLICK = true
-	timer.Simple( 0.02, function() line._PREVENTCLICK = false end )
-	
-	local menu = DermaMenu()
-		menu:AddOption( "Kick", function() RunConsoleCommand( exsto.Commands[ "kick" ].CallerID, line.Data.Ply:Nick() ) qm.Parent.PlayerList:Update() end )
-		menu:AddOption( "Ban", function() RunConsoleCommand( exsto.Commands[ "ban" ].CallerID, line.Data.Ply:Nick() ) qm.Parent.PlayerList:Update() end )
-	menu:Open()
-end
-
-local function categoryPaint( cat )
-	surface.SetFont( "ExGenericText19" )
-	local w, h = surface.GetTextSize( cat.Header:GetValue() )
-	
-	surface.SetDrawColor( 195, 195, 195, 195 )
-	surface.DrawLine( w + 10, ( cat.Header:GetTall() / 2 ), cat.Header:GetWide() - 5, ( cat.Header:GetTall() / 2 ) )
-end
-
-local function buttonBackClick( btn )
-	if !btn._WorkingIndex then return end
-	if btn._Disabled then return end
-	
-	if ( btn._WorkingIndex - 1 ) == 0 then -- We need to go back to the command list.
-		local currentBox = qm.Parent.ComWindow.Objects[ btn._WorkingIndex ]
-			currentBox:SetPos( qm.Parent:GetWide() + 2, 0 )
+		cat.List = vgui.Create( "ExListView", cat )
+			cat.List:DockMargin( 4, 0, 4, 0 )
+			cat.List:Dock( TOP )
+			cat.List:DisableScrollbar()
+			cat.List:AddColumn( "" )
+			cat.List.OnMouseWheeled = nil
+			cat.List:SetHideHeaders( true )
+			cat.List:SetQuickList()
+			cat.List.LineSelected = function( l, disp, data, line )
+				qm.WorkingPlayer = data.Player
+				exsto.Menu.OpenPage( qm.List )
+				exsto.Menu.EnableBackButton()
+			end
 			
-		-- Bring back the command list.
-		qm.Parent.ComWindow.CommandList:SetPos( 0, 0 )
-		qm.Parent.ComWindow:Clean()
-		btn._WorkingIndex = -1
-		return
-	end
-	
-	if ( btn._WorkingIndex == -1 ) then -- We're on the command list, and we need to go to players.
-		qm.Reset( true )
-		return
-	end
-	
-	-- If we made it through all those special instances, just move back a page.
-	local currentBox = qm.Parent.ComWindow.Objects[ btn._WorkingIndex ]
-	local prevBox = qm.Parent.ComWindow.Objects[ btn._WorkingIndex - 1 ]
-		currentBox:SetPos( qm.Parent:GetWide() + 2, 0 )
-		prevBox:SetPos( 0, 0 )
-		prevBox:SetVisible( true )
-		
-		table.remove( qm.ExecTbl, btn._WorkingIndex - 1 )
-		
-		btn._WorkingIndex = btn._WorkingIndex - 1
-		
-	return
-end
-
-local function newPanelClick( btn )
-
-	-- Lets create a derma menu of the pages that we have.+
-	local pgs = exsto.Menu.GetPages();
-	local menu = DermaMenu()
-	
-	for _, obj in ipairs( pgs ) do
-		if obj:GetID() != "quickmenu" then -- We don't want to open ourself :P
-			menu:AddOption( obj:GetTitle(), function() exsto.Menu.OpenPage( obj ) end )
+		for _, data in ipairs( players ) do
+			cat.List:AddRow( { data.Player:Nick() }, data )
 		end
+		
+		cat.List:SetDirty( true )
+		cat.List:InvalidateLayout( true )
+		cat.List:SizeToContents()
+		
+		cat:InvalidateLayout( true )
+		pnl.Categories[ rank ] = cat;
 	end
-	menu:Open()
 end		
 
-local function pntShadow( pnl )
-	surface.SetMaterial( qm.Shadow )
-	surface.SetDrawColor( 255, 255, 255, 255 )
-	surface.DrawTexturedRect( 0, 0, pnl:GetWide(), 9 )
+local function initQuickMenu( pnl )
+	-- We have multiple player lists, constructed by our ranks.  So this function pretty much does nothing, as it happens in Showtime.
+	qm.Main = obj
 end
 
-function exsto.InitQuickMenu( pnl )
-	qm.Parent = pnl
-	
-	-- Create the buttons up top yo.
-	pnl.BackButton = exsto.CreateImageButton( 6, 4, 32, 32, "back_norm.png", pnl )
-		pnl.BackButton._Disabled = true
-		pnl.BackButton.DoClick = buttonBackClick
-		
-	-- Create the new panel button
-	--pnl.NewPanel = exsto.CreateButton( 0, 0, 26, 20, "+", pnl )
-		--pnl.NewPanel:MoveRightOf( pnl.BackButton, 6 )
-		--pnl.NewPanel.DoClick = newPanelClick
-		
-	-- Logo
-	pnl.Logo = vgui.Create( "DImage", pnl )
-		pnl.Logo:SetPos( pnl:GetWide() - 129, 1 )
-		pnl.Logo:SetSize( 128, 32 )
-		pnl.Logo:SetImage( "exsto/exlogo_qmenu.png" )
-		
-	-- Create search box
-	pnl.Search = exsto.CreateTextEntry( 4, pnl:GetTall() - 30, pnl:GetWide() - 8, 24, pnl )
-		pnl.Search.OnTextChanged = function( entry )
-			-- If we're typing, we should lock the menu open.
-			exsto.Menu.OpenLock = true
-			
-			local loc = qm.Parent.BackButton._WorkingIndex
-			local disabled = qm.Parent.BackButton._Disabled
-			
-			if disabled then -- We're on the player list.  Search in it.
-				qm.Parent.PlayerList:CreateContent( entry:GetValue():lower() )
-			elseif loc == -1 then -- We're working in the command list.
-				qm.Parent.ComWindow:Populate( "...", entry:GetValue():lower() )
-			end
-		end
-		pnl.Search.OnEnter = function( entry )
-			-- Reset the search
-			entry:SetText( "" )
-			entry:OnTextChanged()
-		end
-		pnl.Search.DoClick = function( entry )
-			exsto.Menu.OpenLock = true
-		end
-
-	-- Create the player list
-	pnl.PlayerListScroller = vgui.Create( "DScrollPanel", pnl )
-		pnl.PlayerListScroller:SetPos( 4, 28 )
-		pnl.PlayerListScroller:SetSize( pnl:GetWide() - 8, pnl:GetTall() - 65 )
-		
-	local function scrollHandler( p, dlta )
-		print( 'ldkfjdsf', dlta )
-		return pnl.PlayerListScroller:OnMouseWheeled( dlta )
+local function clearContent( pnl )
+	if !pnl.Objects then pnl.Objects = {} return end
+	pnl.LastState = {}
+	for cat, o in pairs( pnl.Objects ) do
+		pnl.LastState[ cat ] = o:GetExpanded();
+		o:Remove()
 	end
-		
-	pnl.PlayerList = vgui.Create( "DPanelList", pnl.PlayerListScroller )
-		pnl.PlayerList:SetSize( pnl:GetWide() - 8, pnl:GetTall() - 65 )
-		pnl.PlayerList:SetPos( 0, 0 )
-		pnl.PlayerList:SetSpacing( 5 )
-		pnl.PlayerList:SetPadding( 5 )
-		pnl.PlayerList:EnableHorizontal( false )
-		--pnl.PlayerList:EnableVerticalScrollbar( true )
-		pnl.PlayerList.OnMouseWheeled = scrollHandler
-		
-		pnl.PlayerList.Paint = function( pnl )
-			pnl:GetSkin().tex.Input.ListBox.Background( 0, 0, pnl:GetWide(), pnl:GetTall() );
-		end
-		
-		pnl.PlayerList.PaintOver = pntShadow
-		
-		-- We need to format a table with ranks and all the players in that rank for the collapseable cats.
-		pnl.PlayerList.Format = function( lst )
-			lst.Objects = {} 
-			
-			-- Loop through players
-			local rnk
-			for _, v in ipairs( player.GetAll() ) do
-				rnk = v:GetRank()
-				
-				-- Create a category for it.
-				if !lst.Objects[ rnk ] then lst.Objects[ rnk ] = {} end
-				
-				-- Throw our player into that.
-				table.insert( lst.Objects[ rnk ], { Ply = v, I = exsto.Ranks[ rnk ].Immunity } )
-			end
-		end
-		
-		pnl.PlayerList.ClearContent = function( lst )
-			if !lst.Categories then lst.Categories = {} return end
-			for rnk, pnl in pairs( lst.Categories ) do
-				pnl:Remove()
-			end
-			lst.Categories = {}
-		end
-		
-		-- We need to create the content for the player list with our formatted table.
-		pnl.PlayerList.CreateContent = function( lst, search )
-			lst:ClearContent()
-			
-			-- Loop through the formatted table
-			for rank, plyTbl in SortedPairsByMemberValue( lst.Objects, "Immunity", true ) do
-				
-				-- Create the collapsible category for it.
-				local cat = exsto.CreateCollapseCategory( 0, 0, lst:GetWide(), 50, exsto.Ranks[ rank ].Name, pnl.PlayerList )
-					cat.Header:SetTextColor( Color( 0, 180, 255, 255 ) )
-					cat.Header:SetFont( "ExGenericText19" )
-					cat.Header.UpdateColours = function( self, skin ) end
-					cat.Header.OnMousePressed = function( c )
-						--cat:Toggle() -- Fuck you garry.
-					end
-					cat.Header.OnMouseWheeled = scrollHandler
-					cat.Paint = categoryPaint
-				
-				-- Now, we need to go through and add our playes to it.
-				cat.PlyList = exsto.CreateListView( 0, 0, 0, 0, cat )
-					cat.PlyList:AddColumn( "" )
-					cat.PlyList:SetHideHeaders( true )
-					cat.PlyList:SetDataHeight( 30 )
-					cat.PlyList:DisableScrollbar() -- Shouldn't need it.  We're going to resize based on content anyways.
-					cat.PlyList.OnRowSelected = playerObjectClick
-					cat.PlyList.OnRowRightClick = playerObjectRightClick -- Thank god for Garry making this override.  Half expected it not to exist.
-					cat.PlyList.OnMouseWheeled = scrollHandler
-					cat.PlyList.Paint = function() end
-				
-				local count = 0
-				for _, data in ipairs( plyTbl ) do
-					if string.find( data.Ply:Nick(), search or "" ) then
-						local obj = cat.PlyList:AddLine( data.Ply:Nick() )
-							obj.Columns[1]:SetFont( "ExGenericTextMidBold16" )
-							obj.Data = data
-						count = count + 34
-					end
-				end
-				
-				-- Set the list's size based off our content we just added to it.
-				cat.PlyList:SetSize( cat:GetWide(), count )
-				--cat.PlyList:SizeToContents()
-				
-				-- Set the contents of the collapsable to the list.
-				cat:SetContents( cat.PlyList )
-				cat:SetExpanded( true )
-				--cat:SetTall( count )
-				cat:SetTall( count + cat.Header:GetTall() )
-				
-				-- And add the category to the DIconLayout
-				lst:AddItem( cat )
-				
-				lst.Categories[ rank ] = cat
-				
-			end
-		end
-		
-		pnl.PlayerList.Update = function( lst )
-			lst:Format()
-			lst:CreateContent()
-		end
-		
-		exsto.Animations.CreateAnimation( pnl.PlayerList )
-		exsto.Animations.CreateAnimation( pnl.PlayerListScroller )
-		
-	qm.CreateCommandWindow( pnl )
-	
+	pnl.Objects = {}
 end
 
-function qm.Reset( bool, disableAnim )
-	if bool then
-		qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, -qm.Parent:GetWide() - 2, 28 )
-		qm.Parent.PlayerListScroller.Anims[ 1 ].Current = -qm.Parent:GetWide() - 2
-		qm.Parent.PlayerListScroller.Anims[ 1 ].Last = -qm.Parent:GetWide() - 2
-		qm.Parent.PlayerListScroller:SetPos( 4, 28 )
+local function starredCommand( id )
+	local starred = qm.Data:ReadAll()
+	for _, data in ipairs( starred ) do
+		if data.Command == id then return true end
+	end
+	return false
+end
+
+local function executeCommand()
+	local data = qm.WorkingData
+	local execTbl = { data.CallerID, qm.WorkingPlayer:Nick() }
+
+	for _, arg in ipairs( data.ReturnOrder ) do
+		if _ != 1 then
+			table.insert( execTbl, qm.WorkingExecute[ arg ] )
+		end
+	end
+	
+	RunConsoleCommand( unpack( execTbl ) )
+end
+
+local function commandClicked( list, display, data, line )
+	if line._OMGRIGHTCLICKED then return end
+	
+	-- We just want to execute with all dem optionals filled in for us.  SO DO THAT.
+	qm.WorkingData = data
+	qm.WorkingExecute = { }
+	
+	for count, arg in ipairs( data.ReturnOrder ) do
+		qm.WorkingExecute[ arg ] = data.Optional[ arg ]
+	end
+	
+	executeCommand()
+	exsto.Menu.OpenPage( qm.List )
+	exsto.Menu.DisableBackButton()
+
+end
+
+local function commandRightClicked( list, display, data, line )
+	line._OMGRIGHTCLICKED = 1
+	timer.Simple( 0.1, function() line._OMGRIGHTCLICKED = 0 end ) -- Because gayre doesn't have any of this standard?
+	
+	if starredCommand( data.ID ) then -- We're starred.  Unstar us.
+		qm.Data:DropRow( data.ID )
+		qm.List.Content:Populate()
 	else
-		qm.Parent.PlayerListScroller.OldFuncs.SetPos( qm.Parent.PlayerListScroller, 4, 28 )
-		qm.Parent.PlayerListScroller.Anims[ 1 ].Current = 4
-		qm.Parent.PlayerListScroller.Anims[ 1 ].Last = 4
+		qm.Data:AddRow( {
+			Command = data.ID;
+			TimesUsed = 1;
+		} )
+		qm.List.Content:Populate()
 	end
-	
-	qm.Parent.PlayerList:Update()
-
-	if disableAnim then
-		qm.Parent.ComWindow.OldFuncs.SetPos( qm.Parent.ComWindow, qm.Parent:GetWide() + 2, 28 )
-		qm.Parent.ComWindow.Anims[ 1 ].Current = qm.Parent:GetWide() + 2
-		qm.Parent.ComWindow.Anims[ 1 ].Last = qm.Parent:GetWide() + 2
-	else
-		qm.Parent.ComWindow:SetPos( qm.Parent:GetWide() + 2, 28 )
-	end
-	
-	qm.Parent.ComWindow:Cleanup()
-	
-	qm.ExecTbl = {}
-	qm.Parent.SelectedItem = nil
-	
-	qm.Parent.BackButton._Disabled = true
-	qm.Parent.BackButton:SetImage( "exsto/back_norm.png" )
-	
-	qm.Parent.Search:SetText( "" )
-end
-exsto.QuickMenuReset = qm.Reset
-
-function qm.Execute()
-	local call = qm.Parent.SelectedItem.CallerID
-	local plys = table.Copy( qm.ExecTbl["PLAYER"] )
-		qm.ExecTbl["PLAYER"] = nil
-	
-	for index, ply in ipairs( plys ) do
-		RunConsoleCommand( call, ply:Nick(), unpack( qm.ExecTbl ) )
-	end
-	
-	timer.Simple( 0.01, function() qm.Reset(true) end )
 end
 
-function qm.CreateCommandWindow( pnl )
-	-- Create the command window.
+local function listOnShowtime( obj )
+	local pnl = obj.Content
+	pnl:Populate();	
+end
 
-	pnl.ComWindow = exsto.CreatePanel( pnl:GetWide() + 2, 28, pnl:GetWide() - 8, pnl:GetTall() - 65, Color( 255, 255, 255, 255 ), pnl )
-	pnl.ComWindow:SetVisible( false )
+local function quickOnClick( obj )
+	qm.WorkingData = obj.CommandData
+	qm.WorkingExecute = { }
 	
-	pnl.ComWindow.Objects = {}
-	qm.ExecTbl = {}
-	
-	--pnl.ComHolder = exsto.CreateComboBox( 0, 0, pnl.ComWindow:GetWide(), pnl.ComWindow:GetTall(), pnl.ComWindow )
-	
-	pnl.ComWindow.Cleanup = function( pnl )
-		for _, obj in ipairs( pnl.Objects ) do
-			if obj and obj:IsValid() then
-				if _ == #pnl.Objects then
-					timer.Simple( 0.4, function() obj:Remove() end ) -- To remove after the animation is done.
-				else
-					obj:Remove() 
-				end
-			end
-		end
-		pnl.ExecTbl = {}
-		pnl.Objects = {}
-		pnl.FromCommandList = false
-		
-		if pnl.CommandList then
-			pnl.CommandList:SetPos( 0, 0 )
-		end
-	end
-	
-	local function rowSelectFunc( combobox, lineID, line )
-		if line.Type == "COMMAND" then -- If this is a command
-			qm.Parent.SelectedItem = line.Data
-			-- Check if there is anything for us to do.
-			if #qm.Parent.SelectedItem.ReturnOrder == 1 then
-				qm.Execute()
-				return
-			end
-			
-			combobox:SetPos( -combobox:GetWide() - 2, 0 )
-			pnl.ComWindow:Clean()
-			pnl.ComWindow:Populate( line.Data )
-			pnl.ComWindow.Objects[ 1 ]:SetPos( 0, 0 )
-			
-			-- Set our button as active.
-			pnl.BackButton._Disabled = false
-			pnl.BackButton:SetImage( "exsto/back_highlight.png" )
-			pnl.BackButton._WorkingIndex = 1
-			
-			combobox:ClearSelection()
-			
-			return
-		end
-		
-		table.insert( qm.ExecTbl, line.Data )
-		
-		local nextComboBox = pnl.ComWindow.Objects[ combobox.Index + 1 ]
-		
-		if !nextComboBox then -- We've hit the last possible one.  Quit and execute.
-			qm.Execute()
-			return
-		end
+	exsto.Menu.OpenPage( qm.Argument )
+end
 
-		if nextComboBox.Optional then
-			-- TODO: Create button to execute and just throw the optionals in.
-		end
+local function initList( pnl )
+
+	-- Throw this into a populate just because we need to run it when we change starred commands.
+	pnl.Populate = function()
+		-- Remove all our old stuff.
+		clearContent( pnl )
 		
-		combobox:SetPos( -combobox:GetWide() - 2, 0 )
-		nextComboBox:SetPos( 0, 0 )
-		
-		combobox:ClearSelection()
-		
-		-- Set our button as active.
-		pnl.BackButton._Disabled = false
-		pnl.BackButton:SetImage( "exsto/back_highlight.png" )
-		pnl.BackButton._WorkingIndex = combobox.Index + 1
-	end
-	
-	pnl.ComWindow.Clean = function( pnl )
-		for _, obj in ipairs( pnl.Objects ) do
-			obj:Remove() 
-		end
-		pnl.Objects = {}
-	end
-	
-	pnl.ComWindow.Populate = function( pnl, data, search )
-		if type( data ) == "string" and data == "..." then -- We need to create this list full of commands
-			pnl.FromCommandList = true
-			
-			if !pnl.CommandList then
-				pnl.CommandList = exsto.CreateListView( 0, 0, pnl:GetWide(), pnl:GetTall(), pnl )
-					pnl.CommandList:AddColumn( "" )
-					pnl.CommandList:SetHideHeaders( true )
-					pnl.CommandList:SetDataHeight( 30 )
-					pnl.CommandList.OnRowSelected = rowSelectFunc
-					pnl.CommandList.PaintOver = pntShadow
-					exsto.Animations.CreateAnimation( pnl.CommandList )
-			else 
-				pnl.CommandList:SetVisible( true )
-				pnl.CommandList:Clear() 
+		-- Create the categories and the commands we want to mess with.
+		local tbl = {}
+		for id, comData in pairs( exsto.Commands ) do
+			if LocalPlayer():IsAllowed( id ) then
+				if !tbl[ comData.Category ] and comData.QuickMenu then tbl[ comData.Category ] = {} end
+				if comData.QuickMenu then table.insert( tbl[ comData.Category ], id ) end
 			end
+		end
+		
+		-- Create the starred category.
+		local cat = pnl:CreateCategory( "Starred" )
+		
+		cat.List = vgui.Create( "ExListView", cat )
+			cat.List:DockMargin( 4, 0, 4, 0 )
+			cat.List:Dock( TOP )
+			cat.List:DisableScrollbar()
+			cat.List:AddColumn( "" )
+			cat.List.OnMouseWheeled = nil
+			cat.List:SetHideHeaders( true )
+			cat.List:SetQuickList()
+			cat.List.LineSelected = commandClicked
+			cat.List.LineRightSelected = commandRightClicked
+			
+		-- Add the starred to this list.
+		for _, data in ipairs( qm.Data:ReadAll() ) do
+			local command = exsto.Commands[ data.Command ]
+			local line = cat.List:AddRow( { command.DisplayName }, command )
+			
+			if table.Count( command.ExtraOptionals ) > 0 then
+				-- Overlay our quick button
+				line.Quick = vgui.Create( "ExQuickOverlay", line )
+					line.Quick.OnClick = quickOnClick
+					line.Quick.CommandData = command
+			end
+			
+			--exsto.Animations.Create( line.Quick )
+		end
+		
+		cat.List:SetDirty( true )
+		cat.List:InvalidateLayout( true )
+		cat.List:SizeToContents()
+		
+		cat:InvalidateLayout( true )
+		cat:SetHideable( true )
+		table.insert( pnl.Objects, cat )
+		
+		-- Now we want to add in the rest of the commands, categorized.
+		for cat, commands in pairs( tbl ) do
+			local cat = pnl:CreateCategory( cat )
+			cat.List = vgui.Create( "ExListView", cat )
+				cat.List:DockMargin( 4, 0, 4, 0 )
+				cat.List:Dock( TOP )
+				cat.List:DisableScrollbar()
+				cat.List:AddColumn( "" )
+				cat.List.OnMouseWheeled = nil
+				cat.List:SetHideHeaders( true )
+				cat.List:SetQuickList()
+				cat.List.LineSelected = commandClicked
+				cat.List.LineRightSelected = commandRightClicked
 				
-			local comboObj
-			for id, comdata in SortedPairsByMemberValue( exsto.Commands, "DisplayName", false ) do
-				if comdata.QuickMenu and string.find( comdata.DisplayName, search or "" ) then
-					comboObj = pnl.CommandList:AddLine( comdata.DisplayName )
-						comboObj.Columns[1]:SetFont( "ExGenericTextMidBold16" )
-						comboObj.Type = "COMMAND"
-						comboObj.Data = comdata
+			for _, id in ipairs( commands ) do
+				local command = exsto.Commands[ id ]
+				local line = cat.List:AddRow( { command.DisplayName }, command )
+				
+				if table.Count( command.ExtraOptionals ) > 0 then
+					-- Overlay our quick button
+					line.Quick = vgui.Create( "ExQuickOverlay", line )
+						line.Quick.OnClick = quickOnClick
+						line.Quick.CommandData = command
 				end
-			end				
-			return
-		end
-		
-		-- Create a proper return order w/o players
-		local returnOrder = table.Copy( data.ReturnOrder )
-		for _, arg in ipairs( data.ReturnOrder ) do
-			if data.Args[ arg ] == "PLAYER" then table.remove( returnOrder, _ ) end
-		end
-		
-		local argName, t, comboPnl, comboObj
-		for I = 1, #returnOrder do
-			argName = returnOrder[ I ]
-			t = data.Args[ argName ]
-			
-			comboPnl = exsto.CreateListView( 0, 0, pnl:GetWide(), pnl:GetTall(), pnl )
-				comboPnl:AddColumn( "" )
-				comboPnl:SetHideHeaders( true )
-				comboPnl:SetDataHeight( 30 )
-				comboPnl.PaintOver = pntShadow
-				comboPnl.Index = I
-
-			for _, fillData in ipairs( data.ExtraOptionals[ argName ] ) do
-				comboObj = comboPnl:AddLine( fillData.Display )
-					comboObj.Columns[1]:SetFont( "ExGenericTextMidBold16" )
-					comboObj.Type = t
-					comboObj.Data = tostring( fillData.Data or fillData.Display )
+				
+				--exsto.Animations.Create( line.Quick )
 			end
 			
-			comboPnl.OnRowSelected = rowSelectFunc
-			table.insert( pnl.Objects, comboPnl )
-		
-			if data.Optional and data.Optional[ argName ] then comboPnl.Optional = true end
-			if I != 1 or pnl.FromCommandList then comboPnl:SetPos( pnl:GetWide() + 1, 0 ) end -- If this isn't the first one, set it to the right.
+			cat.List:SetDirty( true )
+			cat.List:InvalidateLayout( true )
+			cat.List:SizeToContents()
+			cat.List:SortByColumn( 1 )
 			
-			exsto.Animations.CreateAnimation( comboPnl )
+			cat:InvalidateLayout( true )
+			cat:SetHideable( true )
+			cat:Toggle()
+			
+			--cat:SetExpanded( pnl.LastState[ cat ] or false )
+			table.insert( pnl.Objects, cat )
 		end
-		
 	end
-	
-	exsto.Animations.CreateAnimation( pnl.ComWindow )
 end
 
-local function playerObjectPaintOver( obj )
-	-- TODO
+local function clearContent( pnl )
+	for _, o in ipairs( pnl.Objects or {} ) do
+		for _, object in ipairs( o ) do object:Remove() end
+	end
+	pnl.Objects = {}
+end
+
+local function argOnShowtime( obj )
+	local pnl = obj.Content
+	local data = qm.WorkingData
+	
+	-- Clear old set
+	clearContent( pnl )
+	
+	pnl.Cat.Header:SetText( data.DisplayName )
+	
+	local help = pnl.Cat:CreateHelp( "Select the arguments you want to change, and click on execute to send it off." )
+	local spacer = pnl.Cat:CreateSpacer()
+	
+	-- We need to construct our little cool things based on the return order of this command.
+	for count, argument in pairs( data.ReturnOrder ) do
+		if count != 1 then -- 1 is going to be the victim for us.  No need to look at it.
+			local title = pnl.Cat:CreateTitle( argument );
+			local multi = pnl.Cat:CreateMultiChoice();
+			
+			-- Little hack.  I think I inject "rank" in somewhere, so lets just populate our extraoptionals with the possible ranks.
+			if data.ID == "rank" then
+				local t = {}
+				for id, rank in pairs( exsto.Ranks ) do
+					table.insert( t, { Display = rank.Name, Data = rank.ID } )
+				end
+				data.ExtraOptionals[ argument ] = t
+				data.Optional[ argument ] = ""
+			end
+			
+			for count, data in pairs( data.ExtraOptionals[ argument ] ) do
+				multi:AddChoice( data.Display, data.Data or data.Display )
+			end
+			
+			multi.OnValueSet = function( s, d ) 
+				qm.WorkingExecute[ argument ] = d
+			end
+			
+			multi:SetValue( data.Optional[ argument ] )
+			qm.WorkingExecute[ argument ] = data.Optional[ argument ]
+			
+			local spacer = pnl.Cat:CreateSpacer();
+			
+			table.insert( pnl.Objects, { title, multi, spacer } )
+		end
+	end
+	
+	local b = pnl.Cat:CreateButton( "Execute" )
+		b.OnClick = function( s )
+			executeCommand()
+			exsto.Menu.OpenPage( qm.List )
+			exsto.Menu.DisableBackButton()
+		end
+		
+	table.insert( pnl.Objects, { b, help, spacer } )
+	
+	pnl.Cat:InvalidateLayout( true )
+end
+
+local function initArgs( pnl )
+	pnl.Cat = pnl:CreateCategory( "%COMMAND_ID" )
+	
+end
+
+function exsto.InitQuickMenu()
+	-- Top list data saving shit.
+	qm.Data = FEL.CreateDatabase( "exsto_data_quickmenu" )
+		qm.Data:SetDisplayName( "Quickmenu Data" )
+		qm.Data:ConstructColumns( {
+			Command = "TEXT:primary:not_null";
+			TimesUsed = "INTEGER";
+		} )
+		
+	-- Check to see if we have anything in data.  If we don't, inject a few commonly used commands.
+	if #qm.Data:ReadAll() == 0 then
+		local common = { "kick", "ban", "rank" }
+		for _, id in ipairs( common ) do
+			qm.Data:AddRow( {
+				Command = id;
+				TimesUsed = 0;
+			} )
+		end
+	end
+		
+	exsto.Menu.QM = exsto.Menu.CreatePage( "quickmenu", initQuickMenu )
+		exsto.Menu.QM:SetTitle( "Quick Menu" )
+		exsto.Menu.QM:OnShowtime( mainOnShowtime )
+		exsto.Menu.QM:SetIcon( "exsto/quickmenu.png" )
+		exsto.Menu.QM:Build()
+		
+	qm.List = exsto.Menu.CreatePage( "quicklist", initList )
+		qm.List:SetTitle( "Commands" )
+		qm.List:SetFlag( "quickmenu" )
+		qm.List:SetBackFunction( function() exsto.Menu.OpenPage( exsto.Menu.QM ) exsto.Menu.DisableBackButton() end )
+		qm.List:OnShowtime( listOnShowtime )
+		qm.List:SetUnaccessable()
+		
+	qm.Argument = exsto.Menu.CreatePage( "quickargument", initArgs )
+		qm.Argument:SetTitle( "Arguments" )
+		qm.Argument:SetFlag( "quickmenu" )
+		qm.Argument:SetBackFunction( function() exsto.Menu.OpenPage( qm.List ) end )
+		qm.Argument:OnShowtime( argOnShowtime )
+		qm.Argument:SetUnaccessable()
+		
 end

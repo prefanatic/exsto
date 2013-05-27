@@ -22,11 +22,23 @@ PANEL = {}
 
 function PANEL:Init()
 	self:Font( "ExGenericText" )
-	self:MaxFontSize( 128 )
+	self:MaxFontSize( 20 )
 	self:TextPadding( 6 )
-	self:SetText( "" )
 	self:Text( "" )
-	self:SetTextColor( Color( 0, 153, 176, 255 ) )
+	self:SetTextColor( Color( 133, 133, 133, 255 ) )
+	self:SetAlignX( TEXT_ALIGN_CENTER )
+	self:SetAlignY( TEXT_ALIGN_CENTER )
+	
+	self.Material = Material( "exsto/buttonsettings.png" )
+end
+
+function PANEL:SetEvil()
+	self:SetTextColor( Color( 193, 85, 85, 255 ) )
+end
+
+function PANEL:SetQuickMenu()
+	self._QuickMenu = true
+	self:SetTall( 40 )
 end
 
 function PANEL:TextPadding( num )
@@ -41,12 +53,21 @@ function PANEL:MaxFontSize( num )
 	self._MaxFontSize = num
 end
 
+function PANEL:SetMaxTextWide( num )
+
+	self._MaxTextWidth = num
+end
+
+function PANEL:GetMaxTextWide()
+	return self._MaxTextWidth
+end
+
 function PANEL:GetMaxFontSize()
 	return self._MaxFontSize
 end
 
 function PANEL:GetText()
-	return self._Text
+	return self.__TEXT or ""
 end
 
 function PANEL:SetFontSize( num )
@@ -66,8 +87,9 @@ function PANEL:GetFont()
 end
 
 function PANEL:Text( txt )
-	self._Text = txt
-	self:SetFontStyle( "resize", self:GetFont() )
+	self:SetText( "" )
+	self.__TEXT = txt
+	self:InvalidateLayout( true )
 end
 
 function PANEL:SetTextColor( col )
@@ -82,22 +104,27 @@ function PANEL:SetFontStyle( t, exfont )
 	if t == "resize" then
 		
 		-- Resize the font to fit our panel's size.
-		local w, h = self:GetSize()
+		local w, h = self:GetMaxTextWide(), ( self:GetTall() - 14 )
+			w = w or self:GetWide()
 		
 		local workingSize, tw, th = self:GetMaxFontSize()
+
 		while true do
 			surface.SetFont( exfont .. workingSize )
 			tw, th = surface.GetTextSize( self:GetText() )
 			
 			-- Work with text padding
 			tw = tw + ( self:GetTextPadding() * 2 )
+			th = th + ( self:GetTextPadding() * 2 )
+
 			
 			if ( tw < w ) or workingSize == 14 then break end -- If we are smaller than our size.
+			if ( th < h ) or workingSize == 14 then break end
 			
 			-- Otherwise, lets go down to the next font size
 			workingSize = workingSize - 1
 		end
-		
+
 		self:SetFontSize( workingSize )
 		
 		-- We also should set a tmp to move the text down based off half its height
@@ -122,33 +149,54 @@ end
 
 function PANEL:OnClick() end
 function PANEL:OnPaint() end
+function PANEL:OnValueSet( val ) end
+
+function PANEL:HideText( val )
+	self._HideText = val
+end
 
 function PANEL:Paint()
 
 	local w, h = self:GetSize()
 
 	-- Background
-	if ( self.Depressed || self:IsSelected() || self:GetToggle() ) then
-		self:GetSkin().tex.Button_Down( 0, 0, w, h );	
-	elseif ( self:GetDisabled() ) then
-		self:GetSkin().tex.Button_Dead( 0, 0, w, h );	
-	elseif self.Hovered then
-		self:GetSkin().tex.Button_Hovered( 0, 0, w, h );	
+	if self._QuickMenu then
+		surface.SetDrawColor( 255, 255, 255, 255 )
+		surface.SetMaterial( self.Material )
+		surface.DrawTexturedRect( 0, 0, w, h )
 	else
-		self:GetSkin().tex.Button( 0, 0, w, h );
+		if ( self.Depressed || self:IsSelected() || self:GetToggle() ) then
+			self:GetSkin().tex.Button_Down( 0, 0, w, h );	
+		elseif ( self:GetDisabled() ) then
+			self:GetSkin().tex.Button_Dead( 0, 0, w, h );	
+		elseif self.Hovered then
+			self:GetSkin().tex.Button_Hovered( 0, 0, w, h );	
+		else
+			self:GetSkin().tex.Button( 0, 0, w, h );
+		end
 	end
 	
-	-- Text
-	local x = self:GetWide() / 2
-	local y = self:GetTall() / 2
-	
-	--if self._AlignY == TEXT_ALIGN_TOP then y = y + self._YMod end
-	
-	draw.SimpleText( self:GetText(), self:GetFont() .. self:GetFontSize(), x, y, self:GetTextColor(), self._AlignX, self._AlignY )
+	if !self._HideText then
+		
+		-- Text
+		local x = self:GetWide() / 2
+		local y = self:GetTall() / 2
+		
+		if self._AlignX == TEXT_ALIGN_LEFT then x = self:GetTextPadding() end
+		
+		--if self._AlignY == TEXT_ALIGN_TOP then y = y + self._YMod end
+		
+		draw.SimpleText( self:GetText(), self:GetFont() .. self:GetFontSize(), x, y, self:GetTextColor(), self._AlignX, self._AlignY )
+		
+	end
 	
 	-- And finally our OnPaint
 	self:OnPaint()
 	
+end
+
+function PANEL:PerformLayout()
+	self:SetFontStyle( "resize", self:GetFont() )
 end
 
 derma.DefineControl( "ExButton", "Exsto Button", PANEL, "DButton" )
