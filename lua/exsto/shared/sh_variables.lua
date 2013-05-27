@@ -123,11 +123,7 @@ function exsto.CreateVariable( id, display, default, help, eVars )
 		exsto.Debug( "Variables --> '" .. id .. "' is an incorrect boolean!  Please change to use 0, 1 booleans instead of true, false.", 3 )
 		
 		default = ( default == true and 1 ) or ( 0 )
-		obj:SetPossible( 0, 1 ) 
-		obj:SetDataType( "number" )
-		
-		obj:SetMaximum( 1 )
-		obj:SetMinimum( 0 )
+		obj:SetBoolean()
 	end
 	
 	-- Now we need to set the 'default' to either a number or string, because CreateConVar can't handle anything else.
@@ -145,7 +141,7 @@ function exsto.CreateVariable( id, display, default, help, eVars )
 	-- Callback for the cvar.
 	cvars.AddChangeCallback( id, function( cid, oldval, newval )
 		exsto.Debug( "Variables --> Attempting variable change on '" .. cid .. "' from '" .. oldval .. "' to '" .. newval .. "'", 3 )
-		
+
 		if obj._IgnoreCallback then obj._IgnoreCallback = false return end
 		if oldval == newval then return end -- No need.
 			
@@ -176,7 +172,7 @@ function exsto.CreateVariable( id, display, default, help, eVars )
 		hook.Call( "ExVariableChanged", nil, obj, obj:GetValue() )
 		
 		if !obj.Callback then return end
-		local succ, err = pcall( obj.Callback, oldval, newval )
+		local succ, err = pcall( obj.Callback, oldval, obj:GetValue() )
 		if !succ then
 			exsto.ErrorNoHalt( "Variables --> Callback for '" .. cid .. "' failed with:" )
 			exsto.ErrorNoHalt( err )
@@ -221,6 +217,8 @@ end
 -- Helper to set booleans as numbers
 function var:SetBoolean()
 	self:SetPossible( 0, 1 ) 
+	
+	self:SetDataType( "number" )
 	
 	self:SetMaximum( 1 )
 	self:SetMinimum( 0 )
