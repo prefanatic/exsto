@@ -203,7 +203,7 @@ if SERVER then
 		
 		-- Quick hack to allow non-exsto things to use this.
 		local ownerNick, ownerID = "Console", "Console"
-		if owner and owner:IsValid() then
+		if not type( owner ) == "string" and owner:IsValid() then
 			ownerNick = owner:Nick()
 			ownerID = owner:SteamID()
 		end
