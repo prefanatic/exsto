@@ -94,7 +94,7 @@ function exsto.ConvertHSLtoRGB( h, s, l )
 		b = 255 * hue2RGB( t1, t2, h - ( 1 / 3 ) )
 	end
 	
-	return Color( r, g, b, 255 )
+	return Color( math.Round( r ), math.Round( g ), math.Round( b ), 255 )
 end
 
 function exsto.ConvertRGBtoHSL( col )
@@ -126,8 +126,6 @@ function exsto.ConvertRGBtoHSL( col )
 		if h < 0 then h = h + 1 end
 		if h > 1 then h = h - 1 end
 	end
-	
-	print( h, s, l )
 	
 	return h, s, l
 end
