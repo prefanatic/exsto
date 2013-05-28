@@ -31,6 +31,8 @@ if SERVER then
 		else
 			self.Sayings = string.Explode( "\n", file.Read( "exsto/gimps.txt" ) )
 		end
+		
+		util.AddNetworkString( "ExMutePlayer" )
 	end
 
 	function PLUGIN:AddGimp( owner, message )
