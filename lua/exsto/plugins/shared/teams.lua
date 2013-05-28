@@ -76,6 +76,8 @@ if SERVER then
 	end
 	
 	function PLUGIN:ExSetRank( ply )
+		if self.Enabled:GetValue() == 0 then return end
+		
 		local rank = ply:GetRank()
 		local info = self.Teams[rank]
 
@@ -103,6 +105,8 @@ if SERVER then
 	end
 
 	function PLUGIN:ExRanksLoaded()
+		if self.Enabled:GetValue() == 0 then return end
+		
 		-- We are apparently called by the resend rank hook
 		self:BuildTeams() -- They need to be updated again with new ranks.
 		
