@@ -78,6 +78,7 @@ function exsto.Menu.Initialize()
 		exsto.Menu.Logo:SetPos( exsto.Menu.Frame:GetWide() - 129, 1 )
 		exsto.Menu.Logo:SetSize( 128, 32 )
 		exsto.Menu.Logo:SetImage( "exsto/exlogo_qmenu.png" )
+		exsto.Menu.Logo.DoClick = function() exsto.Menu.Close() end 
 		
 	-- Create our scroller.
 	exsto.Menu.FrameScroller = exsto.CreatePanel( 1, 32, exsto.Menu.Frame:GetWide() - 2, exsto.Menu.Frame:GetTall() - 32, nil, exsto.Menu.Frame )
