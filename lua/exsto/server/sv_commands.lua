@@ -803,7 +803,17 @@ end
      ----------------------------------- ]]
 function exsto.CommandCall( ply, _, args )
 	exsto._TMP = ply
-	if #args == 0 then ply:Print( exsto_CLIENT, "No command recieved!  Type 'exsto Commands' for the command list!" ) return end
+	if #args == 0 then
+		local comSearcher = exsto.GetPlugin( "com-search" )
+		if not comSearcher then
+			ply:Print( exsto_CLIENT, "No command received!  Also, it looks like the command search plugin is either disabled or not here, so enable it for command searching!" ) 
+			return 
+		end
+		
+		-- Assume they need help.
+		comSearcher:Search( ply )
+		return
+	end
 	
 	-- Copy the table so we can edit it clean.
 	local command = args[1]

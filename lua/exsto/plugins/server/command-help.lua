@@ -109,8 +109,8 @@ function PLUGIN:Search( ply, command, all )
 
 	
 	exsto.Print( exsto_CLIENT, ply, " \n\n---- End of Exsto help ---- \n" )
-	
-	return { ply, COLOR.NORM, "Printing all commands to your ", COLOR.NAME, "console", COLOR.NORM, "!" }
+	exsto.Print( exsto_CHAT, ply, COLOR.NORM, "All commands have been printed to your ", COLOR.NAME, "console" )
+
 end
 PLUGIN:AddCommand( "search", {
 	Call = PLUGIN.Search,
