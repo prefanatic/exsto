@@ -116,6 +116,12 @@ local function commandClicked( list, display, data, line )
 	qm.WorkingData = data
 	qm.WorkingExecute = { }
 	
+	-- But before we do that, make sure this isn't the rank command.
+	if data.ID == "rank" then -- shit.
+		exsto.Menu.OpenPage( qm.Argument )
+		return
+	end
+	
 	for count, arg in ipairs( data.ReturnOrder ) do
 		qm.WorkingExecute[ arg ] = data.Optional[ arg ]
 	end
