@@ -193,13 +193,15 @@ local function initList( pnl )
 		-- Add the starred to this list.
 		for _, data in ipairs( qm.Data:ReadAll() ) do
 			local command = exsto.Commands[ data.Command ]
-			local line = cat.List:AddRow( { command.DisplayName }, command )
-			
-			if table.Count( command.ExtraOptionals ) > 0 then
-				-- Overlay our quick button
-				line.Quick = vgui.Create( "ExQuickOverlay", line )
-					line.Quick.OnClick = quickOnClick
-					line.Quick.CommandData = command
+			if LocalPlayer():IsAllowed( command.ID ) then
+				local line = cat.List:AddRow( { command.DisplayName }, command )
+				
+				if table.Count( command.ExtraOptionals ) > 0 then
+					-- Overlay our quick button
+					line.Quick = vgui.Create( "ExQuickOverlay", line )
+						line.Quick.OnClick = quickOnClick
+						line.Quick.CommandData = command
+				end
 			end
 			
 			--exsto.Animations.Create( line.Quick )
