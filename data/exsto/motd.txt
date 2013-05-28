@@ -1,0 +1,26 @@
+<html><head><title>Example MOTD</title>
+</head><body> 
+<center><h1>Example MOTD</h1></center>
+  
+  
+  
+  <style type="text/css">
+    body{padding-bottom:40px;background-color:#f7f7f7;text-decoration:none;font-family:'Droid Sans','Orienta',sans-serif;font-size:13px;font-weight:600;}a{color:#525252;margin-right:15px;text-decoration:none;font-family:'Droid Sans',sans-serif;font-size:13px;font-weight:600;}a:hover{color:#158cc3;-webkit-transition:color .1s linear;transition:color .3s linear;text-decoration:none;}a.image{border-bottom:none;}.headermini{width:100% background-color:#f7f7f7;height:91px;border-bottom:solid #e9e9e9 1px;top:0px;z-index:+2;visibility:hidden;}.header{background-color:#f7f7f7;width:100%;height:90px;border-bottom:solid #e9e9e9 1px;position:fixed;top:0px;z-index:+2;}h2#colltitle{text-align:center;}img#logo{width:206px;height:48px;position:relative;top:24px;left:54px;}.links{right:50px;top:51px;height:30px;width:auto;position:fixed;text-align:right;}.main{background-color:#f7f7f7;width:100%;max-height:321px;z-index:-1;position:fixed;margin-top:90px;top:0px;margin-left:auto;margin-right:auto;}.maincontent{background-image:url('../images/main.png');background-repeat:no-repeat;background-size:contain;margin:auto;max-width:875px;min-height:203px;margin-top:50px;}.contentcontainer{background-color:#fbfbfb;width:100%;min-height:1600px;height:auto;margin-top:411px;box-shadow:0px 00px 80px #d4d4d4;border-top:solid 1px #cdcdcd;z-index:+1;position:relative;font-size:20px;font-family:'Roboto';font-weight:300;line-height:25px;color:#000;}.fauxlink{position:relative;top:-100px;}.featurette-divider{margin:40px 0;}.featurette{padding-top:60px;overflow:hidden;}p.featurette{font-family:'Orienta',sans-serif;font-size:20px;color:#8b9295;padding-top:10px;padding-bottom:10px;font-weight:400;}.featurette-image{margin-top:-60px;}.featurette-image.pull-left{margin-right:40px;}.featurette-image.pull-right{margin-left:40px;}.featurette-heading{font-size:40px;color:#494949;line-height:1;letter-spacing:-1px;font-family:'Roboto';font-weight:300;}.featurette-skewedimage{width:268px;height:451px;box-shadow:5px 0px 15px #c4c4c4;margin-top:30px;margin-bottom:30px;}.borderdivider{width:100%;height:7px;background:#ebebeb;}.downloadbox{height:409px;max-width:362px;background:#f5f5f5;margin-top:20px;margin-right:20px;}.downloadtitle{margin-left:15px;padding-top:15px;font-size:33px;color:#494949;line-height:1;letter-spacing:-1px;font-family:'Roboto';font-weight:300;}.downloadbutton{width:auto;height:71px;margin:20px;}.downloadbuttontext{margin-left:15px;padding-top:18px;font-size:36px;color:#fff;line-height:1;letter-spacing:-1px;font-family:'Roboto';font-weight:300;}#stabledownload{background:#26a6e8;}#stabledownload:hover{background:#25B5FF;}#developerdownload{background:#b13939;}#developerdownload:hover{background:#E04141;}#recentcommits{font-size:25px;}
+  </style>
+  
+    <h3="">To change the MOTD:
+<ol>
+<li>Open up the quick menu, using either !menu, +ExQuick, or +ExQuickToggle.<br></li>
+<li>Click on the pages icon (second in from the left on the top) and then navigate to the Settings page.<br></li>
+<li>Click on the MOTD category.  You should see a Location setting.<br></li>
+<li>You can change the location setting to either be an HTTP link, or a location in the data directory.  Currently, it is set to exsto/motd.txt.  This means it will look in data/exsto/motd.txt for your MOTD.<br></li>
+<li>
+  Feel free to remove the contents of exsto/motd.txt and place your own MOTD, or put it somewhere else in the data directory and point the location setting there.</li></ol>
+
+
+
+</h3="">
+<a class="image">
+<img id="logo" src="http://exstomod.co.uk/extesting/images/logo.png" alt="logo">
+</a>
+</body></html>
