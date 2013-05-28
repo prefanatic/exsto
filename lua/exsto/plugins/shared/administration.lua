@@ -87,7 +87,7 @@ if SERVER then
 		local steamid = reader:ReadString()
 		
 		self:Debug( "Unbanning player '" .. steamid .. "' triggered by '" .. ply:GetName() .. "'", 1 )
-		self:UnBan( "console", steamid )
+		self:UnBan( ply, steamid )
 	end
 	PLUGIN:CreateReader( "ExUnbanPlayer", PLUGIN.MenuUnbanPlayer )
 	
@@ -267,7 +267,7 @@ if SERVER then
 	function PLUGIN:UnBan( owner, steamid ) 
 	
 		local dataUsed = false
-		if !string.match( steamid, "STEAM_[0-5]:[0-9]:[0-9]+" ) and !string.match( steamid, "BOT" ) then
+		if !string.match( steamid, "STEAM_[0-5]:[0-9]:[0-9]+" ) and steamid != "BOT" then
 			-- We don't have a match.  Try checking our ban list for his name like this.
 			for _, ban in ipairs( exsto.BanDB:GetAll() ) do
 				if ban.Name == steamid then
@@ -279,7 +279,7 @@ if SERVER then
 			end
 			
 			-- Check our match again
-			if !string.match( steamid, "STEAM_[0-5]:[0-9]:[0-9]+" ) and !string.match( steamid, "BOT" ) then
+			if !string.match( steamid, "STEAM_[0-5]:[0-9]:[0-9]+" ) and steamid != "BOT" then
 				return { owner, COLOR.NORM, "That is an invalid ", COLOR.NAME, "SteamID!", COLOR.NORM, "  A normal SteamID looks like this, ", COLOR.NAME, "STEAM_0:1:123456" }
 			end
 		end
@@ -306,11 +306,7 @@ if SERVER then
 		exsto.BanDB:DropRow( steamid )
 		self:ResendBans()
 		
-		return { 
-			Activator = owner, 
-			Player = steamid .. " (" .. name .. ")",
-			Wording = " has unbanned ", 
-		} 
+		exsto.Print( exsto_CHAT_ALL, COLOR.NAME, owner:Nick(), COLOR.NORM, " has unbanned ", COLOR.NAME, steamid .. " (" .. name .. ")" )
 
 	end 
 		PLUGIN:AddCommand( "unban", { 
