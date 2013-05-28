@@ -422,16 +422,16 @@ function exsto.Menu.Toggle()
 	if exsto.Menu._Opened then exsto.Menu.Close() else exsto.Menu.Open() end
 end
 
-local function commandMenuHandler( reader )
-	--hangdata.key = reader:ReadShort()
-	--hangdata.rank = reader:ReadString()
-	--hangdata.flagCount = reader:ReadShort()
+hook.Add( "ExNetworkingReady", "ExHookMenu", function()
+
+	local function commandMenuHandler( reader )
+		if exsto.Menu.Objects.Content and exsto.Menu.Objects.Content:IsVisible() then exsto.Menu.Close() return end
+		
+		exsto.Menu.Open()
+	end
+	exsto.CreateReader( "ExOpenMenu", commandMenuHandler )
 	
-	if exsto.Menu.Objects.Content and exsto.Menu.Objects.Content:IsVisible() then exsto.Menu.Close() return end
-	
-	exsto.Menu.Open()
-end
---exsto.CreateReader( "ExOpenMenu", commandMenuHandler )
+end )
 
 concommand.Add( "+ExQuick", function() exsto.Menu.Open() exsto.Menu._BindPressed = true end )
 concommand.Add( "-ExQuick", function() exsto.Menu.Close() exsto.Menu._BindPressed = false end )

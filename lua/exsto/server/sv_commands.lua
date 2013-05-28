@@ -844,7 +844,7 @@ function exsto.StringDist( s, t )
 end
 
 function exsto.OpenMenu( ply, _, args )
-	ply:ConCommand( "ExQuickToggle" )
+	ply:QuickSend( "ExOpenMenu" )
 end
 exsto.AddChatCommand( "menu", {
 	Call = exsto.OpenMenu,
