@@ -120,7 +120,7 @@ function exsto.InitPlugins()
 		exsto.PluginDB = FEL.CreateDatabase( "exsto_plugin_settings" )
 			exsto.PluginDB:SetDisplayName( "Plugin Settings" )
 			exsto.PluginDB:ConstructColumns( {
-				ID = "TEXT:not_null:primary";
+				ID = "VARCHAR(255):not_null:primary";
 				Enabled = "TINYINT:not_null";
 			} )
 	end
