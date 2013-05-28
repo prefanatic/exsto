@@ -174,13 +174,11 @@ if SERVER then
 		exsto.BanDB:AddRow( {
 			Name = name;
 			SteamID = id;
-			SteamID64 = 0;
 			Reason = reason;
 			Length = len;
 			BannedBy = owner:Name() or "Console";
 			BannedAt = os.time();
 			BannerID = owner:SteamID() or "Console";
-			BannerID64 = owner:SteamID64();
 		} )
 
 		return {
