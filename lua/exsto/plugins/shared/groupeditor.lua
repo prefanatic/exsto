@@ -192,7 +192,7 @@ elseif CLIENT then
 		pnl.RankSelect:Clear()
 		pnl.OverlayPanel:SetVisible( true )
 		-- Populate the RankSelect with our ranks.
-		for ID, data in pairs( exsto.Ranks ) do
+		for ID, data in SortedPairsByMemberValue( exsto.Ranks, "Immunity", false )  do
 			if ID != "srv_owner" then 
 				pnl.RankSelect:AddChoice( data.Name, data ) 
 			end
