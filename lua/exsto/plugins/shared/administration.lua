@@ -79,7 +79,7 @@ if SERVER then
 	PLUGIN:CreateReader( "ExUpdateBanLen", PLUGIN.UpdateBanLength )
 	
 	function PLUGIN:ExUnbanPlayer( reader )
-		return reader:ReadSender():IsAllowed( "banlist" ) 
+		return reader:ReadSender():IsAllowed( "banlist" ) and reader:ReadSender():IsAllowed( "unban" )
 	end
 	
 	function PLUGIN:MenuUnbanPlayer( reader )
