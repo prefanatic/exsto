@@ -327,7 +327,7 @@ function exsto.SetAccess( ply, user, id )
 	
 	user:SetRank( rank.ID )
 	
-	return { COLOR.NAME, user:Nick(), COLOR.NORM, " has been given rank ", COLOR.NAME, rank.Name }
+	return { COLOR.NAME, ply:Nick(), COLOR.NORM, " has set ", COLOR.NAME, user:Nick(), COLOR.NORM, "'s rank to ", COLOR.NAME, rank.Name }
 	
 end
 exsto.AddChatCommand( "rank", {
@@ -367,7 +367,7 @@ function exsto.SetAccessID( ply, user, id )
 		Rank = rank.ID;
 	} )
 	
-	exsto.Print( exsto_CHAT_ALL, COLOR.NAME, user.Name, COLOR.NORM, " has been given rank ", COLOR.NAME, rank.Name )
+	exsto.Print( exsto_CHAT_ALL, COLOR.NAME, ply:Nick(), COLOR.NORM, " has set ", COLOR.NAME, user.Name, COLOR.NORM, "'s rank to ", COLOR.NAME, rank.Name )
 	
 end
 exsto.AddChatCommand( "rankid", {
@@ -456,10 +456,7 @@ function exsto.UpdateOwnerRank( self )
 			return { self, COLOR.NORM, "You are not the host of this listen server!" }
 		end
 	else
-			
-		self:Print( exsto_CHAT, COLOR.NAME, "Hey!", COLOR.NORM, "  This command has been removed due to confusion.  If you want to make yourself owner:" )
-		self:Print( exsto_CHAT, COLOR.NORM, "Just run the command as rcon: ", COLOR.NAME, "exsto rank " .. self:Name() .. " srv_owner" )
-			
+		self:Print( exsto_CHAT, COLOR.NORM, "This command can only be run on a ", COLOR.NAME, "dedicated server!" )
 		return 
 	end
 end
