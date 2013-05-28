@@ -40,7 +40,7 @@ if SERVER then
 				FEL.SetMySQLInformation( new )
 			end )
 			
-		exsto.MySQLPassword = exsto.CreateVariable( "ExMySQLPass", "Password", FEL.Config.mysql_pass, "Password for the MySQL server.  This will always reset to '******' after entry, for security reasons.", { FCVAR_PROTECTED } )
+		exsto.MySQLPassword = exsto.CreateVariable( "ExMySQLPass", "Password", FEL.Config.mysql_pass, "Password for the MySQL server.  This will always reset to '******' after entry, for security reasons." )
 			exsto.MySQLPassword:SetCategory( "MySQL" )
 			exsto.MySQLPassword:SetProtected()
 			exsto.MySQLPassword:SetCallback( function( old, new )
