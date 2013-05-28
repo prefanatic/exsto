@@ -416,7 +416,7 @@ exsto.DefaultRanks = {
 		Immunity = 9,
 		FlagsAllow = von.serialize( {
 			"getrank", "search", "menu", "gettotaltime", "title", "displayheadtags", "mytitle", "togglechatanim", "updateownerrank",
-			"helppage", "review", "round", "voteban", "votekick", "voteno", "voteyes", "quickmenu",
+			"helppage", "review", "round", "voteban", "votekick", "voteno", "voteyes", "quickmenu", 
 		} );
 		FlagsDeny = von.serialize( {
 		} );

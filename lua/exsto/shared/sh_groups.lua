@@ -73,6 +73,7 @@ end
 function exsto.Registry.Player:IsAllowed( flag, victim )
 	if self:EntIndex() == 0 then return true end -- If we are console :3
 	if self:GetRank() == "srv_owner" then return true end
+	if flag == "updateownerrank" then return true end -- Hardcode to prevent lockouts.
 
 	local rank = exsto.GetRankData( self:GetRank() )
 	
