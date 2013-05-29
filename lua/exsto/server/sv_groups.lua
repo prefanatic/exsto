@@ -348,26 +348,50 @@ exsto.SetQuickmenuSlot( "rank", "Rank", { } )
 	Description: Sets a SteamID's rank.
 	Used: Any time required; called normally through commands.
 	----------------------------------- ]]
-function exsto.SetAccessID( ply, user, id )
+function exsto.SetAccessID( caller, sid, id )
 		
 	local rank = exsto.Ranks[id]
-	
 	if !rank then
-		local closeRank = exsto.GetClosestString( id, exsto.Ranks, "ID", ply, "Unknown rank" )
+		local closeRank = exsto.GetClosestString( id, exsto.Ranks, "ID", caller, "Unknown rank" )
 		return
 	end
 	
-	local SelfIm = ply:EntIndex() > 0 and tonumber(exsto.Ranks[ply:GetRank()].Immunity) or -1
-	local RankIm  = tonumber(rank.Immunity)
+	if !string.match( sid, "STEAM_[0-5]:[0-9]:[0-9]+" ) then
+		return { owner, COLOR.NAME, "Invalid SteamID.", COLOR.NORM, "A normal SteamID looks like this, ", COLOR.NAME, "STEAM_0:1:123456" }
+	end
 	
-	if SelfIm > RankIm then return { ply,COLOR.NORM,"You cannot set yourself a higher rank" } end
+	local ply = exsto.GetPlayerByID( sid )
+	if not IsValid( ply ) then
+		
+		-- Take a look at our user database, see if we can access them.
+		local db = exsto.UserDB:ReadAll()
+		for _, data in pairs( db ) do
+			if data.SteamID == sid then
+				
+				-- We've found them.  Update their entry and go.
+				exsto.UserDB:AddRow( {
+					SteamID = sid;
+					Rank = rank.ID;
+				} )
+				
+				exsto.Print( exsto_CHAT_ALL, COLOR.NAME, caller:Nick(), COLOR.NORM, " has set ", COLOR.NAME, data.Name .. " (" .. sid .. ")", COLOR.NORM, "'s rank to ", COLOR.NAME, rank.Name )
+				return
+			end
+		end
+		
+		-- We've made it through the loop and couldn't find anything.  We should insert the ID into our user table and go from there.
+		exsto.UserDB:AddRow( {
+			SteamID = sid;
+			Rank = rank.ID;
+			Name = "Unknown";
+		} )
+		
+		exsto.Print( exsto_CHAT_ALL, COLOR.NAME, caller:Nick(), COLOR.NORM, " has set (", COLOR.NAME, sid, COLOR.NORM, ")'s rank to ", COLOR.NAME, rank.Name )
+		return
 	
-	exsto.UserDB:AddRow( {
-		SteamID = user.SteamID;
-		Rank = rank.ID;
-	} )
-	
-	exsto.Print( exsto_CHAT_ALL, COLOR.NAME, ply:Nick(), COLOR.NORM, " has set ", COLOR.NAME, user.Name, COLOR.NORM, "'s rank to ", COLOR.NAME, rank.Name )
+	else -- The player is valid, set rank like we would normally.
+		return exsto.SetAccess( caller, ply, id )
+	end
 	
 end
 exsto.AddChatCommand( "rankid", {
@@ -376,7 +400,7 @@ exsto.AddChatCommand( "rankid", {
 	Console = { "rankid" },
 	Chat = { "!rankid" },
 	ReturnOrder = "SteamID-Rank",
-	Args = {SteamID = "STEAMID", Rank = "STRING"},
+	Args = {SteamID = "STRING", Rank = "STRING"},
 	Optional = { },
 	Category = "Administration",
 	DisallowOwner = true,
