@@ -22,7 +22,7 @@ exsto.Menu = {
 	Objects = {};
 	PageWidth = ScrW();
 	PageTall = ScrH() - 280;
-	StartTime = 0;
+	StartTime = nil;
 	BottomPadding = 200;
 	Sizes = {
 		FrameW = 268;
@@ -378,13 +378,13 @@ function exsto.Menu.Open()
 	exsto.Menu.Frame:SetVisible( true )
 	exsto.Menu.Frame:SetKeyboardInputEnabled( true )
 	
-	exsto.Menu.StartTime = CurTime();
-	
-	if exsto.Menu.PageRetain:GetValue() == 0 then
-		exsto.Menu.OpenPage( exsto.Menu.GetPageByID( "quickmenu" ) )
-	else
+	if exsto.Menu.StartTime and exsto.Menu.PageRetain:GetValue() == 1 and posInfo[ "last" ] then -- Only do this when we've started before.  We don't want to reopen something from a last session.
 		exsto.Menu.OpenPage( exsto.Menu.GetPageByID( posInfo[ "last" ] ) )
+	else
+		exsto.Menu.OpenPage( exsto.Menu.GetPageByID( "quickmenu" ) )
 	end
+	
+	exsto.Menu.StartTime = CurTime();
 
 	-- Set our window pos.
 	local qmpos = posInfo[ "menu" ]
