@@ -57,6 +57,11 @@ end
 	Description: Initializes Exsto's Menu system.
 	----------------------------------- ]]
 function exsto.Menu.Initialize()
+
+	-- Create the page retaining variable
+	exsto.Menu.PageRetain = exsto.CreateVariable( "ExPageRetain", "Open Last Page", 0, "When opening the quick menu, it goes the to the last page you were currently working on." )
+		exsto.Menu.PageRetain:SetCategory( "Quickmenu" )
+		exsto.Menu.PageRetain:SetBoolean()
 		
 	-- Create the holding frame.  I'm excited!
 	exsto.Menu.Frame = exsto.CreateFrame( 0, 0, exsto.Menu.Sizes.FrameW, exsto.Menu.Sizes.FrameH )
@@ -374,7 +379,12 @@ function exsto.Menu.Open()
 	exsto.Menu.Frame:SetKeyboardInputEnabled( true )
 	
 	exsto.Menu.StartTime = CurTime();
-	exsto.Menu.OpenPage( exsto.Menu.GetPageByID( "quickmenu" ) )
+	
+	if exsto.Menu.PageRetain:GetValue() == 0 then
+		exsto.Menu.OpenPage( exsto.Menu.GetPageByID( "quickmenu" ) )
+	else
+		exsto.Menu.OpenPage( exsto.Menu.GetPageByID( posInfo[ "last" ] ) )
+	end
 
 	-- Set our window pos.
 	local qmpos = posInfo[ "menu" ]
@@ -405,6 +415,7 @@ function exsto.Menu.Close()
 	
 	local qmx, qmy = exsto.Menu.Frame:GetSeriousPos()
 		posInfo[ "menu" ] = {x = qmx, y = qmy}
+		posInfo[ "last" ] = exsto.Menu.ActivePage:GetID() 
 		
 	-- Save the position info
 	file.Write( "exsto_windows.txt", von.serialize( posInfo ) )

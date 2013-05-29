@@ -50,6 +50,10 @@ function PANEL:Init()
 
 end
 
+function PANEL:SetClientside()
+	self.Clientside = true
+end
+
 function PANEL:SetMultiChoice()
 	self.Active = self.Choice.MULTI;
 	
@@ -116,7 +120,7 @@ function PANEL:Paint()
 end
 
 function PANEL:SetTitle( txt )
-	self.Title:SetText( txt )
+	self.Title:SetText( self.Clientside and "Client: " .. txt or txt )
 end
 
 function PANEL:SetHelp( txt )

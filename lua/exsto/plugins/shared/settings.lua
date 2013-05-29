@@ -13,14 +13,14 @@ PLUGIN:SetInfo({
 if SERVER then
 
 	function PLUGIN:Init()
-		exsto.CreateFlag( "settings", "Allows users to see the settings." )
-		exsto.CreateFlag( "settingsdetails", "Allows users to see settings details." )
+		exsto.CreateFlag( "settings", "Allows users to see the settings page." )
+		exsto.CreateFlag( "server-settings", "Allows users to change server settings." )
 		
 		util.AddNetworkString( "ExChangeVar" )
 	end
 	
 	function PLUGIN:ExChangeVar( reader )
-		return reader:ReadSender():IsAllowed( "settings" )
+		return reader:ReadSender():IsAllowed( "server-settings" )
 	end
 	
 	function PLUGIN:UpdateVariable( reader )
@@ -62,10 +62,20 @@ elseif CLIENT then
 		pnl.List:Clear()
 		
 		local tmp = {}
-		for id, data in pairs( exsto.ServerVariables ) do
-			if data.Category:lower():find( search ) then
-				if !tmp[ data.Category ] then tmp[ data.Category ] = {} end
-				table.insert( tmp[ data.Category ], id )
+		if LocalPlayer():IsAllowed( "server-settings" ) then -- Serverside settings.
+			for id, data in pairs( exsto.ServerVariables ) do
+				if data.Category:lower():find( search ) then
+					if !tmp[ data.Category ] then tmp[ data.Category ] = {} end
+					table.insert( tmp[ data.Category ], { cl = false, id = id } )
+				end
+			end
+		end
+		
+		-- Clientside settings.
+		for id, var in pairs( exsto.Variables ) do
+			if var:GetCategory():lower():find( search ) then
+				if !tmp[ var:GetCategory() ] then tmp[ var:GetCategory() ] = {} end
+				table.insert( tmp[ var:GetCategory() ], { cl = true, id = id } )
 			end
 		end
 
@@ -97,22 +107,27 @@ elseif CLIENT then
 
 		-- Now, we need to loop through all of our data and create objects for each of these things.  Cross your fingers.
 		local data
-		for _, id in ipairs( PLUGIN.WorkingCat ) do
-			data = exsto.ServerVariables[ id ] -- So this is 'live' so to speak
+		for _, dID in ipairs( PLUGIN.WorkingCat ) do
+			if not dID.cl then -- Serverside
+				data = exsto.ServerVariables[ dID.id ] -- So this is 'live' so to speak
+			else
+				data = exsto.Variables[ dID.id ]
+			end
 			
 			page.Cat.Header:SetText( data.Category ) -- Kind of silly to do this, but it saves writing extra code.
 			
 			local obj = vgui.Create( "ExSettingsElement", page.Cat )
+				if dID.cl then obj:SetClientside() end
 				obj:Dock( TOP )
 				obj:SetTitle( data.Display )
 				obj:SetHelp( data.Help )
-				
+
 			if data.Maximum == 1 and data.Minimum == 0 and #data.Possible == 2 then -- We're a boolean
 				obj:SetBoolean()
-			elseif  #data.Possible > 0 then
+			elseif  data.Possible and #data.Possible > 0 then
 				obj:SetMultiChoice()
 				-- Enable multi selecting if we can do that.
-				if data.Multi then PrintTable( data ) obj:SetMultipleOptions() end
+				if data.Multi then obj:SetMultipleOptions() end
 				
 				for i, possible in ipairs( data.Possible ) do
 					obj:AddChoice( possible, possible )
@@ -126,9 +141,20 @@ elseif CLIENT then
 				obj:SetUnit( data.Unit )
 			end
 			
-			obj:SetValue( data.Value )
+			if not dID.cl then
+				obj:SetValue( data.Value )
+			else
+				obj:SetValue( data:GetValue() )
+			end
+			
 			obj.OnValueSet = function( o, val )
-				updateVariable( id, val )
+				if not dID.cl then
+					updateVariable( dID.id, val )
+				else
+					-- Parse out this.  We don't do this above because the server handles it.
+					if type( val ) == "boolean" then val = ( val and 1 or 0 ) end
+					RunConsoleCommand( dID.id, val )
+				end
 			end
 			
 			table.insert( page.Objects, obj )
@@ -184,6 +210,7 @@ elseif CLIENT then
 			self.Page:OnSearchTyped( onSearch )
 		
 		self.DetailsPage = exsto.Menu.CreatePage( "settingsdetails", detailsInit )
+			self.DetailsPage:SetFlag( "settings" )
 			self.DetailsPage:SetTitle( "Details" )
 			self.DetailsPage:OnShowtime( detailsOnShowtime )
 			self.DetailsPage:SetBackFunction( detailsBack )
