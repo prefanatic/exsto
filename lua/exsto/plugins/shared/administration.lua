@@ -28,6 +28,7 @@ if SERVER then
 
 	function PLUGIN:Init() 
 		exsto.CreateFlag( "banlist", "Allows users to access the ban list." )
+		exsto.CreateFlag( "banlistdetails", "Allows users to see the details of a ban in the ban page." )
 		
 		self.BanRefreshRate = exsto.CreateVariable( "ExBanRefreshRate",
 			"Ban Refresh Rate",
@@ -636,7 +637,6 @@ elseif CLIENT then
 			self.Page:SetIcon( "exsto/ban.png" )
 			self.Page:OnShowtime( onShowtime )
 		self.Details = exsto.Menu.CreatePage( "banlistdetails", banDetailsInit )
-			self.Details:SetFlag( "banlist" )
 			self.Details:SetTitle( "Details" )
 			self.Details:SetUnaccessable()
 			self.Details:SetBackFunction( backFunction )
