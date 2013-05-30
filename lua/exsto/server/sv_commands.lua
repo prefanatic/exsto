@@ -509,9 +509,9 @@ end
 exsto.ComImmuneStyle = exsto.CreateVariable( "ExComImmuneStyle",
 	"Command Immunity Style",
 	"remove",
-	"Changes how command immunity works, on a selection basis.\n - 'remove' : Removes players who cannot be accessed.\n - 'kill' : Stops the command from running if Exsto fails immune checks."
+	"Changes how command immunity works, on a selection basis.\n - 'remove' : Removes players who cannot be accessed.\n - 'kill' : Stops the command from running if Exsto fails immune checks.\n - 'ignore' : Ignores immunity and runs anyways."
 )
-exsto.ComImmuneStyle:SetPossible( "remove", "kill" )
+exsto.ComImmuneStyle:SetPossible( "remove", "kill", "ignore" )
 exsto.ComImmuneStyle:SetCategory( "Exsto General" )
 
 --[[ -----------------------------------
@@ -556,6 +556,9 @@ local function ExstoParseCommand( ply, command, args, style )
 							remTriggered = true
 						elseif exsto.ComImmuneStyle:GetValue() == "kill" then
 							break
+						elseif exsto.ComImmuneStyle:GetValue() == "ignore" then
+							-- Do nothing!  We should ignore this
+							allowed = true
 						end
 					end
 				end
