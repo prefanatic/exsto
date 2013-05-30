@@ -37,7 +37,7 @@ exsto.Net = {
 		"ExClearFlags";
 		"ExRecFlags";
 		"ExRecRank";
-		"ExRecievedRanks";
+		"ExReceivedRanks";
 		"ExClientErrNoHalt";
 		"ExClearRanks";
 		"ExSaveBans";
@@ -161,7 +161,7 @@ if SERVER then
 		for k,v in pairs( exsto.Ranks ) do
 			exsto.SendRank( ply, k )
 		end
-		exsto.CreateSender( "ExRecievedRanks", ply ):Send()
+		exsto.CreateSender( "ExReceivedRanks", ply ):Send()
 	end
 	
 --[[ -----------------------------------
@@ -204,9 +204,9 @@ if CLIENT then
 --[[ -----------------------------------
 		Rank Receiving UMSGS
      ----------------------------------- ]]
-	local function recieve( reader )
+	local function receive( reader )
 		local ID = reader:ReadString()
-		exsto.Ranks[ ID ] = {
+		exsto._TempRanks[ ID ] = {
 			Name = reader:ReadString(),
 			ID = ID,
 			Parent = reader:ReadString(),
@@ -216,7 +216,7 @@ if CLIENT then
 			Inherit = reader:ReadTable(),
 		}
 	end
-	exsto.CreateReader( "ExRecRank", recieve )
+	exsto.CreateReader( "ExRecRank", receive )
 
 	function exsto.ReceiveRankErrors( reader )
 		if !exsto.RankErrors then exsto.RankErrors = {} end
@@ -224,16 +224,18 @@ if CLIENT then
 	end
 	exsto.CreateReader( "ExRecRankErr", exsto.ReceiveRankErrors )
 	
-	local function recieve()
-		exsto.Ranks = {}
-		exsto.LoadedRanks = {}
+	local function receive()
+		-- Before we used to just make exsto.Ranks a new table.  Clients loading things during this time would error out.  Prevent it.
+		exsto._TempRanks = {}
 	end
-	exsto.CreateReader( "ExClearRanks", recieve )
+	exsto.CreateReader( "ExClearRanks", receive )
 	
-	function exsto.RecievedRanks()
+	function exsto.ReceivedRanks()
+		-- Finalize our table.
+		exsto.Ranks = table.Copy( exsto._TempRanks )
 		hook.Call( "ExReceivedRanks" )
 	end
-	exsto.CreateReader( "ExRecievedRanks", exsto.RecievedRanks )
+	exsto.CreateReader( "ExReceivedRanks", exsto.ReceivedRanks )
 	
 --[[ -----------------------------------
 	Function: receive
