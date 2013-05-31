@@ -195,7 +195,7 @@ function exsto.Registry.Player:RemoveJail()
 	if self:EntIndex() == 0 then return end
 	if type( self.JailWalls ) == "table" then
 		for _, ent in ipairs( self.JailWalls ) do
-			if ent:IsValid() then ent:Remove() end
+			if IsValid( ent ) then ent:Remove() end
 		end
 	end
 	

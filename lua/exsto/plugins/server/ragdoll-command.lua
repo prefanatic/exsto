@@ -52,6 +52,8 @@ function PLUGIN:Ragdoll( self, ply )
 		ply.ExRagdoll_Weps = ply:GetWeapons()
 		ply:StripWeapons()
 		
+		ply:StopZooming()
+		
 		local vel = ply:GetVelocity()
 		local doll = ents.Create( "prop_ragdoll" )
 			doll:SetModel( ply:GetModel() )
