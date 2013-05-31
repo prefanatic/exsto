@@ -852,6 +852,7 @@ elseif CLIENT then
 			self.List:SetTitle( "Restrictions" )
 			self.List:SetSearchable( true )
 			self.List:OnShowtime( onRestrictShowtime )
+			self.List:SetIcon( "exsto/restriction.png" )
 			self.List:OnSearchTyped( function( e ) 
 				self.List.Content.RankList:Populate( exsto.Ranks, e:GetValue() )
 				self.List.Content.PlayerList:Populate( e:GetValue() )
