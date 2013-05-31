@@ -425,6 +425,7 @@ function exsto.Menu.Close()
 	
 	-- Backstage our open page.  Just for OnBackstage.
 	exsto.Menu.ActivePage:Backstage()
+	exsto.Menu.ActivePage = nil
 	
 	-- Goodbye!
 	exsto.CreateSender( "ExMenuUserLeft" ):Send()
