@@ -17,6 +17,16 @@ if SERVER then
 		util.AddNetworkString( "ExRecImmuneChange" )
 		util.AddNetworkString( "ExDelRankFromClient" )
 		util.AddNetworkString( "ExUpImmunity" )
+		
+		self.Echo = exsto.CreateVariable( "ExEchoGroupChanges", "Echo Changes", 0, "Print messages to the chat to all players to notify of group editing in progress." )
+			self.Echo:SetBoolean()
+			self.Echo:SetCategory( "Group Editor" )
+	end
+	
+	function PLUGIN:PrintEcho( msgTbl )
+		if self.Echo:GetValue() == 1 then
+			exsto.Print( exsto_CHAT_ALL, unpack( msgTbl ) )
+		end
 	end
 	
 	-- Security
@@ -33,31 +43,28 @@ if SERVER then
 		return reader:ReadSender():IsAllowed( "rankeditor" )
 	end
 
-	function PLUGIN.DeleteRank( reader )
-		-- Add Flag.
+	
+	function PLUGIN:DeleteRank( reader )
+		local id = reader:ReadString()
+		local rank = exsto.Ranks[ id ]
 		
-		-- Remove exsto rank error data if we are removing the rank
-		//exsto.RankErrors[ args[ 1 ] ] = nil
-
-		-- Remove the data.
-		exsto.RankDB:DropRow( reader:ReadString() )
+		self:PrintEcho( { COLOR.NAME, reader:ReadSender():Nick(), COLOR.NORM, " has deleted the rank ", COLOR.NAME, rank.Name } )
+		
+		exsto.RankDB:DropRow( id )
 		
 		timer.Simple( 0.1, function()
-		
-			-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
 			exsto.aLoader.Initialize()
-			
-			-- Reload the rank editor.
 			exsto.SendRanks( player.GetAll() )
-
 		end )
 		
 	end
-	exsto.CreateReader( "ExDelRankFromClient", PLUGIN.DeleteRank )
 	
-	function PLUGIN.CommitChanges( reader )
+	function PLUGIN:CommitChanges( reader )
 		local id = reader:ReadString()
 		local ply = reader:ReadSender()
+		
+		-- Echo
+		PLUGIN:PrintEcho( { COLOR.NAME, ply:Nick(), COLOR.NORM, " has updated the rank ", COLOR.NAME, exsto.Ranks[ id ].Name } )
 
 		-- Write the data
 		PLUGIN:WriteAccess( id, reader:ReadString(), reader:ReadString(), reader:ReadColor(), reader:ReadTable() )
@@ -67,27 +74,22 @@ if SERVER then
 			PLUGIN:WriteImmunity( id, 10 )
 		end
 		
-		-- Give FEL some time to save shit.
-		--timer.Simple( 0.1, function()
-
-			-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
-			exsto.aLoader.Initialize()
+		-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
+		exsto.aLoader.Initialize()
+		
+		-- If everything is successful, lets reload.
+		if exsto.aLoader.Errors and table.Count( exsto.aLoader.Errors ) == 0 then
+			-- We sadly have to resend everything, with flags and stuff being the way they are.
+			exsto.SendRanks( player.GetAll() )
 			
-			-- If everything is successful, lets reload.
-			if exsto.aLoader.Errors and table.Count( exsto.aLoader.Errors ) == 0 then
-				-- We sadly have to resend everything, with flags and stuff being the way they are.
-				exsto.SendRanks( player.GetAll() )
-				
-				-- Reload the rank editor.
-				hook.Call( "ExOnRankCreate", nil, id )
-			else
-				-- We've got some errors.  We need to send these to the client and then notify the laddy who was making this rank he sucks.
-				exsto.SendRankErrors( ply )
-			end
-			
-		--end )
+			-- Reload the rank editor.
+			hook.Call( "ExOnRankCreate", nil, id )
+		else
+			-- We've got some errors.  We need to send these to the client and then notify the laddy who was making this rank he sucks.
+			exsto.SendRankErrors( ply )
+		end
 	end
-	exsto.CreateReader( "ExPushRankToSrv", PLUGIN.CommitChanges )
+	PLUGIN:CreateReader( "ExPushRankToSrv", PLUGIN.CommitChanges )
 	
 	function PLUGIN:UpdateImmunity( reader )
 		local id = reader:ReadString()
