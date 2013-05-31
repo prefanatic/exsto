@@ -303,7 +303,9 @@ if SERVER then
 		end 
 		
 		exsto.BanDB:DropRow( steamid )
-		self:ResendBans()
+		timer.Simple( 0.01, function()
+			self:ResendBans()
+		end )
 		
 		exsto.Print( exsto_CHAT_ALL, COLOR.NAME, owner:Nick(), COLOR.NORM, " has unbanned ", COLOR.NAME, steamid .. " (" .. name .. ")" )
 
