@@ -76,7 +76,7 @@ end
 function PLUGIN:PlayerSpawn( ply )
 	if ply:Jailed() then
 		ply:MoveToJail()
-		timer.Create( "stripSweps"..ply:EntIndex(), 0.1, 1, exsto.Registry.Player.Player.StripWeapons, ply )
+		timer.Simple( 0.1, function() ply:StripWeapons() end )
 	end
 end
 
