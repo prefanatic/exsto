@@ -94,7 +94,7 @@ function PANEL:SetTextEntry()
 		self.Button:Dock( TOP )
 		self.Button:SetTall( 40 )
 		self.Button:SetFont( "ExGenericText14" )
-		self.Button.OnValueChanged = function( o ) self:OnValueSet( o:GetValue() ) end
+		self.Button.OnTextChanged = function( o ) self:OnValueSet( o:GetValue() ) end
 		self.Button.OnEnter = function( o ) self:OnValueSet( o:GetValue() ) end
 end
 
