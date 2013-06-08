@@ -110,6 +110,7 @@ function exstoInit( srvVer )
 	
 	-- Create our data directory.
 	file.CreateDir( "exsto", "DATA" )
+	file.CreateDir( "exsto/temporary", "DATA" )
 	
 	if SERVER then
 		exstoServer( "sv_init.lua" )
