@@ -114,7 +114,7 @@ if SERVER then
 		local timeleft = string.ToMinutesSeconds( ( banLen + bannedAt ) - os.time() ) 
 		
 		-- Make sure we remove his ban if it has expired.
-		if banLen + bannedAt <= os.time() then exsto.BanDB:DropRow( data.networkid ) self:ResendToAll() callHook( data ) return end
+		if banLen + bannedAt <= os.time() then exsto.BanDB:DropRow( data.networkid ) self:ResendBans() callHook( data ) return end
 		if timeleft and banReason then self:Drop( data.userid, "BANNED! Time left: " .. timeleft .. " - Reason: " .. banReason ) return end
 		
 		-- Call our after-ban hook
