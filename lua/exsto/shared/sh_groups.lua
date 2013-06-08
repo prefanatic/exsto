@@ -164,6 +164,12 @@ end
 function exsto.Registry.Player:GetUserGroup() return self:GetRank() end
 
 --[[ -----------------------------------
+	Function: player:CheckGroup
+	Description: ULX Override: for compat. reasons.
+	----------------------------------- ]]
+function exsto.Registry.Player:CheckGroup( id ) return self:HasUserGroup( id ) end
+
+--[[ -----------------------------------
 	Function: player:HasUserGroup
 	Description: Checks if a player is a rank.
 	----------------------------------- ]]
