@@ -139,8 +139,63 @@ end
 
 --[[ -----------------------------------
 	Function: exsto.CreateColoredPrint
-	Description: Returns a table w/ colors for exsto.Print
+	Description: Returns a table w/ colors for exsto.Print.  Parses str into a table and substitutes color commands for the color table.
+	Input: str: String to print.
     ----------------------------------- ]]
+function exsto.CreateColoredPrint( str )
+	-- Explode our string
+	local tbl, strBuffer = string.Explode( " ", str ), ""
+	
+	-- Loop through to construct our new table.
+	local new, clStart, clEnd, clTag, r, g, b, a = {}
+	for _, word in ipairs( tbl ) do
+		clStart, clEnd, clTag, r, g, b, a = string.find( word, "(%[c=(%d+),(%d+),(%d+),(%d+)%])" )
+		if clStart then -- We've found a color.  Input it
+			-- Flush strBuffer
+			if strBuffer != "" then
+				table.insert( new, strBuffer )
+				strBuffer = ""
+			end
+			
+			table.insert( new, Color( r, g, b, a ) )
+		else -- No color.  Insert string.
+			-- But wait, can we throw in one of our COLOR colors?
+			clStart, clEnd, clTag, c2 = string.find( word, "(%[c=COLOR,(%u+)%])" )
+			if clStart and COLOR[ c2 ] then
+				-- Flush strBuffer
+				if strBuffer != "" then
+					table.insert( new, strBuffer )
+					strBuffer = ""
+				end
+				
+				table.insert( new, COLOR[ c2 ] )
+			else
+				-- Append to the str buffer
+				strBuffer = strBuffer .. word .. " " 
+			end
+		end
+	end
+	
+	table.insert( new, strBuffer )
+	return new
+end	
+
+--[[ -----------------------------------
+	Function: exsto.CreateStringColorPrint
+	Description: Converts table returned by exsto.CreateColoredPrint back into a string format.
+	Input: tbl: The above
+    ----------------------------------- ]]
+function exsto.CreateStringColorPrint( tbl )
+	local strBuffer = ""
+	for _, d in ipairs( tbl ) do
+		if type( d ) == "table" then
+			strBuffer = strBuffer .. "[c=" .. d.r .. "," .. d.g .. "," .. d.b .. "," .. d.a .. "] "
+		else
+			strBuffer = strBuffer .. d
+		end
+	end
+	return strBuffer
+end
 
 --[[ -----------------------------------
 	Function: exsto.GetClosestString
