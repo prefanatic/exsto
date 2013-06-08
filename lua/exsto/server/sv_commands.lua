@@ -146,10 +146,30 @@ function exsto.AddChatCommand( ID, info )
 
 	if !ID or !info then exsto.Error( "No valid ID or Information for a chat command requesting initialization!" ) return end
 	
+	-- This is probably going to be very bad, with what we're about to do.  But we're going to hack in a new way to make commands into this until I have time to recode everything
+	-- It's pretty much a clash of 2013 stuff and 2009 stuff.  This was the FIRST thing I put into exsto, so, its OLD.
+	if not info.Args and info.Arguments then -- New style
+		exsto.Debug( "Commands --> Downconverting command style.  This will be fixed at one point!", 3 )
+	
+		info.ReturnOrder = {}
+		info.Args = {}
+		--info.Optional = {}
+		
+		-- Lets construct backwards to the old style from what we've gotten from the developer.
+		for _, data in ipairs( info.Arguments ) do -- Loop through the order
+			table.insert( info.ReturnOrder, data.Name )
+			info.Args[ data.Name ] = data.Type
+			if data.Optional then
+				info.Optional[ data.Name ] = data.Optional
+			end
+		end
+
+	end
+	
 	local returnOrder = {}
 	if type( info.ReturnOrder ) == "string" then
 		returnOrder = string.Explode( "-", info.ReturnOrder )
-	end
+	else returnOrder = info.ReturnOrder end
 
 	exsto.Commands[ID] = {
 		ID = ID,
@@ -159,20 +179,24 @@ function exsto.AddChatCommand( ID, info )
 		ReturnOrder = returnOrder or {},
 		Args = info.Args or {},
 		Optional = info.Optional or {},
+		Arguments = info.Arguments;
 		Plugin = info.Plugin or nil,
 		Category = info.Category or "Unknown",
 		DisallowCaller = info.DisallowCaller or false
 	}
 	
 	exsto.Commands[ID].Chat = {}
-	if !info.Chat then exsto.Error( ID .. " contains invalid chat commands!  Cannot continue register!" ) return end
-	for k,v in pairs( info.Chat ) do
-		exsto.AddChat( ID, v )
+	if info.Chat then
+		for k,v in pairs( info.Chat ) do
+			exsto.AddChat( ID, v )
+		end
 	end
 	
 	exsto.Commands[ID].Console = {}
-	for k,v in pairs( info.Console ) do
-		exsto.AddConsole( ID, v )
+	if info.Console then
+		for k,v in pairs( info.Console ) do
+			exsto.AddConsole( ID, v )
+		end
 	end
 	
 end
