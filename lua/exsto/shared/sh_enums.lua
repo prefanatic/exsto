@@ -38,6 +38,14 @@ ANIM_BLIND_UP = enum();
 ANIM_POP_UP = enum();
 
 --[[ -----------------------------------
+	Command Types
+	----------------------------------- ]]
+COMMAND_STRING = enum();
+COMMAND_PLAYER = enum();
+COMMAND_NUMBER = enum();
+COMMAND_BOOL = enum();
+
+--[[ -----------------------------------
 	Misc
 	----------------------------------- ]]
 EX_DEVELOPMENT = "devlopment";
