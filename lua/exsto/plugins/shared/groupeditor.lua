@@ -64,7 +64,7 @@ if SERVER then
 		local ply = reader:ReadSender()
 		
 		-- Echo
-		PLUGIN:PrintEcho( { COLOR.NAME, ply:Nick(), COLOR.NORM, " has updated the rank ", COLOR.NAME, exsto.Ranks[ id ].Name } )
+		PLUGIN:PrintEcho( { COLOR.NAME, ply:Nick(), COLOR.NORM, " has updated the rank ", COLOR.NAME, exsto.Ranks[ id ] and exsto.Ranks[ id ].Name or id } )
 
 		-- Write the data
 		PLUGIN:WriteAccess( id, reader:ReadString(), reader:ReadString(), reader:ReadColor(), reader:ReadTable() )
