@@ -331,7 +331,7 @@ function exsto.GetAddonFolder()
 		-- Create a fake debug so we can grab where we are running from.
 		local runningLoc = debug.getinfo( 1, "S" ).short_src
 		
-		runningLoc = string.Explode( "\\", runningLoc )
+		runningLoc = string.Explode( "/", runningLoc )
 		folder = runningLoc[2]
 	end
 	
