@@ -347,7 +347,7 @@ function db:OnMySQLConnectFail( err )
 	self:Error( "MySQL Error: " .. tostring( err ) )
 	self._mysqlSuccess = false
 	
-	if self._AttemptingMySQLReconnect and self._AttemptingMySQLReconnect > 3 then -- Three times.
+	if self._AttemptingMySQLReconnect and self._AttemptingMySQLReconnect > 4 then -- Three times.
 		self:Error( "Unable to reconnect to MYSQL.  Forcing SQLite." )
 		self._forcedLocal = true
 		self._AttemptingMySQLReconnect = nil
@@ -668,7 +668,7 @@ function db:Query( str, threaded, callback )
 	
 	if self._mysqlSuccess == true and self._forcedLocal != true then -- We are MySQL baby
 		self._mysqlQuery = self._mysqlDB:query( str )
-		self._mysqlQuery.onError = function( query, err ) self:OnQueryError( err, query ) end
+		self._mysqlQuery.onError = function( q, err, qSTR ) self:OnQueryError( err, qSTR ) end
 		self._mysqlQuery:start()
 		
 		if threaded == false then -- If we request not to be threaded.
