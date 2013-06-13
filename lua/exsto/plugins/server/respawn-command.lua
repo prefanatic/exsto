@@ -11,10 +11,13 @@ PLUGIN:SetInfo({
 
 if !SERVER then return end
 
-function PLUGIN.Respawn(self, ply, target)
-	target:Spawn()
+function PLUGIN.Respawn(self, ply, target)	
+	if exsto.CurrentGamemode == "terrortown" then 
+		target:SetTeam( ROLE_INNOCENT ) 
+		SendFullStateUpdate()
+	end
 	
-	if exsto.CurrentGamemode == "terrortown" then target:SetTeam( 1 ) end
+	target:Spawn()
 	
 	return {
 		Activator = ply,
