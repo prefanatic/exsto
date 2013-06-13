@@ -14,6 +14,8 @@ if !SERVER then return end
 function PLUGIN.Respawn(self, ply, target)
 	target:Spawn()
 	
+	if exsto.CurrentGamemode == "terrortown" then target:SetTeam( 1 ) end
+	
 	return {
 		Activator = ply,
 		Player = target,
@@ -31,6 +33,6 @@ PLUGIN:AddCommand( "respawn", {
 	Args = {Target="PLAYER"},
 	Category = "Administration",
 })
-PLUGIN:RequestQuickmenuSlot( "respawn" )
+PLUGIN:RequestQuickmenuSlot( "respawn", "Spawn" )
 
 PLUGIN:Register()
