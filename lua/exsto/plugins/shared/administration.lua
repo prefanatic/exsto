@@ -417,7 +417,7 @@ if SERVER then
 	function PLUGIN:ResendBans()
 		local plys = player.GetAll()
 		for _, data in pairs( exsto.BanDB:GetAll() ) do
-			self:SendBan( v, plys )
+			self:SendBan( data, plys )
 		end
 	end
 	
