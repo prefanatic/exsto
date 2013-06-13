@@ -204,6 +204,18 @@ function exsto.dbGetPlayerByID( id )
 	return nil
 end
 
+function exsto.MonitorGamemode()
+	if not exsto.CurrentGamemode and GAMEMODE then
+		-- Detect the gamemode we're in.
+		local exp = string.Explode( "/", GAMEMODE.Folder )
+		exsto.CurrentGamemode = exp[#exp]
+		exsto.Debug( "Running under gamemode: " .. exsto.CurrentGamemode, 1 )
+		
+		hook.Call( "ExGamemodeFound", nil, exsto.CurrentGamemode )
+	end
+end
+hook.Add( "Think", "ExFindGamemode", exsto.MonitorGamemode )
+
 local succ, err = pcall( require, "json" );
 if !succ then
 	exsto.Debug( "Failed to load json.  Oh well.  No ping!", 1 )
