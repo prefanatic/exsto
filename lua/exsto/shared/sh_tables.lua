@@ -436,7 +436,7 @@ exsto.DefaultRanks = {
 			"rankeditor", "allowentity", "allowprop", "allowstool", "allowswep", "ban", "banid",
 			"denyentity", "denyprop", "denystool", "denyswep", "entspawn", "felbackup", "feldetails", "felsettings", "immunity",
 			"rank", "rankid", "server-settings", "banlistdetails", "afkkickignore", "command", "findghosts",
-			"playerpickup", "setconvar", "unban", "pluginpage", "nolimitrank"
+			"playerpickup", "setconvar", "unban", "pluginpage", "nolimitrank", "crcinvalnotify"
 		} );
 		FlagsDeny = von.serialize( {
 		} );
