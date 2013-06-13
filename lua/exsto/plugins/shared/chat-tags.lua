@@ -23,15 +23,8 @@ if SERVER then
 
 	end
 	
-	-- I don't know a better way to do this.
-	function PLUGIN:Think()
-		if !self.Gamemode and GAMEMODE then
-			-- Detect the gamemode we're in.
-			local exp = string.Explode( "/", GAMEMODE.Folder )
-			self.Gamemode = exp[#exp]
-			
-			self:Debug( "Running under gamemode: " .. self.Gamemode, 3 )
-		end
+	function PLUGIN:ExGamemodeFound( gm )
+		self.Gamemode = gm
 	end
 	
 	function PLUGIN:ExInitSpawn( ply )
