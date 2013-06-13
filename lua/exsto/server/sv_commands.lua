@@ -153,11 +153,22 @@ function exsto.AddChatCommand( ID, info )
 	
 		info.ReturnOrder = {}
 		info.Args = {}
-		--info.Optional = {}
 		
 		-- Lets construct backwards to the old style from what we've gotten from the developer.
 		for _, data in ipairs( info.Arguments ) do -- Loop through the order
 			table.insert( info.ReturnOrder, data.Name )
+			
+			-- Convert data.Type
+			if type( data.Type ) == "number" then -- It's an enum, convert it.
+				if data.Type == COMMAND_PLAYER then
+					data.Type = "PLAYER"
+				elseif data.Type == COMMAND_STRING then
+					data.Type = "STRING"
+				elseif data.Type == COMMAND_NUMBER then
+					data.Type = "NUMBER"
+				end
+			end
+			
 			info.Args[ data.Name ] = data.Type
 			if data.Optional then
 				info.Optional[ data.Name ] = data.Optional
