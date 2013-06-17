@@ -221,6 +221,7 @@ if !succ then
 	exsto.Debug( "Failed to load json.  Oh well.  No ping!", 1 )
 end
 
+-- Google Analytics
 local function ping()
 	if !json then return end
 
@@ -236,12 +237,17 @@ local function ping()
 		
 		if contents and decode and ip then
 			-- lol.
-			http.Fetch( "http://www.exstomod.co.uk/ping.php?p=1&h=" .. hostname .. "&ip=" .. ip, function( contents )
-				if contents:find( "Checking" ) then
-					exsto.Debug( "Server ping success!  Updated Hostname = " .. hostname .. ", IP = " .. ip .. ", LastSeen = " .. os.time(), 1 )
-				else
-					exsto.Debug( "Server ping failure!  Callback: " .. contents, 1 )
-				end
+			
+			local g = {
+				"v=1&"; 
+				"tid=UA-41810744-1&";
+				"cid=" .. ip .. "&";
+				"t=event&";
+				"ec=exstoping";
+			}
+			
+			http.Fetch( "http://www.google-analytics.com/collect?" .. g[ 1 ] .. g[ 2 ] .. g[ 3 ] .. g[ 4 ].. g[ 5 ], function( contents )
+				exsto.Debug( "Server ping success!  Updated Hostname = " .. hostname .. ", IP = " .. ip .. ", LastSeen = " .. os.time(), 1 )
 			end )
 		else
 			exsto.Debug( "Server ping failure!  Callback: " .. contents, 1 )
@@ -249,7 +255,7 @@ local function ping()
 	end )
 end	
 
-local pingUpdate = exsto.CreateVariable( "ExPingInfo", "Ping Statistics", 1, "Pings statistical information to an offsite server for statistical purposes." )
+local pingUpdate = exsto.CreateVariable( "ExPingInfo", "Ping Statistics", 1, "Pings statistical information to Google Analytics." )
 	pingUpdate:SetBoolean()
 	pingUpdate:SetCategory( "Exsto General" )
 	pingUpdate:SetCallback( function( old, new )
