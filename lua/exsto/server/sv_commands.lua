@@ -34,7 +34,7 @@ AddArg( "BOOLEAN", "boolean", function( bool ) return tobool( bool ) end )
 AddArg( "NIL", "nil", function( object ) return "" end )
 AddArg( "STEAMID", "table", function( str ) if str == "" then return str else return exsto.dbGetPlayerByID(str) end end )
 
-AddArg( "TIME", "number", function( num )
+AddArg( "TIME", "string", function( num )
 	local split = string.Explode( ":", num )
 	if #split == 1 then return tonumber( num ) end
 	
