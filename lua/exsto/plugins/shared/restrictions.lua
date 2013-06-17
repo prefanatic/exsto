@@ -22,6 +22,8 @@ if SERVER then
 
 	function PLUGIN:Init()
 	
+		exsto.CreateFlag( "restrictions", "Allows access to the restrictions menu." )
+	
 		util.AddNetworkString( "ExReqRestrict" )
 		util.AddNetworkString( "ExReceiveRestriction" )
 		util.AddNetworkString( "ExUpdateRestriction" )
@@ -849,6 +851,7 @@ elseif CLIENT then
 
 	function PLUGIN:Init()
 		self.List = exsto.Menu.CreatePage( "restrictions", restrictInit )
+			self.List:SetFlag( "restrictions" )
 			self.List:SetTitle( "Restrictions" )
 			self.List:SetSearchable( true )
 			self.List:OnShowtime( onRestrictShowtime )
@@ -859,6 +862,7 @@ elseif CLIENT then
 			end )
 			
 		self.Select = exsto.Menu.CreatePage( "restrictionselect", selectInit )
+			self.Select:SetFlag( "restrictions" )
 			self.Select:SetTitle( "Restrictions" )
 			self.Select:OnShowtime( onSelectShowtime )
 			self.Select:SetUnaccessable()
@@ -870,6 +874,7 @@ elseif CLIENT then
 			end )
 			
 		self.WeaponPage = exsto.Menu.CreatePage( "restrictweapon", weaponInit )
+			self.WeaponPage:SetFlag( "restrictions" )
 			self.WeaponPage:SetTitle( "Weapons" )
 			self.WeaponPage:OnShowtime( function( obj ) request( 1 ) end )
 			self.WeaponPage:SetBackFunction( backToSelect )
@@ -877,6 +882,7 @@ elseif CLIENT then
 			self.WeaponPage:SetUnaccessable()
 			
 		self.ToolPage = exsto.Menu.CreatePage( "restricttool", toolInit )
+			self.ToolPage:SetFlag( "restrictions" )
 			self.ToolPage:SetTitle( "Tools" )
 			self.ToolPage:OnShowtime( function( obj ) request( 2 ) end )
 			self.ToolPage:SetBackFunction( backToSelect )
@@ -884,6 +890,7 @@ elseif CLIENT then
 			self.ToolPage:SetUnaccessable()
 			
 		self.ENTPage = exsto.Menu.CreatePage( "restrictent", ENTInit )
+			self.ENTPage:SetFlag( "restrictions" )
 			self.ENTPage:SetTitle( "Entities" )
 			self.ENTPage:OnShowtime( function( obj ) request( 4 ) end )
 			self.ENTPage:SetBackFunction( backToSelect )
@@ -891,6 +898,7 @@ elseif CLIENT then
 			self.ENTPage:SetUnaccessable()
 			
 		self.PropPage = exsto.Menu.CreatePage( "restrictprop", propInit )
+			self.PropPage:SetFlag( "restrictions" )
 			self.PropPage:SetTitle( "Props" )
 			self.PropPage:OnShowtime( function( obj ) request( 3 ) end )
 			self.PropPage:SetBackFunction( backToSelect )
