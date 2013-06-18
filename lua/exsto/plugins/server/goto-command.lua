@@ -16,7 +16,7 @@ PLUGIN:SetInfo({
 function PLUGIN:Init()
 	-- Construct send positions
 	self.Pos = {}
-	for I = 0, 360 do
+	for I = 0, 360, 30 do
 		table.insert( self.Pos, Vector( math.cos( I ), math.sin( I ), 0 ) )
 	end
 	-- Check above and below too.
