@@ -44,6 +44,7 @@ COMMAND_STRING = enum();
 COMMAND_PLAYER = enum();
 COMMAND_NUMBER = enum();
 COMMAND_BOOL = enum();
+COMMAND_BOOLEAN = COMMAND_BOOL
 
 --[[ -----------------------------------
 	Misc

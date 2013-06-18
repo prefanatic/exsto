@@ -166,11 +166,14 @@ function exsto.AddChatCommand( ID, info )
 					data.Type = "STRING"
 				elseif data.Type == COMMAND_NUMBER then
 					data.Type = "NUMBER"
+				elseif data.Type == COMMAND_BOOLEAN then
+					data.Type = "BOOLEAN"
 				end
 			end
 			
 			info.Args[ data.Name ] = data.Type
-			if data.Optional then
+			if data.Optional != nil then
+				if not info.Optional then info.Optional = {} end
 				info.Optional[ data.Name ] = data.Optional
 			end
 		end
