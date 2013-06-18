@@ -16,6 +16,13 @@ function PLUGIN:Init()
 		"If propkill messages are shown in admin's consoles or not (Only with FPP or SPP)."
 	)
 	self.Enable:SetCategory( "Props" )
+	
+	timer.Simple(1, function()
+						if !FPP then
+							self:Debug( "No FPP detected.  Unloading!", 1 )
+							self:Unload()
+						end
+					end )
 end
 
 function PLUGIN:AdminPrint(msg)
@@ -28,14 +35,12 @@ function PLUGIN:PlayerDeath(victim,inflictor,killer)
 	inflictor = inflictor or ""
 	if self.Enable:GetValue() then
 		if killer:GetClass() != "player" and victim != killer then
-			if FPP or SPP then
-				local Msg = "[Propkill] "..victim:Nick().." was killed by "..killer:GetClass().." owned by "
-				if FPP and killer.Owner then Msg = Msg..killer.Owner:Nick()
-				elseif SPropProtection and killer:GetNWEntity("OwnerObj") then Msg = Msg..killer:GetNWEntity("OwnerObj"):Nick() end				
-				self:AdminPrint(Msg)
-				--return true
-			else
-				Msg("Prop kill message not sent, FPP or SPP only.\n")
+			if FPP then
+				local KillMsg = "[Propkill] "..victim:Nick().." was killed by "..killer:GetClass().." owned by "
+				if killer:CPPIGetOwner() then 
+					KillMsg = KillMsg..killer:CPPIGetOwner():Nick()
+				end
+				self:AdminPrint(KillMsg)
 			end
 		end
 	end
