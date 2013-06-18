@@ -103,7 +103,7 @@ function PLUGIN:Goto( owner, ply, force )
 	
 	local pos = self:SendPlayer( owner, ply, force )
 	
-	if !pos then exsto.Print( exsto_CHAT, owner, COLOR.NORM, "Not enough room to goto ", COLOR.NAME, ply:Nick(), COLOR.NORM, "!" ) return end
+	if !pos then exsto.Print( exsto_CHAT, owner, COLOR.NORM, "Not enough room to go to ", COLOR.NAME, ply:Nick(), COLOR.NORM, "!" ) return end
 	
 	owner:SetPos( pos )
 	
@@ -124,7 +124,7 @@ PLUGIN:AddCommand( "goto", {
 	Optional = { Force = false },
 	Category = "Teleportation",
 })
-PLUGIN:RequestQuickmenuSlot( "goto", "Goto", {
+PLUGIN:RequestQuickmenuSlot( "goto", "Go to", {
 	Force = {
 		{ Display = "Force Teleport", Data = true },
 	},

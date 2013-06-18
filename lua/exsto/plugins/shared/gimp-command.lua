@@ -137,7 +137,7 @@ if SERVER then
 		Args = {Victim = "PLAYER"},
 		Category = "Chat",
 	})
-	PLUGIN:RequestQuickmenuSlot( "unmute", "UnMute" )
+	PLUGIN:RequestQuickmenuSlot( "unmute", "Unmute" )
 
 	function PLUGIN:Gag( owner, ply )
 

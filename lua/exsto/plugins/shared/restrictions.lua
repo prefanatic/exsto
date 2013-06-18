@@ -284,7 +284,7 @@ if SERVER then
 		Args = { Player = "PLAYER" },
 		Category = "Restrictions",
 	})
-	PLUGIN:RequestQuickmenuSlot( "nolimits" )
+	PLUGIN:RequestQuickmenuSlot( "nolimits", "No Limits" )
 	
 	function PLUGIN:ExOnRankCreate( ID )
 		-- TODO

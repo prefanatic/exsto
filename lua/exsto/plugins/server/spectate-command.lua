@@ -70,6 +70,6 @@ PLUGIN:AddCommand( "spectate", {
 	Args = {Victim = "PLAYER"},
 	Category = "Administration",
 })
-PLUGIN:RequestQuickmenuSlot( "spectate" )
+PLUGIN:RequestQuickmenuSlot( "spectate", "Spectate" )
 
 PLUGIN:Register()

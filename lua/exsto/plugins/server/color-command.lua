@@ -32,7 +32,7 @@ PLUGIN:AddCommand( "color", {
 	Optional = {Red = 255, Green = 255, Blue = 255},
 	Category = "Fun"
 })
-PLUGIN:RequestQuickmenuSlot( "color", {
+PLUGIN:RequestQuickmenuSlot( "color", "Color", {
 		Red = {
 			{ Display = "50" },
 			{ Display = "100" },

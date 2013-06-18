@@ -16,8 +16,8 @@ function PLUGIN.Frags(self, ply, target, frags)
 	return {
 		Activator = ply,
 		Player = target,
-		Wording = " set ",
-		Secondary = "'s kills to "..frags
+		Wording = " set the kills of ",
+		Secondary = " to "..frags
 	}
 end
 
@@ -26,8 +26,8 @@ function PLUGIN.Deaths(self, ply, target, deaths)
 	return {
 		Activator = ply,
 		Player = target,
-		Wording = " set ",
-		Secondary = "'s deaths to "..deaths
+		Wording = " set the deaths of ",
+		Secondary = " to "..deaths
 	}
 end
 
@@ -41,7 +41,7 @@ PLUGIN:AddCommand( "setfrags", {
 	Args = {Target="PLAYER", Kills="NUMBER"},
 	Category = "Fun",
 })
-PLUGIN:RequestQuickmenuSlot( "setfrags", {
+PLUGIN:RequestQuickmenuSlot( "setfrags", "Set Kills", {
 	Kills = {
 		{ Display = "1 kill", Data = 1 },
 		{ Display = "2 kills", Data = 2 },
@@ -60,7 +60,7 @@ PLUGIN:AddCommand( "setdeaths", {
 	Args = {Target="PLAYER", DeathCount="NUMBER"},
 	Category = "Fun",
 })
-PLUGIN:RequestQuickmenuSlot( "setdeaths", {
+PLUGIN:RequestQuickmenuSlot( "setdeaths", "Set Deaths", {
 	DeathCount = {
 		{ Display = "1 death", Data = 1 },
 		{ Display = "2 deaths", Data = 2 },

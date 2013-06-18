@@ -42,6 +42,6 @@ PLUGIN:AddCommand( "freeze", {
 	Args = {Victim = "PLAYER"},
 	Category = "Fun",
 })
-PLUGIN:RequestQuickmenuSlot( "freeze" )
+PLUGIN:RequestQuickmenuSlot( "freeze", "Freeze" )
 
 PLUGIN:Register()

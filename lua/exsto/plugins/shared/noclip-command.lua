@@ -54,7 +54,7 @@ if SERVER then
 		Optional = { Victim = nil },
 		Category = "Fun",
 	})
-	PLUGIN:RequestQuickmenuSlot( "noclip" )
+	PLUGIN:RequestQuickmenuSlot( "noclip", "Noclip" )
 	
 end
 

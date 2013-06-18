@@ -61,11 +61,11 @@ function PLUGIN:ExVoteFinished( data )
 			
 			if data.ID == "votekick" then 
 				exsto.Print( exsto_CHAT_ALL, COLOR.NORM, "Votekick ", COLOR.NAME, "successful.", COLOR.NORM, "Kicking player: ", COLOR.NAME, self.VotePlayer:Nick() )
-				admin:Kick( "Console", self.VotePlayer, "Kicked due to a majority vote." ) 
+				admin:Kick( "Console", self.VotePlayer, "Kicked due to a majority vote" ) 
 				return
 			elseif data.ID == "voteban" then 
 				exsto.Print( exsto_CHAT_ALL, COLOR.NORM, "Voteban ", COLOR.NAME, "successful.", COLOR.NORM, "Banning player: ", COLOR.NAME, self.VotePlayer:Nick() )
-				admin:Ban( "Console", self.VotePlayer, 10, "Banned due to a majority vote." ) 
+				admin:Ban( "Console", self.VotePlayer, 10, "Banned due to a majority vote" ) 
 				return 
 			end
 		end
