@@ -113,6 +113,7 @@ end
      ----------------------------------- ]]
 function exsto.InitPlugins()
 	exsto.Print( exsto_CONSOLE, "Plugins --> Starting load." );
+	local last = exsto.GetLastPluginRegister
 	
 	if SERVER then
 		-- Create the settings database.
@@ -132,6 +133,8 @@ function exsto.InitPlugins()
 	for _, name in pairs( loc ) do
 		exsto.Debug( "Plugins --> Including client: " .. name, 3 )
 		exstoClient( "plugins/client/" .. name )
+		last().Location = "plugins/client/" .. name 
+		last().Side = "cl"
 	end
 	
 	-- Shared
@@ -139,6 +142,8 @@ function exsto.InitPlugins()
 	for _, name in pairs( loc ) do
 		exsto.Debug( "Plugins --> Including shared: " .. name, 3 )
 		exstoShared( "plugins/shared/" .. name )
+		last().Location = "plugins/shared/" .. name 
+		last().Side = "sh"
 	end
 	
 	if SERVER then
@@ -146,6 +151,8 @@ function exsto.InitPlugins()
 		for _, name in pairs( loc ) do
 			exsto.Debug( "Plugins --> Including server: " .. name, 3 )
 			exstoServer( "plugins/server/" .. name )
+			last().Location = "plugins/server/" .. name 
+			last().Side = "sv"
 		end
 	end
 	
