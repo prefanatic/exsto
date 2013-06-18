@@ -17,6 +17,7 @@ if SERVER then
 		util.AddNetworkString( "ExRecPluginList" )
 		util.AddNetworkString( "ExRequestPluginList" )
 		util.AddNetworkString( "ExTogglePlugin" )
+		util.AddNetworkString( "ExSendPlugin" )
 		
 		exsto.CreateFlag( "pluginpage", "Allows access to the plugin page." )
 	
@@ -63,9 +64,60 @@ if SERVER then
 		self:SendPluginList( reader )
 	end
 	PLUGIN:CreateReader( "ExTogglePlugin", PLUGIN.ChangePlugin )
-
+	
+	-- THIS WILL RELOAD PLUGINS OH MY GOD!
+	function PLUGIN:Reload( caller, id )
+		local plug = exsto.GetPlugin( id )
+		if not plug then
+			caller:Print( exsto_CHAT, COLOR.NORM, "Unable to find the plugin ", COLOR.NAME, id, COLOR.NORM, "." )
+			return
+		end
+		
+		if not plug:CanCleanlyUnload() then
+			caller:Print( exsto_CHAT, COLOR.NORM, "Due to developmental error, we cannot ", COLOR.NAME, "reload this plugin.  ", COLOR.NORM, "The best you can do right now is reload the server using !reloadmap." )
+			return
+		end
+		
+		plug:Unload()
+		
+		-- This is where it gets retarded.
+		if plug.Side == "sv" then -- We only need to reload serverside.  Thank the gods.
+			exsto.Debug( "Plugins --> Reloading server plugin: " .. plug:GetName(), 1 )
+			exstoServer( plug.Location )
+		elseif plug.Side == "sh" then -- We need to reload on the server and on the client.
+			exsto.Debug( "Plugins --> Reloading shared plugin: " .. plug:GetName(), 1 )
+			exstoShared( plug.Location )
+			
+			local sender = exsto.CreateSender( "ExSendPlugin", player.GetAll() )
+				sender:AddString( file.Read( "exsto/" .. plug.Location, "LUA" ) )
+			sender:Send()
+		elseif plug.Side == "cl" then -- Just clientside
+			exsto.Debug( "Plugins --> Reloading client plugin: " .. plug:GetName(), 1 )
+			exstoClient( plug.Location )
+			
+			local sender = exsto.CreateSender( "ExSendPlugin", player.GetAll() )
+				sender:AddString( file.Read( "exsto/" .. plug.Location, "LUA" ) )
+			sender:Send()
+		end
+		
+		caller:Print( exsto_CHAT, COLOR.NAME, plug:GetName() or id, COLOR.NORM, " has been reloaded." )
+	end
+	PLUGIN:AddCommand( "reload", {
+		Call = PLUGIN.Reload,
+		Console = { "reload" },
+		Chat = { "!reload" },
+		Arguments = {
+			{ Name = "ID", Type = "STRING" };
+		};
+		Category = "Development";
+	} )
 	
 elseif CLIENT then
+
+	function PLUGIN:Reload( reader )
+		RunString( reader:ReadString() )
+	end
+	PLUGIN:CreateReader( "ExSendPlugin", PLUGIN.Reload )
 
 	local function invalidate( cont )
 		local pnl = cont.Content
