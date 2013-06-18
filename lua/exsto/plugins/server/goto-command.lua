@@ -10,51 +10,41 @@ PLUGIN:SetInfo({
 	ID = "goto-bring",
 	Desc = "A plugin that allows bringing and goto player commands!",
 	Owner = "Prefanatic",
+	CleanUnload = true;
 } )
 
--- I was told to rewrite this by the lovely Megiddo; so I did.  Love: Prefanatic.
--- Hated: hatred says you are now lower life form then a scene whore... hi overv
-function PLUGIN:SendPlayer( ply, megiddo, force )
-
-	local isvec = false
-	if type( megiddo ) == "Vector" then isvec = true end
-
-	if !isvec and !megiddo:IsInWorld() and !force then return false end
-	
-	local fuck
-	local umegiddo
-	if isvec then
-		umegiddo = 0
-		fuck = megiddo
-	else
-		umegiddo = megiddo:EyeAngles().yaw
-		fuck = megiddo:GetPos()
+function PLUGIN:Init()
+	-- Construct send positions
+	self.Pos = {}
+	for I = 0, 360 do
+		table.insert( self.Pos, Vector( math.cos( I ), math.sin( I ), 0 ) )
 	end
+	-- Check above and below too.
+	table.insert( self.Pos, Vector( 0, 0, 1 ) )
+	table.insert( self.Pos, Vector( 0, 0, -1 ) )
 	
-	local ulx_sucks = {
-		math.NormalizeAngle( umegiddo - 180 ),
-		math.NormalizeAngle( umegiddo + 90 ),
-		math.NormalizeAngle( umegiddo - 90 ),
-		umegiddo,
-	}
-
-	local lol_creative_commons_on_code = {}
-	lol_creative_commons_on_code.start = fuck + Vector( 0, 0, 32 )
-	lol_creative_commons_on_code.filter = { megiddo, ply }
-
-	local loveyou
-	for I = 1, #ulx_sucks do
-		lol_creative_commons_on_code.endpos = fuck + Angle( 0, ulx_sucks[ I ], 0 ):Forward() * 47
-		loveyou = util.TraceEntity( lol_creative_commons_on_code, ply )
-		if !loveyou.Hit then return loveyou.HitPos end
-	end
-	
-	if force then
-		return fuck + Angle( 0, ulx_sucks[ 1 ], 0 ):Forward() * 47
-	end
-	
+	self.Sizes = Vector( 35, 35, 77 )
 end
 
+-- Sends 'send' to 'to'.  Checks in a circle around 'to' to prevent going into walls.
+function PLUGIN:SendPlayer( send, to, force )
+	local pos = IsValid( to ) and to:GetPos() or to
+	if force and IsValid( to ) and to:IsInWorld() then return pos end
+	
+	-- Do a trace for each point in the circle.
+	local trace = {
+		start = pos;
+		filter = { send, IsValid( to ) and to or false };
+	}
+	local traceData = nil; -- Reference
+	for I = 1, #self.Pos do
+		trace.endpos = pos + ( self.Pos[ I ] * self.Sizes )
+		traceData = util.TraceEntity( trace, send )
+		if not traceData.Hit then return traceData.HitPos end
+	end
+	
+	if force then return traceData.HitPos end
+end
 
 function PLUGIN:Teleport( owner )
 	local pos = self:SendPlayer( owner, owner:GetEyeTrace().HitPos )
