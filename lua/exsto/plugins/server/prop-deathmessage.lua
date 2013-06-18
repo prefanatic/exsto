@@ -17,10 +17,12 @@ function PLUGIN:Init()
 	)
 	self.Enable:SetCategory( "Props" )
 	
-	if !FPP then
-		self:Debug( "No FPP detected.  Unloading!", 1 )
-		self:Unload()
-	end
+	timer.Simple(1, function()
+						if !FPP then
+							self:Debug( "No FPP detected.  Unloading!", 1 )
+							self:Unload()
+						end
+					end )
 end
 
 function PLUGIN:AdminPrint(msg)

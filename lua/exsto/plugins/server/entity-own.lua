@@ -8,32 +8,29 @@ PLUGIN:SetInfo({
     Owner = "Hobo",
 } )
 
+function PLUGIN:Init()
+	timer.Simple(1, function()
+						if !FPP then
+							self:Debug( "No FPP detected.  Unloading!", 1 )
+							self:Unload()
+						end
+					end )
+end
+
 function PLUGIN:Own( owner, ply, const )
--- Only works for Falco's Prop Protection and SPP.
-    if FPP or SPropProtection then
+-- Only works for Falco's Prop Protection.
+    if FPP then
         local e = owner:GetEyeTraceNoCursor().Entity
         if ValidEnt(e) then
             local i = 0
             if const == 0 then
                 i = 1
-                if FPP then
-                    e.Owner = ply
-                else
-                    SPropProtection["Props"][e:EntIndex()] = {ply:SteamID(), e, ply}
-                    e:SetNetworkedString("Owner", ply:Nick())
-                    e:SetNetworkedEntity("OwnerObj", ply)
-                end
+                e:CPPISetOwner(ply)
             else
                 Consts = constraint.GetAllConstrainedEntities(e)
                 for _,const in pairs (Consts) do
                     i = i+1
-                    if FPP then
-                        const.Owner = ply
-                    else
-                        SPropProtection["Props"][const:EntIndex()] = {ply:SteamID(), const, ply}
-                        const:SetNetworkedString("Owner", ply:Nick())
-                        const:SetNetworkedEntity("OwnerObj", ply)
-                    end
+                    const:CPPISetOwner(ply)
                 end
             end
             return { COLOR.NAME,owner,COLOR.NORM, " gave ",COLOR.NAME,ply,COLOR.NORM," possession of ",COLOR.NAME,tostring(i),COLOR.NORM," object"..(i>1 and "s" or "").."." }
