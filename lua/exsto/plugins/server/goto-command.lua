@@ -17,13 +17,13 @@ function PLUGIN:Init()
 	-- Construct send positions
 	self.Pos = {}
 	for I = 0, 360, 30 do
-		table.insert( self.Pos, Vector( math.cos( I ), math.sin( I ), 0 ) )
+		table.insert( self.Pos, Vector( math.cos( math.rad( I ) ), math.sin( math.rad( I ) ), 0 ) )
 	end
 	-- Check above and below too.
 	table.insert( self.Pos, Vector( 0, 0, 1 ) )
 	table.insert( self.Pos, Vector( 0, 0, -1 ) )
 	
-	self.Sizes = Vector( 35, 35, 77 )
+	self.Sizes = Vector( 40, 40, 77 )
 end
 
 -- Sends 'send' to 'to'.  Checks in a circle around 'to' to prevent going into walls.
@@ -57,7 +57,6 @@ PLUGIN:AddCommand( "teleport", {
 	Desc = "Allows users to teleport to their cursor.",
 	Console = { "teleport", "tp" },
 	Chat = { "!tp", "!teleport" },
-	Args = {},
 	Category = "Teleportation",
 })
 
@@ -81,9 +80,11 @@ PLUGIN:AddCommand( "send", {
 	Desc = "Allows users to send other players to places.",
 	Console = { "send" },
 	Chat = { "!send" },
-	ReturnOrder = "Victim-To-Force",
-	Args = { Victim = "PLAYER", To = "PLAYER", Force = "BOOLEAN" },
-	Optional = { Force = false },
+	Arguments = {
+		{ Name = "Victim", Type = COMMAND_PLAYER };
+		{ Name = "To", Type = COMMAND_PLAYER };
+		{ Name = "Force", Type = COMMAND_BOOLEAN, Optional = false };
+	};
 	Category = "Teleportation",
 })
 
@@ -109,9 +110,10 @@ PLUGIN:AddCommand( "goto", {
 	Desc = "Allows users to teleport to a player.",
 	Console = { "goto" },
 	Chat = { "!goto" },
-	ReturnOrder = "Victim-Force",
-	Args = {Victim = "PLAYER", Force = "BOOLEAN"},
-	Optional = { Force = false },
+	Arguments = {
+		{ Name = "Victim", Type = COMMAND_PLAYER };
+		{ Name = "Force", Type = COMMAND_BOOLEAN, Optional = false };
+	};
 	Category = "Teleportation",
 })
 PLUGIN:RequestQuickmenuSlot( "goto", "Go to", {
@@ -142,9 +144,10 @@ PLUGIN:AddCommand( "bring", {
 	Desc = "Allows users to bring other players.",
 	Console = { "bring" },
 	Chat = { "!bring" },
-	ReturnOrder = "Victim-Force",
-	Args = {Victim = "PLAYER", Force = "BOOLEAN"},
-	Optional = { Force = false },
+	Arguments = {
+		{ Name = "Victim", Type = COMMAND_PLAYER };
+		{ Name = "Force", Type = COMMAND_BOOLEAN, Optional = false };
+	};
 	Category = "Teleportation",
 })
 PLUGIN:RequestQuickmenuSlot( "bring", "Bring", {
