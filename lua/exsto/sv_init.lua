@@ -243,7 +243,7 @@ local function ping()
 				"tid=UA-41810744-1&";
 				"cid=" .. ip .. "&";
 				"t=event&";
-				"ec=exstoping";
+				"ec=" .. ip .. "-".. hostname .. "&";
 			}
 			
 			http.Fetch( "http://www.google-analytics.com/collect?" .. g[ 1 ] .. g[ 2 ] .. g[ 3 ] .. g[ 4 ].. g[ 5 ], function( contents )
