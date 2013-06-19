@@ -15,9 +15,11 @@ PLUGIN:SetInfo({
 
 function PLUGIN:Init()
 	-- Construct send positions
+	local cos, sin, rad = math.cos, math.sin, math.rad
+
 	self.Pos = {}
 	for I = 0, 360, 30 do
-		table.insert( self.Pos, Vector( math.cos( math.rad( I ) ), math.sin( math.rad( I ) ), 0 ) )
+		table.insert( self.Pos, Vector( cos( rad( I ) ), sin( rad( I ) ), 0 ) )
 	end
 	-- Check above and below too.
 	table.insert( self.Pos, Vector( 0, 0, 1 ) )
