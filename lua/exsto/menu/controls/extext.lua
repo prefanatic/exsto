@@ -39,6 +39,10 @@ function PANEL:GetFont() return self._Font or "ExGenericTextNoBold14" end
 function PANEL:GetLines() return self.Lines end
 function PANEL:GetLineCount() return #self.Lines end
 function PANEL:GetProjectedHeight() return #self.Lines * self.GreatestLineHeight end
+function PANEL:IgnoreSelfWide() self.IgnoreWide = true end
+function PANEL:SetMaxWide( m ) self.MaxW = m end
+function PANEL:SetProjectedWide( w ) self.ProjectedWide = w end
+function PANEL:GetProjectedWide() return self.ProjectedWide end
 
 function PANEL:ConstructLines( ... )
 	-- Abide by the width of our panel so we create new lines downward.
@@ -55,7 +59,7 @@ function PANEL:ConstructLines( ... )
 				w, h = surface.GetTextSize( word .. " " )
 				
 				-- Handle going over in w
-				if ( w + tW ) > self:GetWide() then
+				if ( not self.IgnoreWide and ( w + tW ) > self:GetWide() ) or ( self.IgnoreWide and ( w + tW ) > self.MaxW ) then
 					-- We can't fit, so segregate downwards.
 					l = l + 1
 					tW = w -- Reset our tW to this new one.
@@ -67,6 +71,7 @@ function PANEL:ConstructLines( ... )
 					tW = tW + w
 				end
 			end
+			self:SetProjectedWide( tW )
 		elseif type( d ) == "table" then -- We've got a color.
 			c = d
 		end
@@ -136,5 +141,6 @@ function PANEL:PerformLayout()
 	end
 	
 end
+
 
 derma.DefineControl( "ExText", "Exsto Text", PANEL, "DPanel" )
