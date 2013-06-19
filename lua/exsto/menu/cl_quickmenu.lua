@@ -37,8 +37,8 @@ local function mainOnShowtime( obj )
 	-- Loop through our players to construct the ranks table.
 	local tbl = {}
 	for _, ply in ipairs( player.GetAll() ) do
-		if !tbl[ ply:GetRank() ] then tbl[ ply:GetRank() ] = {} end;
-		table.insert( tbl[ ply:GetRank() ], { Player = ply, Immunity = exsto.Ranks[ ply:GetRank() ].Immunity } )
+		if !tbl[ ply:GetRank() ] then tbl[ ply:GetRank() ] = { Immunity = exsto.Ranks[ ply:GetRank() ].Immunity } end;
+		table.insert( tbl[ ply:GetRank() ], { Player = ply } )
 	end
 	pnl.FormattedTable = tbl;
 	
