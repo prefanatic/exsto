@@ -277,6 +277,10 @@ function exsto.Debug( msg, level )
 	exsto.Print( exsto_DEBUG, msg, level or 1 )
 end
 
+function exsto.NotifyChat( ... )
+	exsto.Print( exsto_CHAT_ALL, unpack( {...} ) )
+end
+
 hook.Call( "ExPrintingInit" )
 
 if CLIENT then
