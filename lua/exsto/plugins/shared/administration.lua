@@ -196,7 +196,7 @@ if SERVER then
 		Console = { "banid" }, 
 		Chat = { "!banid" }, 
 		ReturnOrder = "SteamID-Length-Reason", 
-		Args = {SteamID = "STRING", Length = "TIME", Reason = "STRING"}, 
+		Args = {SteamID = "STRING", Length = "NUMBER", Reason = "STRING"}, 
 		Optional = {SteamID = "", Length = 0, Reason = "Banned by [self]"}, 
 		Category = "Administration", 
 	}) 
@@ -238,7 +238,7 @@ if SERVER then
 		Console = { "ban" }, 
 		Chat = { "!ban" }, 
 		ReturnOrder = "Victim-Length-Reason", 
-		Args = {Victim = "ONEPLAYER", Length = "TIME", Reason = "STRING"}, 
+		Args = {Victim = "ONEPLAYER", Length = "NUMBER", Reason = "STRING"}, 
 		Optional = {Length = 0, Reason = "Banned by [self]"}, 
 		Category = "Administration", 
 		DisallowCaller = true, 
