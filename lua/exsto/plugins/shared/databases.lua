@@ -333,13 +333,14 @@ if CLIENT then
 			pnl.Reset:SetQuickMenu()
 			pnl.Reset:SetEvil()
 			pnl.Reset.OnClick = function( o )
-				pnl:GetObject():Alert( "Warning!  This will completely delete all the data in the table.  A server restart is required to complete this action.  Are you sure you want to continue?", 
-					function()
+				pnl:GetObject():Alert( {
+					Text = { COLOR.NAME, "Warning!", COLOR.MENU, "  This will completely delete ", COLOR.NAME, "all the data in the table.  A server restart is required to complete this action.  ", COLOR.MENU, "Are you sure you want to continue?" }, 
+					Yes = function()
 						local sender = exsto.CreateSender( "ExResetDB" )
 							sender:AddString( PLUGIN.WorkingDB.db )
 						sender:Send()
 					end
-				)
+				} )
 			end
 
 		pnl.Cat:InvalidateLayout( true )
@@ -391,14 +392,15 @@ if CLIENT then
 	exsto.CreateReader( "ExSendBackupList", receiveBackupsList )
 	
 	local function restoreSelected( pnl )
-		pnl:GetObject():Alert( "You have selected to restore a backup!  This will erase all the contents existing in the database.  The server will also reload promptly after the restore has complete.  Are you sure?",
-			function()
+		pnl:GetObject():Alert( {
+			Text = { "You have selected to restore a backup!  This will erase all the contents existing in the database.  The server will also reload promptly after the restore has complete.  Are you sure?" },
+			Yes = function()
 				local sender = exsto.CreateSender( "ExRestoreDatabase" )
 					sender:AddString( PLUGIN.WorkingDB.db )
 					sender:AddString( pnl.RestoreSelected.db )
 				sender:Send()
 			end
-		)
+		} )
 	end
 	
 	local function backupInit( pnl )

@@ -121,7 +121,6 @@ function PANEL:SetText( ... )
 	for _, line in ipairs( self:GetLines() ) do
 		h = h + line:GetTall()
 	end
-	print( h )
 	self:SetTall( h + 4 )
 
 end
@@ -132,9 +131,6 @@ function PANEL:PerformLayout()
 	if w != self._W or h != self._H then -- We changed sizes!
 		self._W = w
 		self._H = h
-		
-		print( "redo" )
-		PrintTable( self._TEXT )
 		
 		self:SetText( unpack( self._TEXT ) )
 	end
