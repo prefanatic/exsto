@@ -14,7 +14,7 @@ function PLUGIN:Say( owner, ply, text )
     if not text then
         return { owner,COLOR.NORM, "You need to enter text for the player to say." }
     else
-        match = 0
+        local match = 0
         for i,com in pairs(exsto.Commands) do
             for k,comm in pairs(com.Chat) do
                 if string.match( text, comm, 1, true ) then match = 1 end
