@@ -203,35 +203,52 @@ function exsto.Registry.Player:RemoveJail()
 
 	self.IsJailed = false
 end
+
+function PLUGIN:UnJail( owner, ply, time )
+	if not ply.IsJailed then
+		owner:Print( exsto_CHAT, COLOR.NAME, ply:Nick(), COLOR.NORM, " is not jailed." )
+		return
+	end
+
+	ply:RemoveJail()
+	exsto.NotifyChat( COLOR.NAME, owner:Nick(), COLOR.NORM, " has unjailed ", COLOR.NAME, ply:Nick() )	
+end
+PLUGIN:AddCommand( "unjail", {
+	Call = PLUGIN.UnJail,
+	Desc = "Allows users to remove other users in jail.",
+	Console = { "unjail" },
+	Chat = { "!unjail" },
+	Arguments = {
+		{ Name = "Player", Type = COMMAND_PLAYER };
+	};
+	Category = "Fun",
+})
+PLUGIN:RequestQuickmenuSlot( "unjail", "Unjail")
 	
 function PLUGIN:Jail( owner, ply, time )
+	if ply.IsJailed then
+		owner:Print( exsto_CHAT, COLOR.NAME, ply:Nick(), COLOR.NORM, " is already jailed." )
+		return
+	end
 
-	if !ply.IsJailed then
-		ply:CreateJail(time)
-		if time > 0 then 
-			return { exsto_CHAT,COLOR.NAME,owner:Nick(),COLOR.NORM," has jailed ",COLOR.NAME,ply:Nick(),
-				COLOR.NORM," for ", COLOR.NAME,tostring(time),COLOR.NORM, " seconds." }
-		else
-			return { exsto_CHAT,COLOR.NAME,owner:Nick(),COLOR.NORM," has jailed ",COLOR.NAME,ply:Nick(),COLOR.NORM,"!" }		
-		end
+	ply:CreateJail(time)
+	if time > 0 then 
+		return { exsto_CHAT,COLOR.NAME,owner:Nick(),COLOR.NORM," has jailed ",COLOR.NAME,ply:Nick(),
+			COLOR.NORM," for ", COLOR.NAME,tostring(time),COLOR.NORM, " seconds." }
 	else
-		ply:RemoveJail()
-		return {
-			Activator = owner,
-			Player = ply,
-			Wording = " has un-jailed ",
-		}
+		return { exsto_CHAT,COLOR.NAME,owner:Nick(),COLOR.NORM," has jailed ",COLOR.NAME,ply:Nick(),COLOR.NORM,"!" }		
 	end
 	
 end
 PLUGIN:AddCommand( "jail", {
 	Call = PLUGIN.Jail,
 	Desc = "Allows users to put other users in jail.",
-	Console = { "jail", "unjail" },
-	Chat = { "!jail", "!unjail" },
-	ReturnOrder = "Victim-Time",
-	Args = {Victim = "PLAYER", Time = "NUMBER"},
-	Optional = { Time = 0 },
+	Console = { "jail" },
+	Chat = { "!jail" },
+	Arguments = {
+		{ Name = "Player", Type = COMMAND_PLAYER };
+		{ Name = "Time", Type = COMMAND_NUMBER, Optional = 0 };
+	};
 	Category = "Fun",
 })
 PLUGIN:RequestQuickmenuSlot( "jail", "Jail", {

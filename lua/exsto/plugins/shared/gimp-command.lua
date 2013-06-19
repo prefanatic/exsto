@@ -50,35 +50,48 @@ if SERVER then
 		Args = {Message = "STRING"},
 		Category = "Chat",
 	})
-
+	
 	function PLUGIN:Gimp( owner, ply )
-
-		local style = " has gimped "
-		
 		if self:IsGimped( ply ) then
-			ply.Gimped = false
-			style = " has un-gimped "
-		else
-			ply.Gimped = true
+			ply:Print( exsto_CHAT, COLOR.NAME, ply:Nick(), COLOR.NORM, " is already gimped." )
+			return
 		end
 		
-		return {
-			Activator = owner,
-			Player = ply,
-			Wording = style,
-		}
-
+		ply.Gimped = true
+		exsto.NotifyChat( COLOR.NAME, owner:Nick(), COLOR.NORM, " has gimped ", COLOR.NAME, ply:Nick() )
 	end
 	PLUGIN:AddCommand( "gimp", {
 		Call = PLUGIN.Gimp,
 		Desc = "Allows users to gimp other players.",
-		Console = { "gimp", "ungimp" },
-		Chat = { "!gimp", "!ungimp" },
-		ReturnOrder = "Victim",
-		Args = {Victim = "PLAYER"},
+		Console = { "gimp" },
+		Chat = { "!gimp" },
+		Arguments = {
+			{ Name = "Player", Type = COMMAND_PLAYER };
+		};
 		Category = "Chat",
 	})
 	PLUGIN:RequestQuickmenuSlot( "gimp", "Gimp" )
+	
+	function PLUGIN:UnGimp( owner, ply )
+		if not self:IsGimped( ply ) then
+			ply:Print( exsto_CHAT, COLOR.NAME, ply:Nick(), COLOR.NORM, " is not gimped." )
+			return
+		end
+		
+		ply.Gimped = false
+		exsto.NotifyChat( COLOR.NAME, owner:Nick(), COLOR.NORM, " has ungimped ", COLOR.NAME, ply:Nick() )
+	end
+	PLUGIN:AddCommand( "ungimp", {
+		Call = PLUGIN.UnGimp,
+		Desc = "Allows users to ungimp other players.",
+		Console = { "ungimp" },
+		Chat = { "!ungimp" },
+		Arguments = {
+			{ Name = "Player", Type = COMMAND_PLAYER };
+		};
+		Category = "Chat",
+	})
+	PLUGIN:RequestQuickmenuSlot( "ungimp", "Ungimp" )
 
 	function PLUGIN:Mute( owner, ply )
 		if ply._IsMuted then
