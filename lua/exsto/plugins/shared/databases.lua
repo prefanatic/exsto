@@ -284,8 +284,8 @@ if CLIENT then
 		
 		pnl.MySQLText = vgui.Create( "ExText", pnl.Cat )
 			pnl.MySQLText:Dock( TOP )
-			pnl.MySQLText:SetText( "MySQL" )
 			pnl.MySQLText:SetTextColor( Color( 0, 180, 255, 255 ) )
+			pnl.MySQLText:SetText( "MySQL" )
 			pnl.MySQLText:SetFont( "ExGenericText18" )
 		
 		pnl.MySQLHelp = vgui.Create( "ExText", pnl.Cat )
@@ -299,20 +299,16 @@ if CLIENT then
 			pnl.MySQL:SetQuickMenu()
 			pnl.MySQL:SetTall( 40 )
 			pnl.MySQL.OnClick = function( o, val )
-				if PLUGIN.WorkingDB.db == "Global" then
-					pnl:GetObject():Alert( string.format( "This will set EVERY database to %s.  Any %s data will not transfer over, and the server will need to be restarted in order for this to take effect.  Are you sure?", val and "MySQL" or "SQLite", val and "SQLite" or "MySQL" ),
-						function()
-						
-						end, function() o:SetValue( !val ) end )
-				else
-					pnl:GetObject():Alert( string.format( "Are you sure you want to set this database to %s?  Any data currently in %s will not transfer over, and you will need to restart the server.", val and "MySQL" or "SQLite", val and "SQLite" or "MySQL" ),
-						function()
-							local sender = exsto.CreateSender( "ExSetMySQLDB" )
-								sender:AddString( PLUGIN.WorkingDB.db )
-								sender:AddBoolean( val )
-							sender:Send()
-						end, function() o:SetValue( !val ) end )
-				end
+				pnl:GetObject():Alert( {
+					Text = { string.format( "Are you sure you want to set this database to %s?  Any data currently in %s will not transfer over, and you will need to restart the server.", val and "MySQL" or "SQLite", val and "SQLite" or "MySQL" ) },
+					Yes = function()
+						local sender = exsto.CreateSender( "ExSetMySQLDB" )
+							sender:AddString( PLUGIN.WorkingDB.db )
+							sender:AddBoolean( val )
+						sender:Send()
+					end, 
+					No = function() o:SetValue( !val ) end 
+				} )
 			end
 			
 		pnl.Cat:CreateSpacer()

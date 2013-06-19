@@ -302,8 +302,9 @@ elseif CLIENT then
 	end
 	
 	local function createNewRank()		
-		PLUGIN.Page:InputText( "Please type a unique identifyer for your rank.  It must not contain any spaces, and it should be accurate based on the rank you are creating.  This cannot be changed later.",
-			function( val ) 
+		PLUGIN.Page:InputText( {
+			Text = { COLOR.MENU, "Please create an ", COLOR.NAME, "unique ID", COLOR.MENU, " for your rank.  It must not contain any spaces, and it should be accurate based on the rank you are creating.  ", COLOR.NAME, "This cannot be changed later." },
+			Yes = function( val ) 
 				val = val:lower():Replace( " ", "_" )
 				
 				exsto.Ranks[ val ] = {
@@ -317,8 +318,8 @@ elseif CLIENT then
 				PLUGIN.WorkingRank = exsto.Ranks[ val ];
 				refreshEditor()		
 			end,
-			function() end
-		)
+			No = function() end
+		} )
 	end
 
 	local function deleteRank( self )

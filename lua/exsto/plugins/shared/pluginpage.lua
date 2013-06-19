@@ -176,11 +176,12 @@ elseif CLIENT then
 			end
 			
 			if data.CleanUnload == 0 and tobool( data.Enabled ) == true then
-				PLUGIN.Page:Alert( "Warning!  This plugin cannot unload cleanly due to developmental error.  A server restart is RECOMMENDED in order to disable.",
-					function()
+				PLUGIN.Page:Alert( {
+					Text = { COLOR.NAME, "Warning!", Color( 133, 133, 133, 255 ), "  This plugin cannot unload cleanly due to developmental error.  A server restart is RECOMMENDED in order to disable." },
+					Yes = function()
 						push( data )
 					end
-				)
+				} )
 			else
 				push( data )
 			end
