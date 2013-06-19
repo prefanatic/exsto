@@ -55,6 +55,7 @@ COLOR = {}
 	COLOR.BLUE = Color( 50, 50, 200, 255 )
 	COLOR.EXSTO = Color( 116, 202, 254, 255 )
 	COLOR.NAME = Color( 255, 105, 105, 255 )
+	COLOR.MENU = Color( 133, 133, 133, 255 ) 
 	
 -- Complementary color generator.  Adapted from easyrgb.com
 function exsto.GenerateComplementaryColor( col )
