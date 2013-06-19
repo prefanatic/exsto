@@ -23,7 +23,7 @@ PANEL = {}
 function PANEL:Init()
 	self.Lines = {}
 	
-	self:SetTextColor( Color( 133, 133, 133, 255 ) )
+	self:SetTextColor( COLOR.MENU )
 end
 
 function PANEL:Paint() end
@@ -40,59 +40,80 @@ function PANEL:GetLines() return self.Lines end
 function PANEL:GetLineCount() return #self.Lines end
 function PANEL:GetProjectedHeight() return #self.Lines * self.GreatestLineHeight end
 
-function PANEL:ConstructLines( txt )
+function PANEL:ConstructLines( ... )
 	-- Abide by the width of our panel so we create new lines downward.
 	surface.SetFont( self:GetFont() )
-	local words = string.Explode( " ", txt )
-	local tbl = {}
-	
-	local w, h, l, tW, word = 0, 0, 1, 0
-	for I = 1, #words do
-		word = words[ I ]
-		if !tbl[ l ] then tbl[ l ] = {} end
-		
-		w, h = surface.GetTextSize( word .. " " )
-		
-		if word:find( "\n" ) then
-			table.insert( tbl[ l ], word:Replace( "\n", "" ) )
-			l = l + 1 -- Increase the line level
-			tW = 0
-		elseif w + tW > self:GetWide() then
-			l = l + 1
+
+	-- This might be werid.  I'm implementing color support.  So, yeah.
+	local w, h, l, tW, tH, tbl, c = 0, 0, 1, 0, 0, {}, nil
+	for _, d in pairs( {...} ) do
+		if not tbl[ l ] then tbl[ l ] = {} end
+		if type( d ) == "string" then
+			local exp = string.Explode( " ", d )
 			
-			tW = w
-			tbl[ l ] = {}
-			table.insert( tbl[ l ], word )
-		else
-			tW = tW + w
-			table.insert( tbl[ l ], word )
+			for _, word in ipairs( exp ) do
+				w, h = surface.GetTextSize( word .. " " )
+				
+				-- Handle going over in w
+				if ( w + tW ) > self:GetWide() then
+					-- We can't fit, so segregate downwards.
+					l = l + 1
+					tW = w -- Reset our tW to this new one.
+					tH = tH + h + 2
+					tbl[ l ] = {} -- Reset our line.
+					table.insert( tbl[ l ], { X = 0, Y = tH, W = w, H = h, L = l, T = word, C = c } )
+				else -- If we can throw it in, then do so!
+					table.insert( tbl[ l ], { X = tW, Y = tH, W = w, H = h, L = l, T = word, C = c } )
+					tW = tW + w
+				end
+			end
+		elseif type( d ) == "table" then -- We've got a color.
+			c = d
 		end
-		
 	end
-	
+
 	return tbl
 end
 
-function PANEL:SetText( txt )
+local function nilFunc() end
 
-	self._TEXT = txt
+function PANEL:SetText( ... )
+	local arg = {...}
+	if type( arg[1] ) == "string" and table.Count( arg ) == 1 then
+		arg = { self:GetTextColor(), arg[1] }
+	end
+
+	self._TEXT = arg
 
 	for _, line in ipairs( self:GetLines() ) do
 		if IsValid( line ) then line:Remove() end
 	end
 	self.Lines = {}
 	
-	local construct = self:ConstructLines( txt )
-
-	-- Create our text objects for each line we have.
-	for I = 1, #construct do
-		local line = self:Add( "DLabel" )
-			line:Dock( TOP )
-			line:SetText( table.concat( construct[ I ], " " ) )
-			line:SetTextColor( self:GetTextColor() )
-			line:SetFont( self:GetFont() )
-			line:SizeToContents()
-		table.insert( self.Lines, line )
+	local construct = self:ConstructLines( unpack( arg ) )
+	
+	-- K, construct done.  We get back lines, and inside the line table, are the separate DLabel shit
+	
+	for line, data in ipairs( construct ) do
+		-- Create the label holder.
+		local hold = self:Add( "DPanel" )
+			hold.Paint = nilFunc
+			hold:Dock( TOP )
+		
+		for labelID, labelD in ipairs( data ) do
+			
+			local line = hold:Add( "DLabel" )
+				line:SetPos( labelD.X, 0 )
+				line:SetTextColor( labelD.C )
+				line:SetFont( self:GetFont() )
+				line:SetText( labelD.T )
+				line:SizeToContents()
+				
+			-- Eh.
+			hold:SetTall( labelD.H )
+		end
+		
+		table.insert( self.Lines, hold )
 	end
 	
 	-- Set our H
@@ -100,6 +121,7 @@ function PANEL:SetText( txt )
 	for _, line in ipairs( self:GetLines() ) do
 		h = h + line:GetTall()
 	end
+	print( h )
 	self:SetTall( h + 4 )
 
 end
@@ -111,7 +133,10 @@ function PANEL:PerformLayout()
 		self._W = w
 		self._H = h
 		
-		self:SetText( self._TEXT )
+		print( "redo" )
+		PrintTable( self._TEXT )
+		
+		self:SetText( unpack( self._TEXT ) )
 	end
 	
 end
