@@ -79,9 +79,9 @@ end
 
 local function createTitle( o, txt )
 	local title = vgui.Create( "ExText", o )
+		title:SetTextColor( Color( 0, 180, 255, 255 ) )
 		title:SetText( txt )
 		title:SetFont( "ExGenericText18" )
-		title:SetTextColor( Color( 0, 180, 255, 255 ) )
 		title:Dock( TOP )
 	return title
 end
