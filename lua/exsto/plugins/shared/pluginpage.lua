@@ -66,14 +66,14 @@ if SERVER then
 	PLUGIN:CreateReader( "ExTogglePlugin", PLUGIN.ChangePlugin )
 	
 	-- THIS WILL RELOAD PLUGINS OH MY GOD!
-	function PLUGIN:Reload( caller, id )
+	function PLUGIN:Reload( caller, id, f )
 		local plug = exsto.GetPlugin( id )
 		if not plug then
 			caller:Print( exsto_CHAT, COLOR.NORM, "Unable to find the plugin ", COLOR.NAME, id, COLOR.NORM, "." )
 			return
 		end
 		
-		if not plug:CanCleanlyUnload() then
+		if not plug:CanCleanlyUnload() and not f then
 			caller:Print( exsto_CHAT, COLOR.NORM, "Due to developmental error, we cannot ", COLOR.NAME, "reload this plugin.  ", COLOR.NORM, "The best you can do right now is reload the server using !reloadmap." )
 			return
 		end
@@ -107,7 +107,8 @@ if SERVER then
 		Console = { "reload" },
 		Chat = { "!reload" },
 		Arguments = {
-			{ Name = "ID", Type = "STRING" };
+			{ Name = "ID", Type = COMMAND_STRING };
+			{ Name = "Force", Type = COMMAND_BOOLEAN, Optional = false };
 		};
 		Category = "Development";
 	} )
