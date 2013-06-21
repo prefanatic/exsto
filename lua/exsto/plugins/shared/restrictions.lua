@@ -91,7 +91,7 @@ if SERVER then
 	end
 	function PLUGIN:GetRestrictionList( short )
 		if short == 1 then 
-			local lst = table.Copy( weapons.GetList() )
+			local lst = table.Copy( list.Get( "Weapon" ) )
 				lst[ "gmod_tool" ] = nil
 			return lst 
 		elseif short == 2 then 
