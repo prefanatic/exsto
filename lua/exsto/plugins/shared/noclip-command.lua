@@ -8,6 +8,7 @@ PLUGIN:SetInfo({
 	ID = "noclip",
 	Desc = "A plugin that allows noclipping!",
 	Owner = "Prefanatic",
+	CleanUnload = true;
 } )
 
 if SERVER then
@@ -59,17 +60,9 @@ if SERVER then
 end
 
 function PLUGIN:PlayerNoClip( ply )
-
-	if ply:IsAllowed( "cannoclip" ) then return true end
-
-	if CLIENT then if !ply:IsAdmin() then return false end end
-	
-	if SERVER then
-
-		if self.AdminOnly:GetValue() and !ply:IsAdmin() then
-			return false
-		end
-		
+	local var = ( CLIENT and exsto.ServerVariables[ "ExNoclipAdmin" ].Value ) or ( SERVER and self.AdminOnly:GetValue() )
+	if var == 1 and not ply:IsAdmin() and not ply:IsAllowed( "cannoclip" ) then
+		return false
 	end
 
 end
