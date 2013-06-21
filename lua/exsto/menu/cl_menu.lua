@@ -427,6 +427,9 @@ function exsto.Menu.Close()
 	exsto.Menu.ActivePage:Backstage()
 	exsto.Menu.ActivePage = nil
 	
+	-- Close off any excess derma menus
+	CloseDermaMenus()
+	
 	-- Goodbye!
 	exsto.CreateSender( "ExMenuUserLeft" ):Send()
 end
