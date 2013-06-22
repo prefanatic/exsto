@@ -56,7 +56,10 @@ function PANEL:Init()
 		self.Entry:SetFont( "ExGenericText14" )
 		self.Entry.OnTextChanged = function( o )
 			local val = o:GetValue()
-			if val == "" or val == nil then val = 0 end
+			if val == "" or val == nil then
+				self:SetValue( 0 )
+				return
+			end
 			self.Scratch:SetValue( val )
 			self:OnValueSet( val )
 		end

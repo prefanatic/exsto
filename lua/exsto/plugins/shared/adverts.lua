@@ -529,7 +529,7 @@ else
 		pnl.Cat:CreateTitle( "Delay" )
 		pnl.Cat:CreateHelp( "Sets the delay between advertisements." )
 		pnl.Delay = pnl.Cat:CreateNumberChoice()
-		pnl.Delay:SetMin( 0 )
+		pnl.Delay:SetMin( 0.1 )
 		pnl.Delay:SetMax( 100 )
 		pnl.Delay:SetUnit( "Delay (minutes)" )
 		pnl.Delay.OnValueSet = function( e, val )
