@@ -98,6 +98,13 @@ end
 
 local function executeCommand()
 	local data = qm.WorkingData
+	
+	-- Make sure the player is still valid
+	if not IsValid( qm.WorkingPlayer ) then
+		chat.AddText( exsto_CHAT, COLOR.NORM, "The player you were running the command on has ", COLOR.NAME, "left" )
+		return
+	end
+	
 	local execTbl = { data.CallerID, qm.WorkingPlayer:Nick() }
 
 	for _, arg in ipairs( data.ReturnOrder ) do
