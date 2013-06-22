@@ -39,6 +39,10 @@ exsto.RankDB = FEL.CreateDatabase( "exsto_data_ranks" );
 		Color = "TEXT";							-- Color of the rank
 		Immunity = "INTEGER";					-- Immunity, we go from 0 as the highest and onward.
 	} )
+	exsto.RankDB.CacheUpdated = function()
+		exsto.aLoader.Initialize()
+		exsto.SendRanks( player.GetAll() )
+	end
 	
 -- And our user database.
 exsto.Debug( "aLoader --> Constructing exsto_data_users", 3 );
