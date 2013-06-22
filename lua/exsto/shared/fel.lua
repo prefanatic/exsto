@@ -201,6 +201,7 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	obj._lastRefreshCheck = CurTime()
 	obj._lastBackup = CurTime()
 	obj._forcedLocal = forceLocal
+	obj._CacheUpdate = os.time()
 	obj.cacheResetRate = 0
 	obj.backupRate = 0
 	
@@ -210,6 +211,11 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	
 	table.insert( FEL.Databases, obj )
 	hook.Add( "Think", "FELDBTHINK_" .. dbName, function() obj:Think() end )
+	hook.Add( "ShutDown", "FELDBSHUTDOWN_" .. dbName, function()
+		if obj:IsMySQL() then
+			obj:Query( "DELETE FROM " .. dbName .. "_instances WHERE ExID=" .. obj._ExID .. ";", false )
+		end 
+	end )
 	
 	-- Do we need to initiate a MySQL object?
 	if obj:RequiresMySQL() and FEL.HasMySQLCapacity() then obj:InitMySQL()
@@ -317,9 +323,25 @@ function db:Debug( msg, level )
 	FEL.Debug( self.dbName .. " --> " .. msg, level )
 end
 
+function db:InjectInstance()
+	-- This is going to create an accessor table, filled with exsto instances using the table.
+	-- We will consistantly check this table, and we can use it to push out notifications that we need cache updates.
+	self:Query( "CREATE TABLE IF NOT EXISTS " .. self.dbName .. "_instances ( ExID int NOT NULL AUTO_INCREMENT, CacheUpdate int NOT NULL, PRIMARY KEY (ExID) );", true,
+		function( q, data )
+			self:Query( "INSERT INTO " .. self.dbName .. "_instances (ExID, CacheUpdate) VALUES(NULL, " .. os.time() .. ");", true,
+				function( q, data )
+					self._ExID = q:lastInsert()
+				end 
+			)
+		end
+	)
+end
+
 function db:OnMySQLConnect()
 	self:Print( "MySQL connected!" )
 	self._mysqlSuccess = true
+	
+	self:InjectInstance()
 	
 	if self._AttemptingMySQLReconnect then -- Grab us back into motion.
 		self:Query( self._PreMySQLQueryErr, false )
@@ -430,7 +452,7 @@ function db:SetRefreshRate( time )
 	self:Debug( "Setting cache refresh rate at '" .. time .. "' seconds.", 1 )
 end
 
-function db:CacheRefresh()
+function db:CacheRefresh( callback )
 	self:GetCacheData( true )
 	self:QOSCheck()
 	
@@ -442,11 +464,17 @@ local function pass3( self, data, tbl, index, max )
 	
 	if index == max then
 		self.Cache._cache = table.Copy( tbl )
+		if self.CacheUpdated then
+			self:CacheUpdated()
+		end
 	end
 end
 
 local function pass2( self, data )
 	self.Cache._cache = data or {}
+	if self.CacheUpdated then
+		self:CacheUpdated()
+	end
 end
 
 local function pass( self, cacheData, thread )
@@ -717,6 +745,11 @@ function db:PushSaves()
 	end
 	
 	self:SetLastUpdateTime( os.time() )
+	
+	-- Set our notification that sql data has changed.
+	if self:IsMySQL() then
+		self:Query( "UPDATE " .. self.dbName .. "_instances SET CacheUpdate=".. os.time() .." WHERE ExID=" .. self._ExID .. ";", true )
+	end
 end
 
 function db:Think()
@@ -724,7 +757,21 @@ function db:Think()
 	if ( CurTime() > self._lastThink + self.thinkDelay ) then
 
 		-- Heartbeat please.
-		if self:IsMySQL() and self._forcedLocal != true then self:Query( "SELECT 1 + 1", true ) end
+		if self:IsMySQL() and self._forcedLocal != true then 
+			--self:Query( "SELECT 1 + 1", true ) 
+			self:Query( "SELECT * FROM " .. self.dbName .. "_instances", true, function( q, data )
+				for entry, d in ipairs( data ) do
+					if ( d.CacheUpdate > self._CacheUpdate ) and d.ExID != self._ExID then -- Another instance has updated data!  PULL IT IN!
+						self:CacheRefresh()
+						self._CacheUpdate = d.CacheUpdate
+
+						-- Update our instance to the last update that we received.
+						self:Query( "UPDATE " .. self.dbName .. "_instances SET CacheUpdate=" .. d.CacheUpdate .." WHERE ExID=" .. self._ExID .. ";", true )
+					end
+				end
+			end )
+		end
+		
 		
 		self._lastThink = CurTime()
 	end
