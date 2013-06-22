@@ -13,8 +13,13 @@ if !SERVER then return end
 
 function PLUGIN.Respawn(self, ply, target)	
 	if exsto.CurrentGamemode == "terrortown" then 
-		target:SetTeam( ROLE_INNOCENT ) 
-		SendFullStateUpdate()
+		v:SpawnForRound( true )
+		return {
+			Activator = ply,
+			Player = target,
+			Wording = " respawned ",
+			Secondary = ""
+		}
 	end
 	
 	target:Spawn()
