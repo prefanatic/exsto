@@ -294,13 +294,13 @@ if SERVER then
 		-- Is the PLAYER allowed?
 		local data = self:GetRestrictionData( ply:SteamID(), w )
 		for _, d in pairs( data ) do
-			if d.Class == class then return not d.Enabled end
+			if ( d.Class:lower() == class ) and d.Enabled then return false end
 		end
-		
+
 		-- If we passed the player, is the RANK allowed?
 		local data = self:GetRestrictionData( ply:GetRank(), w )
 		for _, d in pairs( data ) do
-			if d.Class == class then return not d.Enabled end
+			if ( d.Class:lower() == class ) and d.Enabled then return false end
 		end
 	
 		return true
@@ -327,7 +327,7 @@ if SERVER then
 	end
 	
 	function PLUGIN:PlayerSpawnProp( ply, prop )
-		if not self:Allowed( ply, 3, prop ) then
+		if not self:Allowed( ply, 3, prop:lower() ) then
 			ply:Print( exsto_CHAT, COLOR.NORM, "The prop ", COLOR.NAME, prop, COLOR.NORM, " is disabled for your rank!" )
 			return false
 		end
@@ -945,6 +945,44 @@ elseif CLIENT then
 				end
 			end,
 		} )
+		
+		-- This is going to be some really fancy ass shit right here.  Hold onto your butts.
+		self._DermaMenuOption = DMenu.AddOption
+		local trigger = 0
+		function DMenu.AddOption( d, txt, func )
+			print( "HELLO!", txt, trigger )
+			if txt == "Edit Icon" then trigger = trigger + 1 end
+			if trigger == 1 and txt == "Delete" then 
+				local pnl = self._DermaMenuOption( d, txt, func )
+				local sub = d:AddSubMenu( "Add to Exsto Restrictions" )
+				
+				for rID, rank in pairs( exsto.Ranks ) do
+					sub:AddOption( rank.Name, function()
+						PLUGIN.WorkingItem = {
+							Type = 1,
+							Data = rID,
+						}
+						update( 3, { ent:GetModel(), false } )
+					end )
+				end
+				
+				sub:AddSpacer()
+				
+				for _, ply in ipairs( player.GetAll() ) do
+					sub:AddOption( ply:Nick(), function()
+						PLUGIN.WorkingItem = {
+							Type = 0,
+							Data = ply:SteamID(),
+						}
+						update( 3, { ent:GetModel(), false } )
+					end )
+				end
+				trigger = 0
+				return
+			end		
+			
+			return self._DermaMenuOption( d, txt, func )
+		end
 	end
 	
 	
