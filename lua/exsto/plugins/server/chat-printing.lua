@@ -1,4 +1,3 @@
-
 -- Prefan Access Controller
 -- ULX Style Printing
 
@@ -54,7 +53,7 @@ PLUGIN:AddCommand( "adminsay", {
 	Call = PLUGIN.AdminSay,
 	Desc = "Allows users to talk to admins privately.",
 	Console = { "adminsay" },
-	Chat = { "@", "!admin" },
+	Chat = { "@", "!admin", "!a" },
 	ReturnOrder = "Text",
 	Args = { Text = "STRING" },
 	Optional = { },
