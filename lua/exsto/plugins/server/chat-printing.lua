@@ -60,4 +60,15 @@ PLUGIN:AddCommand( "adminsay", {
 	Category = "Chat",
 })
 
+PLUGIN:AddCommand( "ownersay", {
+	Call = PLUGIN.OwnerSay,
+	Desc = "Allows owners to talk to other owners privately.",
+	Console = { "ownersay" },
+	Chat = { "!owner", "!o" },
+	ReturnOrder = "Text",
+	Args = { Text = "STRING" },
+	Optional = { },
+	Category = "Chat",
+})
+
 PLUGIN:Register()
