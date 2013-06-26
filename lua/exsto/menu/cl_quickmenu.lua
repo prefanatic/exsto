@@ -141,7 +141,7 @@ end
 
 local function commandRightClicked( list, display, data, line )
 	line._OMGRIGHTCLICKED = 1
-	timer.Simple( 0.1, function() line._OMGRIGHTCLICKED = 0 end ) -- Because gayre doesn't have any of this standard?
+	timer.Simple( 0.1, function() if IsValid( line ) then line._OMGRIGHTCLICKED = 0 end end ) -- Because gayre doesn't have any of this standard?
 	
 	if starredCommand( data.ID ) then -- We're starred.  Unstar us.
 		qm.Data:DropRow( data.ID )
