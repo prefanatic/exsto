@@ -415,7 +415,9 @@ function exsto.Menu.Close()
 	
 	local qmx, qmy = exsto.Menu.Frame:GetSeriousPos()
 		posInfo[ "menu" ] = {x = qmx, y = qmy}
-		posInfo[ "last" ] = exsto.Menu.ActivePage:GetID() 
+		if IsValid( exsto.Menu.ActivePage ) then
+			posInfo[ "last" ] = exsto.Menu.ActivePage:GetID() 
+		end
 		
 	-- Save the position info
 	file.Write( "exsto_windows.txt", von.serialize( posInfo ) )
@@ -424,8 +426,10 @@ function exsto.Menu.Close()
 	exsto.Menu._Opened = false
 	
 	-- Backstage our open page.  Just for OnBackstage.
-	exsto.Menu.ActivePage:Backstage()
-	exsto.Menu.ActivePage = nil
+	if IsValid( exsto.Menu.ActivePage ) then
+		exsto.Menu.ActivePage:Backstage()
+		exsto.Menu.ActivePage = nil
+	end
 	
 	-- Close off any excess derma menus
 	CloseDermaMenus()
