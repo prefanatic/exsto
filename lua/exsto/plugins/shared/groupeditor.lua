@@ -11,7 +11,6 @@ if SERVER then
 
 	function PLUGIN:Init()
 		exsto.CreateFlag( "rankeditor", "Allows users to edit ranks in the menu." )
-		exsto.CreateFlag( "immunity", "Allows users access to edit immunity in the editor subpage." )
 		
 		util.AddNetworkString( "ExPushRankToSrv" )
 		util.AddNetworkString( "ExRecImmuneChange" )
@@ -496,6 +495,7 @@ elseif CLIENT then
 			self.Page:SetIcon( "exsto/rank.png" )
 			
 		self.ImmunityPage = exsto.Menu.CreatePage( "immunity", immunityInit )
+			self.ImmunityPage:SetFlag( "rankeditor" )
 			self.ImmunityPage:SetTitle( "Immunity" )
 			self.ImmunityPage:SetChildOf( self.Page )
 			self.ImmunityPage:OnShowtime( updateImm )
