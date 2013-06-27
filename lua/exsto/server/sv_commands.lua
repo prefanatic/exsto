@@ -861,6 +861,18 @@ function exsto.CommandCall( ply, _, args )
 	
 	-- Remove the command, we don't need it.  It should leave us with the function arguments.
 	table.remove( args, 1 )
+	
+	-- For some reason the dedicated console rips apart anything with _ or : in it.  Meaning, we can't use STEAMID.  Fix this.
+	local id = ""
+	for i, arg in ipairs( args ) do
+		if arg == "STEAM_0" then -- We've got a steamid.
+			for I = 0, 4 do
+				id = id .. args[ i + I ]
+				args[ i + I ] = nil
+			end
+			args[ i ] = id
+		end
+	end
 
 	local finished = exsto.RunCommand( ply, command, args )
 	
