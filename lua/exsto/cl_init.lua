@@ -56,10 +56,9 @@
 	else
 	
 		hook.Add( "OnEntityCreated", "ExPlayerCheck", function( ent )
-			print( ent, ent == LocalPlayer() )
 			if ent == LocalPlayer() and IsValid( ent ) then
 				hook.Call( "ExClientLoading" )
-				exsto.CreateSender( "ExClientLoading" ):Send()
+				exsto.CreateSender( "ExClientLoad" ):Send()
 				hook.Remove( "OnEntityCreated", "ExPlayerCheck" )
 			end
 		end )
