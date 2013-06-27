@@ -166,13 +166,13 @@ elseif CLIENT then
 				-- If we arnt hitting world, continue
 				if !trace.HitWorld and dist <= 1000 then
 					
-					surface.SetFont( "PlayerTagText" )
+					surface.SetFont( "ExGenericText18" )
 					local w = math.max( surface.GetTextSize( ply:Nick() ) + 20, surface.GetTextSize( ply:GetNWString( "title" ) ) + 20 )
 					local h = 40
 					
 					if !ply:GetNWString( "title" ) or ply:GetNWString( "title" ) == "" then h = 21 end
 					
-					local drawPos = ( ply:GetBonePosition( ply:LookupBone( "ValveBiped.Bip01_Head1" ) ) + Vector( 0, 0, 15 ) ):ToScreen()
+					local drawPos = ( ply:GetPos() + Vector( 0, 0, ply:OBBMaxs().z + 7 ) ):ToScreen()
 					drawPos.x = drawPos.x - w / 2
 					drawPos.y = drawPos.y - 20
 					
@@ -190,12 +190,12 @@ elseif CLIENT then
 					textColor.a = alpha
 					outlineCol.a = alpha
 					
-					draw.SimpleTextOutlined( ply:Nick(), "PlayerTagText", drawPos.x + w / 2, drawPos.y + 2, textColor, 1, 0, 1, outlineCol )
+					draw.SimpleTextOutlined( ply:Nick(), "ExGenericText18", drawPos.x + w / 2, drawPos.y + 2, textColor, 1, 0, 1, outlineCol )
 					
 					-- if h is not 21, we have a title.  draw cool stuff.
 					if h != 21 then
 						//surface.DrawLine( drawPos.x + 5, drawPos.y + 18, drawPos.x + w - 5, drawPos.y + 18 )
-						draw.SimpleTextOutlined( ply:GetNWString( "title" ), "PlayerTagText", drawPos.x + w / 2, drawPos.y + 18, textColor, 1, 0, 1, outlineCol )
+						draw.SimpleTextOutlined( ply:GetNWString( "title" ), "ExGenericText18", drawPos.x + w / 2, drawPos.y + 18, textColor, 1, 0, 1, outlineCol )
 					end
 				end
 			end
