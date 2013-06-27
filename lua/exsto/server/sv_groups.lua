@@ -435,11 +435,7 @@ exsto.AddChatCommand( "getrank", {
 	Description: Monitors on join, and prints any relevant information to the chat.
 	----------------------------------- ]]
 function exsto.AddUsersOnJoin( ply, steamid, uniqueid )
-
-	local rank, userFlags = exsto.UserDB:GetData( steamid, "Rank, UserFlags" )
-
-	ply:SetRank( rank or "guest" )	
-	ply:UpdateUserFlags( type( userFlags ) == "string" and FEL.NiceDecode( userFlags ) or {} )
+	local rank = ply:GetRank()
 	
 	if !rank then
 		-- Its his first time here!  Welcome him to the beautiful environment of Exsto.
@@ -664,6 +660,27 @@ end
 hook.Add( "ExClientLoading", "exsto_SendRankData", exsto.SendRankData )
 concommand.Add( "_ResendRanks", exsto.SendRankData )
 
+function exsto.InitializePlayer( ply, sid, uid )
+	exsto.Debug( "Initializing player '" .. ply:Nick() .. "' for initspawn.", 1 )
+	ply.InitSpawn = true
+	
+	-- We actually should auth in here now.
+	local rank, userFlags = exsto.UserDB:GetData( sid, "Rank, UserFlags" )
+
+	ply:SetRank( rank or "guest" )	
+	ply:UpdateUserFlags( type( userFlags ) == "string" and FEL.NiceDecode( userFlags ) or {} )
+
+	hook.Call( "ExPlayerAuthed", nil, ply, sid, uid )
+end
+hook.Add( "PlayerAuthed", "ExInitPlayer", exsto.InitializePlayer )
+
+hook.Add( "ExClientLoading", "ExSpawnPlayer", function( p )
+	hook.Call( "ExInitSpawn", nil, p, p:SteamID(), p:UniqueID() )
+	hook.Call( "exsto_InitSpawn", nil, p, p:SteamID(), p:UniqueID() ) -- Legacy
+end )
+
+-- Turns out we don't need this shit below anymore.
+
 --[[ -----------------------------------
 	Function: exsto.FixInitSpawn
 	Description: Pings the client and waits till hes loaded, then calls the exsto_InitSpawn hook.
@@ -691,20 +708,22 @@ local function Hang()
 	end
 	
 end
-hook.Add( "Think", "ExPlayingLoadThink", Hang )
+--hook.Add( "Think", "ExPlayingLoadThink", Hang )
 
 local function Hook( ply, sid, uid )
+	print( ply:Nick(), sid, uid )
 	table.insert( exsto.PlayersLoading, {
 		ply = ply,
 		sid = sid,
 		uid = uid,
 	} )
 end
-hook.Add( "PlayerAuthed", "FakeInitialSpawn", Hook )
+--hook.Add( "PlayerAuthed", "FakeInitialSpawn", Hook )
 
 concommand.Add( "_exstoInitSpawn", function( ply, _, args )
 	exsto.Print( exsto_CONSOLE_DEBUG, "InitSpawn --> " .. ply:Nick() .. " is ready for initSpawn!" )
 	ply.InitSpawn = true
 end )
 
+-- Get rid of Garry's auth.  Sorry.
 hook.Add( "PlayerInitialSpawn", "PlayerAuthSpawn", function() end )
