@@ -101,6 +101,7 @@ if SERVER then
 	end
 	
 	function PLUGIN:player_connect( data )
+		if game.SinglePlayer() then return end -- Don't bother.  Theres only going to be one person on, and thats the host.
 		if !data.networkid then return end
 		
 		local bannedAt, banLen, banReason = exsto.BanDB:GetData( data.networkid, "BannedAt, Length, Reason" )
@@ -210,6 +211,9 @@ if SERVER then
 			ownerNick = owner:Nick()
 			ownerID = owner:SteamID()
 		end
+		
+		if game.SinglePlayer() then return { exsto_CHAT, COLOR.NORM, "You can't ban yourself in a ", COLOR.NAME, "single player", COLOR.NORM, " game." } end
+		if ply:IsListenServerHost() then return { exsto_CHAT, COLOR.NORM, "You can't ban the ", COLOR.NAME, "listen server host", COLOR.NORM, "." } end
 		
 		-- Save his stuff yo.		
 		exsto.BanDB:AddRow( {
