@@ -42,6 +42,12 @@ function PANEL:Clear()
 	DListView.Clear( self )
 end
 
+function PANEL:EnableOverlay( txt, icon )
+	self.OverlayEnabled = true
+	self.OverlayIcon = icon
+	self.OverlayText = txt
+end
+
 function PANEL:SetQuickList( cat )
 	self.Paint = function() end
 	self.OnMouseWheeled = nil
@@ -132,6 +138,12 @@ function PANEL:AddRow( cols, data )
 	
 	-- This also, is deeply tragic.  Modify the line's OnMousePressed behavior, because fuck everything.
 	line.OnMousePressed = mouseClick
+	
+	if self.OverlayEnabled then -- We've got an overlay to do
+		line.Overlay = vgui.Create( "ExQuickOverlay", line )
+			line.Overlay:Dock( RIGHT )
+			line.Overlay:Text( self.OverlayText )
+	end
 	
 	return line
 
