@@ -92,14 +92,27 @@ function exsto.aLoader.LoadRanks()
 	exsto.Debug( "aLoader --> Loading saved ranks.", 2 )
 	for _, data in ipairs( exsto.RankDB:GetAll() ) do
 		exsto.Debug( "aLoader --> Pushing data to load process: " .. data.ID, 3 )
+		
+		-- Quality check
+		local succF, err = pcall( von.deserialize, data.FlagsAllow )
+		if not succF then
+			exsto.Debug( "aLoader --> Failed to load flags for '" .. data.ID .. "'", 1 )
+			exsto.aLoader.Error( data.ID, ALOADER_VON_FAILURE_FLAGS )
+		end
+		local succC, err = pcall( von.deserialize, data.Color )
+		if not succC then
+			exsto.Debug( "aLoader --> Failed to load color for '" .. data.ID .. "'", 1 )
+			exsto.aLoader.Error( data.ID, ALOADER_VON_FAILURE_COLOR )
+		end
+		
 		exsto.aLoader.Loaded[ data.ID ] = {
 			Name = data.Name;
 			Description = data.Description;
 			ID = data.ID;
 			Parent = data.Parent;
-			FlagsAllow = von.deserialize( data.FlagsAllow );
+			FlagsAllow = succF and von.deserialize( data.FlagsAllow ) or nil;
 			Immunity = data.Immunity;
-			Color = von.deserialize( data.Color );
+			Color = succC and von.deserialize( data.Color ) or nil;
 		}
 	end
 end
@@ -135,8 +148,8 @@ function exsto.aLoader.CheckParent( id, parent )
 		exsto.Debug( "aLoader --> Down " .. I .. " levels, checking: " .. ( current or "nothing" ), 3 )
 		if current == "NONE" then return true end -- End if we don't need a parent.
 		if id == current then exsto.aLoader.Error( current, ALOADER_SELF_PARENT ) return false end -- End if we parent off of ourselves.
-		if !exsto.aLoader.Loaded[ current ] then exsto.aLoader.Error( current, ALOADER_INVALID_PARENT ) return false end -- End if our parent doesn't exist.
-		if table.HasValue( checked, current ) then exsto.aLoader.Error( current, ALOADER_ENDLESS ) return false end -- We've already checked.  This would lead us into an inf.loop.
+		if !exsto.aLoader.Loaded[ current ] then exsto.aLoader.Error( id, ALOADER_INVALID_PARENT ) return false end -- End if our parent doesn't exist.
+		if table.HasValue( checked, current ) then exsto.aLoader.Error( id, ALOADER_ENDLESS ) return false end -- We've already checked.  This would lead us into an inf.loop.
 	
 		table.insert( checked, current )
 		current = exsto.aLoader.Loaded[ current ].Parent
@@ -181,6 +194,9 @@ function exsto.aLoader.SegmentRank( id, data )
 		-- Load his parent.  This "SHOULD" send aLoader into a loop all the way down to the last parent to load, then cycle back up.
 		exsto.Debug( "aLoader --> Cycling down to segment parent: " .. data.Parent, 3 )
 		exsto.aLoader.SegmentRank( data.Parent, exsto.aLoader.GrabLoadInfo( data.Parent ) )
+		
+		-- Check to see if our flags made it in.
+		if not exsto.aLoader.Processing[ data.Parent ].FlagsAllow then exsto.Debug( "aLoader --> Caught invalid flag table.  Removing.", 2 ) return end
 		
 		exsto.Debug( "aLoader --> Cycling up to merge flag tables from: " .. data.Parent .. " to " .. id, 3 )
 		
@@ -230,13 +246,25 @@ function exsto.aLoader.QualityCheck()
 				local rank;
 				for id, err in pairs( exsto.aLoader.Errors ) do
 					rank = exsto.aLoader.Processing[ id ];
-
+					
 					-- Our parent errors.  Just set the actual parent to NONE and try loading again.
 					if err == ALOADER_SELF_PARENT or err == ALOADER_INVALID_PARENT or err == ALOADER_ENDLESS then
 						exsto.Debug( "aLoader --> Errors found in '" .. id .. "' with parent '" .. rank.Parent .."'.  Solving with derive replacement 'NONE'", 1 )
 						exsto.RankDB:AddRow( {
 							ID = id;
 							Parent = "NONE";
+						} )
+					elseif err == ALOADER_VON_FAILURE_COLOR then
+						exsto.Debug( "aLoader --> Errors found in '" .. id .. "' with color.  Replacing with white.", 1 )
+						exsto.RankDB:AddRow( {
+							ID = id;
+							Color = von.serialize( Color( 255, 255, 255, 255 ) );
+						} )
+					elseif err == ALOADER_VON_FAILURE_FLAGS then
+						exsto.Debug( "aLoader --> Errors found in '" .. id .. "' with flags.  Replacing with empty table.", 1 )
+						exsto.RankDB:AddRow( {
+							ID = id;
+							FlagsAllow = von.serialize( {} );
 						} )
 					end
 				end
