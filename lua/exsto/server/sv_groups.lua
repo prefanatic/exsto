@@ -694,8 +694,13 @@ function exsto.InitializePlayer( ply, sid, uid )
 	
 	-- We actually should auth in here now.
 	local rank, userFlags = exsto.UserDB:GetData( sid, "Rank, UserFlags" )
-
-	ply:SetRank( rank or "guest" )	
+	
+	if game.SinglePlayer() then
+		ply:SetRank( "srv_owner" )
+	else
+		ply:SetRank( rank or "guest" )	
+	end
+	
 	ply:UpdateUserFlags( type( userFlags ) == "string" and FEL.NiceDecode( userFlags ) or {} )
 
 	hook.Call( "ExPlayerAuthed", nil, ply, sid, uid )
