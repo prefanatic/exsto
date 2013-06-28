@@ -212,7 +212,7 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	table.insert( FEL.Databases, obj )
 	hook.Add( "Think", "FELDBTHINK_" .. dbName, function() obj:Think() end )
 	hook.Add( "ShutDown", "FELDBSHUTDOWN_" .. dbName, function()
-		if obj:IsMySQL() then
+		if obj:IsMySQL() and obj._ExID then
 			obj:Query( "DELETE FROM " .. dbName .. "_instances WHERE ExID=" .. obj._ExID .. ";", false )
 		end 
 	end )
@@ -747,7 +747,7 @@ function db:PushSaves()
 	self:SetLastUpdateTime( os.time() )
 	
 	-- Set our notification that sql data has changed.
-	if self:IsMySQL() then
+	if self:IsMySQL() and self._ExID then -- In no case will we NOT have self._ExID due to an error.  If we don't have it, assume the server is hibernating.
 		self:Query( "UPDATE " .. self.dbName .. "_instances SET CacheUpdate=".. os.time() .." WHERE ExID=" .. self._ExID .. ";", true )
 	end
 end
