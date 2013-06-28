@@ -60,7 +60,7 @@ function PLUGIN:Init()
 	
 	self.RandomDeathMessages = { "He couldn't load the death messages file." }
 	
-	parse( nil, self.Messages:GetValue() )
+	function self.ExGamemodeFound() parse( nil, self.Messages:GetValue() ) end
 	
 end
 

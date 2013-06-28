@@ -25,7 +25,7 @@ function PLUGIN:Init()
 	exsto.CreateFlag( "crcinvalnotify", "Users with this flag will be notified of the invalid CRC checks that occur." )
 		
 	if self.StartupEnabled:GetValue() == 1 then -- Check and make sure our generated CRC matches what the mothership calls for.
-		self:FetchCRC( true );
+		function self.ExGamemodeFound() self:FetchCRC( true ) end
 	end
 	
 end
