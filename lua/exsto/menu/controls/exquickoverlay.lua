@@ -21,40 +21,24 @@ PANEL = {}
 function PANEL:Init()
 	self:MaxFontSize( 16 )
 	self:Dock( RIGHT )
-	self:Text( "More" )
 	self:SetAlignX( TEXT_ALIGN_LEFT )
 	self:SetTall( 40 )
 	
 	-- We've got two things.  We have the icon, which overlay the entire unexpanded button, and then the background button, which contains quick (which is this parent)
-	--[[self.Icon = self:Add( "ExButton" )
+	self.Icon = self:Add( "DImageButton" )
 		self.Icon:SetWide( 40 )
+		self.Icon:SetDrawOnTop()
 		self.Icon:Dock( RIGHT )
 		self.Icon.Paint = function( s )
 			local w, h = s:GetSize()
 			surface.SetDrawColor( 100, 100, 100, 255 )
 			surface.DrawRect( 0, 0, w, h )
 		end
-		]]
+		
+	exsto.Animations.Create( self )
 end
-
-function PANEL:AnimationUpdate( val )
-	self:SetWide( val )
-end
---[[
-function PANEL:Paint()
-	local w, h = self:GetSize()
-	
-	--surface.SetDrawColor( 0, 0, 0, 100 )
-	--surface.DrawRect( 0, 0, w, h )
-	
-	surface.SetFont( "ExGenericText16" )
-	surface.SetTextPos( 4, self:GetTall() / 2 - 4 )
-	surface.SetTextColor( 90, 90, 90, 255 )
-	surface.DrawText( "More" )
-end]]
 
 function PANEL:Think()
-	--[[
 	if self.Hovered then -- If the main Quick is hovered, keep us expanded.
 		self:SetWide( 90 )
 		return
@@ -66,7 +50,7 @@ function PANEL:Think()
 	end
 	
 	-- Resize down to the standard
-	self:SetWide( 40 )]]
+	self:SetWide( 40 )
 end
 
 derma.DefineControl( "ExQuickOverlay", "Exsto Quickmenu Line Overlay", PANEL, "ExButton" )
