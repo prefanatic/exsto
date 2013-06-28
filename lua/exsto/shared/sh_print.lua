@@ -150,18 +150,11 @@ exsto_CLIENT = AddPrint(
 			exsto.Print( exsto_CONSOLE, msg )
 			return
 		end
-		
-		-- Check if we should use our UMSG system.
-		if msg:len() > 200 then
-		
-			local sender = exsto.CreateSender( "ExClientPrint", ply )
-				sender:AddString( msg )
-			sender:Send()
-			
-		else
-			ply:PrintMessage( HUD_PRINTCONSOLE, msg )
-		end
-		
+
+		local sender = exsto.CreateSender( "ExClientPrint", ply )
+			sender:AddString( msg )
+		sender:Send()
+	
 	end, true
 )
 exsto_CLIENT_NOLOGO = exsto_CLIENT
