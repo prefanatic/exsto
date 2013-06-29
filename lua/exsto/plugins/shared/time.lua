@@ -86,12 +86,12 @@ if SERVER then
 		if not time and not last then -- We haven't been filed yet.
 			self:Save( ply, 0, 1, 0 )
 			ply:SetFixedTime( 0 )
-			ply:Print( exsto_CHAT, COLOR.NORM, "Welcome ", COLOR.NAME, nick, COLOR.NORM, ".  It seems this is your first time here, have fun!" )
+			ply:Print( exsto_CHAT, COLOR.NORM, "Welcome ", COLOR.NAME, ply:Nick(), COLOR.NORM, ".  It seems this is your first time here, have fun!" )
 			return
 		end
 		
 		ply:SetFixedTime( time )
-		ply:Print( exsto_CHAT, COLOR.NORM, "Welcome back ", COLOR.NAME, nick, COLOR.NORM, "!" )
+		ply:Print( exsto_CHAT, COLOR.NORM, "Welcome back ", COLOR.NAME, ply:Nick(), COLOR.NORM, "!" )
 		ply:Print( exsto_CHAT, COLOR.NORM, "You last visited ", COLOR.NAME, os.date( "%A (%x) at %I:%M %p", last ) )
 	end
 	
