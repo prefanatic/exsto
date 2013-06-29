@@ -205,7 +205,9 @@ local function initList( pnl )
 				
 				if table.Count( command.ExtraOptionals ) > 0 then
 					-- Overlay our quick button
-					line.Quick = vgui.Create( "ExQuickOverlay", line )
+					line.Quick = vgui.Create( "ExButton", line )
+						line.Quick:Dock( RIGHT )
+						line.Quick:Text( "More Args" )
 						line.Quick.OnClick = quickOnClick
 						line.Quick.CommandData = command
 				end
@@ -242,7 +244,9 @@ local function initList( pnl )
 				
 				if table.Count( command.ExtraOptionals ) > 0 then
 					-- Overlay our quick button
-					line.Quick = vgui.Create( "ExQuickOverlay", line )
+					line.Quick = vgui.Create( "ExButton", line )
+						line.Quick:Dock( RIGHT )
+						line.Quick:Text( "More Args" )
 						line.Quick.OnClick = quickOnClick
 						line.Quick.CommandData = command
 				end
