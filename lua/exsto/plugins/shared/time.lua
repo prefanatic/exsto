@@ -79,7 +79,7 @@ if SERVER then
 	function PLUGIN:ExInitSpawn( ply, sid )
 		local time, last = self.DB:GetData( sid, "Time, Last" )
 		
-		self:Debug( "Time for '" .. ply:Nick() .. "' is '" .. time .. "' last '" .. last .. "'", 1 )
+		self:Debug( "Time for '" .. ply:Nick() .. "' is '" .. tostring( time ) .. "' last '" .. tostring( last ) .. "'", 1 )
 		
 		ply:SetJoinTime( CurTime() )
 		
