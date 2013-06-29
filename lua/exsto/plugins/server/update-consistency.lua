@@ -1,7 +1,7 @@
 local PLUGIN = exsto.CreatePlugin()
 
 PLUGIN:SetInfo( {
-	Name = "Consistency Checker",
+	Name = "Consistency",
 	ID = "crccheck",
 	Desc = "Maintains Exsto consistency by checking pre-built CRC's against runtime CRC's.  Lets you know if your Exsto has been tampered or is out of date.",
 	Owner = "Prefanatic",
