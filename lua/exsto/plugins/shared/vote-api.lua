@@ -232,7 +232,10 @@ elseif CLIENT then
 		PLUGIN.VoteData[ id ] = val
 		
 		if PLUGIN.VoteData[ id ] == 0 then PLUGIN.VoteData[ id ] = nil end
-		PLUGIN.VoteLarge.List:Update()
+		
+		if self.VoteStyle == "large" then
+			PLUGIN.VoteLarge.List:Update()
+		end
 	end
 	exsto.CreateReader( "ExVoteUpdate", updateVote )
 	
@@ -338,25 +341,15 @@ elseif CLIENT then
 		self.VoteLarge.List.Update = function( lst )
 			local copy = table.Copy( lst.Buttons )
 			table.sort( copy, function( a, b )
-				local data_a = PLUGIN.VoteData[ a._VoteIndex ] or a._VoteIndex
-				local data_b = PLUGIN.VoteData[ b._VoteIndex ] or b._VoteIndex
+				local data_a = PLUGIN.VoteData[ a._VoteIndex ] or ( a._VoteIndex + 1 )
+				local data_b = PLUGIN.VoteData[ b._VoteIndex ] or ( b._VoteIndex + 1 )
 				
-				return data_a > data_b
+				return data_a < data_b
 			end )
-				
-				
-			--table.sort( lst.Buttons, function( a, b ) print( a._VoteIndex ) return ( ( PLUGIN.VoteData[ a._VoteIndex ] != 0 and PLUGIN.VoteData[ a._VoteIndex ] ) or a._VoteIndex ) > ( ( PLUGIN.VoteData[ b._VoteIndex ] != 0 and PLUGIN.VoteData[ b._VoteIndex ] ) or b._VoteIndex ) end )
-			
-			print( "SORTING" )
 			
 			for key, button in ipairs( copy ) do
-				print( button._VoteIndex, key, button:GetText() )
-					lst:Add( button )
-				--[[if copy[ key + 1 ] then
-					button:MoveToBefore(copy[ key + 1 ] )
-				else
-					button:MoveToBefore( copy[ #copy ] )
-				end]]
+				button:SetParent( nil )
+				lst:Add( button )
 			end
 			lst:Layout()
 		end
