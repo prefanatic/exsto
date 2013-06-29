@@ -91,7 +91,7 @@ function exsto.HookCall( name, gm, ... )
 			elseif data[1] == false then -- It returned an error, catch it.
 				exsto.ErrorNoHalt( "Hook '" .. name .. "' failed in plugin '" .. plug:GetID() .. "' error: " )
 				exsto.ErrorNoHalt( data[2] )
-				if SERVER then exsto.Plugins[ _ ]:Disable( 1 ) end
+				if SERVER then exsto.Plugins[ _ ]:Disable( "Unloaded to prevent error spam." ) end
 			end
 		end
 	end
