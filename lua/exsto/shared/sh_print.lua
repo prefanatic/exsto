@@ -22,9 +22,9 @@
 -- Variables
 
 exsto.PrintStyles = {}
-exsto.TextStart = "[Exsto] "
-exsto.ErrorStart = "[EXSTO ERROR]"
-exsto.DebugStart = "[ExDebug] "
+exsto.TextStart = "[Ex] "
+exsto.ErrorStart = "[EXERR]"
+exsto.DebugStart = "[Ex] "
 
 --[[ -----------------------------------
 	Function: AddPrint
@@ -96,8 +96,25 @@ exsto_CONSOLE = AddPrint(
 exsto_CONSOLE_NOLOGO = exsto_CONSOLE
 
 exsto_CONSOLE_LOGO = AddPrint(
-	function( msg, extra )
-		print( exsto.TextStart .. msg )
+	function( ... )
+		local a = {...}
+		if table.Count( a ) == 1 then
+			MsgC( COLOR.EXSTOGREEN, exsto.TextStart )
+			MsgC( COLOR.WHITE, a[1] .. "\n" )
+			return
+		end
+		
+		MsgC( COLOR.EXSTOGREEN, exsto.TextStart )
+		
+		local c = COLOR.WHITE
+		for _, d in ipairs( a ) do
+			if type( d ) == "table" then c = d;
+			else
+			if #a == _ and type( d ) == "string" then d = d .. "\n" end
+			MsgC( c, d )
+			end
+		end
+		
 	end
 )
 	
@@ -197,7 +214,8 @@ exsto_DEBUG = AddPrint(
 		end
 		
 		if exsto.DebugLevel and exsto.DebugLevel != 0 and ( exsto.DebugLevel:GetValue() >= level ) then
-			MsgC( COLOR.DEBUG, exsto.DebugStart .. msg .. "\n" )
+			MsgC( COLOR.HAZARDYELLOW, exsto.DebugStart )
+			MsgC( COLOR.WHITE, msg .. "\n" )
 		end
 	end
 )
