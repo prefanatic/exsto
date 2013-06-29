@@ -61,10 +61,9 @@ end
 
 function PLUGIN:PlayerNoClip( ply )
 	local var = ( CLIENT and exsto.ServerVariables[ "ExNoclipAdmin" ].Value ) or ( SERVER and self.AdminOnly:GetValue() )
-	if var == 1 and not ply:IsAdmin() and not ply:IsAllowed( "cannoclip" ) then
-		return false
-	end
-
+	if var == 1 and ( ply:IsAdmin() or ply:IsAllowed( "cannoclip" ) ) then
+		return true
+	elseif ply:IsAllowed( "cannoclip" ) then return true end
 end
 
 PLUGIN:Register()
