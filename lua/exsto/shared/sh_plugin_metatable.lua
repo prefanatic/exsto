@@ -166,12 +166,12 @@ end
 	Function: plugin:Unload
 	Description: Unloads the plugin
      ----------------------------------- ]]
-function plugin:Unload()
+function plugin:Unload( reason )
 
-	self:Print( "Unloading!" )
+	self:Print( "Unloading" .. ( reason and (" - " .. reason) or "" ) )
 	
 	if !self.Info.CleanUnload then
-		self:Print( "Warning!  This plugin may not unload properly due to developmental error.  It is suggested you perform a server restart in order to cleanly unload." )
+		self:Debug( "Warning!  This plugin may not unload properly due to developmental error.  It is suggested you perform a server restart in order to cleanly unload." )
 	end
 	
 	-- TODO: Clean Unload Plugins
@@ -239,12 +239,9 @@ function plugin:Disable( r )
 		Enabled = 0;
 	} )
 	
-	if r == 1 then -- Disabling due to an error
-		self:Print( "Disabling plugin due to error related causes!" )
-	end
 	self:Debug( "Disabling!" )
 	self.Disabled = true
-	self:Unload()
+	self:Unload( r )
 	
 	exsto.SendPluginSettings( player.GetAll() )
 end
@@ -256,7 +253,7 @@ function plugin:CanCleanlyUnload() return self.Info.CleanUnload end
 
 function plugin:Print( enum, ... )
 	if type( enum ) == "string" then
-		exsto.Print( exsto_CONSOLE, "Plugins --> " .. self.Info.Name .. " --> " .. enum )
+		exsto.Print( exsto_CONSOLE_LOGO, COLOR.EXSTO, self:GetName(), COLOR.WHITE, " --> " .. enum )
 		return
 	end
 
@@ -264,11 +261,11 @@ function plugin:Print( enum, ... )
 end
 
 function plugin:Debug( msg )
-	exsto.Debug( "Plugins --> " .. self:GetName() .. " --> " .. msg )
+	exsto.Debug( self:GetName() .. " --> " .. msg )
 end
 
 function plugin:Error( msg )
-	exsto.ErrorNoHalt( "Plugins --> " .. self.Info.Name .. " --> " .. msg )
+	exsto.ErrorNoHalt( self:GetName() .. " --> " .. msg )
 end
 
 function plugin:AddVariable( tbl )
