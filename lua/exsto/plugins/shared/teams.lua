@@ -23,7 +23,7 @@ if SERVER then
 			PLUGIN:ExRanksLoaded()
 			return true
 		elseif val == 0 then
-			PLUGIN:Unload()
+			PLUGIN:Unload( "Disabled in settings." )
 			return true
 		end
 	end
@@ -46,7 +46,7 @@ if SERVER then
 		if self.Enabled:GetValue() == 1 then
 			self:ExRanksLoaded()
 		else
-			self:Unload()
+			self:Unload( "Disabled in settings." )
 		end
 	
 	end

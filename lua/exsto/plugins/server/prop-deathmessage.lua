@@ -20,7 +20,7 @@ function PLUGIN:Init()
 	timer.Simple(1, function()
 						if !FPP then
 							self:Debug( "No FPP detected.  Unloading!", 1 )
-							self:Unload()
+							self:Unload( "FPP not detected." )
 						end
 					end )
 end
