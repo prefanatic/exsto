@@ -228,8 +228,11 @@ elseif CLIENT then
 	exsto.CreateReader( "ExVoteClear", clrVote )
 	
 	local function updateVote( reader )
-		PLUGIN.VoteData[ reader:ReadShort() ] = reader:ReadShort()
-		--PLUGIN.VoteLarge.List:Update()
+		local id, val = reader:ReadShort(), reader:ReadShort()
+		PLUGIN.VoteData[ id ] = val
+		
+		if PLUGIN.VoteData[ id ] == 0 then PLUGIN.VoteData[ id ] = nil end
+		PLUGIN.VoteLarge.List:Update()
 	end
 	exsto.CreateReader( "ExVoteUpdate", updateVote )
 	
@@ -348,11 +351,12 @@ elseif CLIENT then
 			
 			for key, button in ipairs( copy ) do
 				print( button._VoteIndex, key, button:GetText() )
-				if copy[ key + 1 ] then
+					lst:Add( button )
+				--[[if copy[ key + 1 ] then
 					button:MoveToBefore(copy[ key + 1 ] )
 				else
 					button:MoveToBefore( copy[ #copy ] )
-				end
+				end]]
 			end
 			lst:Layout()
 		end
