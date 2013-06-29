@@ -56,6 +56,10 @@ COLOR = {}
 	COLOR.EXSTO = Color( 116, 202, 254, 255 )
 	COLOR.NAME = Color( 255, 105, 105, 255 )
 	COLOR.MENU = Color( 133, 133, 133, 255 ) 
+	COLOR.EXSTOGREEN = Color( 146, 232, 136, 255 )
+	COLOR.EXSTOCOMP = Color( 255, 68, 255, 255 )
+	COLOR.WHITE = Color( 255, 255, 255, 255 )
+	COLOR.HAZARDYELLOW = Color( 238, 210, 2, 255 )
 	
 -- Complementary color generator.  Adapted from easyrgb.com
 function exsto.GenerateComplementaryColor( col )
