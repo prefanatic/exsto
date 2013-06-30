@@ -233,7 +233,7 @@ elseif CLIENT then
 		
 		if PLUGIN.VoteData[ id ] == 0 then PLUGIN.VoteData[ id ] = nil end
 		
-		if self.VoteStyle == "large" then
+		if PLUGIN.VoteStyle == "large" then
 			PLUGIN.VoteLarge.List:Update()
 		end
 	end
