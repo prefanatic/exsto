@@ -90,31 +90,45 @@ end
 	----------------------------------- ]]
 function exsto.aLoader.LoadRanks()
 	exsto.Debug( "aLoader --> Loading saved ranks.", 2 )
-	for _, data in ipairs( exsto.RankDB:GetAll() ) do
-		exsto.Debug( "aLoader --> Pushing data to load process: " .. data.ID, 3 )
+	exsto.RankDB:GetAll( function( q, d )
+		-- Check to see if defaults need to be saved.
+		if #d == 0 then exsto.aLoader.CreateDefaults() end
 		
-		-- Quality check
-		local succF, err = pcall( von.deserialize, data.FlagsAllow )
-		if not succF then
-			exsto.Debug( "aLoader --> Failed to load flags for '" .. data.ID .. "'", 1 )
-			exsto.aLoader.Error( data.ID, ALOADER_VON_FAILURE_FLAGS )
-		end
-		local succC, err = pcall( von.deserialize, data.Color )
-		if not succC then
-			exsto.Debug( "aLoader --> Failed to load color for '" .. data.ID .. "'", 1 )
-			exsto.aLoader.Error( data.ID, ALOADER_VON_FAILURE_COLOR )
+		for _, data in ipairs( d ) do
+			exsto.Debug( "aLoader --> Pushing data to load process: " .. data.ID, 3 )
+			
+			-- Quality check
+			local succF, err = pcall( von.deserialize, data.FlagsAllow )
+			if not succF then
+				exsto.Debug( "aLoader --> Failed to load flags for '" .. data.ID .. "'", 1 )
+				exsto.aLoader.Error( data.ID, ALOADER_VON_FAILURE_FLAGS )
+			end
+			local succC, err = pcall( von.deserialize, data.Color )
+			if not succC then
+				exsto.Debug( "aLoader --> Failed to load color for '" .. data.ID .. "'", 1 )
+				exsto.aLoader.Error( data.ID, ALOADER_VON_FAILURE_COLOR )
+			end
+			
+			exsto.aLoader.Loaded[ data.ID ] = {
+				Name = data.Name;
+				Description = data.Description;
+				ID = data.ID;
+				Parent = data.Parent;
+				FlagsAllow = succF and von.deserialize( data.FlagsAllow ) or nil;
+				Immunity = data.Immunity;
+				Color = succC and von.deserialize( data.Color ) or nil;
+			}
 		end
 		
-		exsto.aLoader.Loaded[ data.ID ] = {
-			Name = data.Name;
-			Description = data.Description;
-			ID = data.ID;
-			Parent = data.Parent;
-			FlagsAllow = succF and von.deserialize( data.FlagsAllow ) or nil;
-			Immunity = data.Immunity;
-			Color = succC and von.deserialize( data.Color ) or nil;
-		}
-	end
+		exsto.aLoader.Process()
+		exsto.aLoader.QualityCheck()
+		exsto.SendRanks( player.GetAll() )
+
+		exsto.Debug( "aLoader --> End main core sequence.", 2 )
+		
+		hook.Call( "ExRanksLoaded" )
+
+	end )
 end
 
 --[[ -----------------------------------
@@ -316,18 +330,7 @@ function exsto.aLoader.Initialize()
 		Description = "Owner of the server.",
 	}
 	
-	-- Check to see if defaults need to be saved.
-	if #exsto.RankDB:GetAll() == 0 then exsto.aLoader.CreateDefaults() end
-	exsto.aLoader.LoadRanks()
-	exsto.aLoader.Process()
-	exsto.aLoader.QualityCheck()
-
-	exsto.Debug( "aLoader --> End main core sequence.", 2 )
-	
-	hook.Call( "ExRanksLoaded" )
-	
-	local ed = SysTime() - start
-	--print( "Took " .. ed .. " seconds to load aLoader" )
+	exsto.aLoader.LoadRanks() -- Load ranks now needs to throw the rest of us into production, because we load threaded now.
 end
 exsto.aLoader.Initialize()
 
@@ -485,11 +488,7 @@ function exsto.AddUsersOnJoin( ply, steamid, uniqueid )
 		end
 	else
 		-- We are running a dedicated server, and someone joined.  Lets check to see if there are any admins.
-		if !exsto.AnyAdmins() then
-			ply:Print( exsto_CHAT, COLOR.NORM, "Exsto has detected this is a ", COLOR.NAME, "dedicated server environment", COLOR.NORM, ", and there are no server owners set yet." )
-			ply:Print( exsto_CHAT, COLOR.NORM, "If you are the owner of this server, please rcon the following command:" )
-			ply:Print( exsto_CHAT, COLOR.NORM, "exsto rank " .. ply:Name() .. " srv_owner" )
-		end
+		exsto.AdminCheck()
 	end
 
 end
@@ -555,13 +554,16 @@ exsto.AddChatCommand( "getsteamid", {
 	Function: player:SetRank
 	Description: Sets a player's rank.
 	----------------------------------- ]]
-function exsto.Registry.Player:SetRank( rank )
+function exsto.Registry.Player:SetRank( rank, s )
+	if self:GetRank() == rank then return end;
 	self:SetNetworkedString( "rank", rank )
-	exsto.UserDB:AddRow( {
-		SteamID = self:SteamID();
-		Rank = rank;
-		Name = self:Nick();
-	} )
+	if not s then
+		exsto.UserDB:AddRow( {
+			SteamID = self:SteamID();
+			Rank = rank;
+			Name = self:Nick();
+		} )
+	end
 	hook.Call( "ExSetRank", nil, self, rank )
 end
 
@@ -676,6 +678,18 @@ function exsto.AnyAdmins()
 	return false
 end
 
+function exsto.AdminCheck()
+	exsto.UserDB:GetAll( function( q, d )
+		for _, p in ipairs( d ) do
+			if p.Rank == "srv_owner" then return true end
+		end
+	
+		ply:Print( exsto_CHAT, COLOR.NORM, "Exsto has detected this is a ", COLOR.NAME, "dedicated server environment", COLOR.NORM, ", and there are no server owners set yet." )
+		ply:Print( exsto_CHAT, COLOR.NORM, "If you are the owner of this server, please rcon the following command:" )
+		ply:Print( exsto_CHAT, COLOR.NORM, "exsto rank " .. ply:Name() .. " srv_owner" )
+	end )
+end
+
 --[[ -----------------------------------
 	Function: exsto.SendRankData
 	Description: Sends the rank table.
@@ -692,18 +706,17 @@ function exsto.InitializePlayer( ply, sid, uid )
 	exsto.Debug( "Initializing player '" .. ply:Nick() .. "' for initspawn.", 1 )
 	ply.InitSpawn = true
 	
-	-- We actually should auth in here now.
-	local rank, userFlags = exsto.UserDB:GetData( sid, "Rank, UserFlags" )
-	
-	if game.SinglePlayer() then
-		ply:SetRank( "srv_owner" )
-	else
-		ply:SetRank( rank or "guest" )	
-	end
-	
-	ply:UpdateUserFlags( type( userFlags ) == "string" and FEL.NiceDecode( userFlags ) or {} )
+	exsto.UserDB:GetData( sid, "Rank,FlagsAllow", function( q, d )
+		if game.SinglePlayer() then
+			ply:SetRank( "srv_owner" )
+		else
+			ply:SetRank( d.Rank or "guest", d.Rank and true )	
+		end
+		
+		ply:UpdateUserFlags( type( d.UserFlags ) == "string" and FEL.NiceDecode( d.UserFlags ) or {} )
 
-	hook.Call( "ExPlayerAuthed", nil, ply, sid, uid )
+		hook.Call( "ExPlayerAuthed", nil, ply, sid, uid )
+	end )
 end
 hook.Add( "PlayerAuthed", "ExInitPlayer", exsto.InitializePlayer )
 
