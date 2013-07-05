@@ -19,8 +19,10 @@
 --[[ -----------------------------------
 	Category:  Script Loading/Resources
     ----------------------------------- ]]
-	resource.AddFile( "materials/gwenskin/exsto_main.png")
-	exstoResources()
+	--resource.AddFile( "materials/gwenskin/exsto_main.png")  We've moved our resources to workshop, now that we can do resource.AddWorkshop.  Thanks garry!
+	--exstoResources()
+	
+	resource.AddWorkshop( "157864671" )
 	
 	-- Includes!
 	exstoShared( "shared/fel.lua" ) -- The main data-saving backend.  Has no ties with Exsto.  Can be loaded first!
