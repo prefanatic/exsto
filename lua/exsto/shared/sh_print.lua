@@ -215,7 +215,19 @@ exsto_DEBUG = AddPrint(
 		
 		if exsto.DebugLevel and exsto.DebugLevel != 0 and ( exsto.DebugLevel:GetValue() >= level ) then
 			MsgC( COLOR.HAZARDYELLOW, exsto.DebugStart )
-			MsgC( COLOR.WHITE, msg .. "\n" )
+			
+			if type( msg ) == "table" then
+				local c = COLOR.WHITE
+				for _, d in ipairs( msg ) do
+					if type( d ) == "table" then c = d;
+					else
+					if #msg == _ and type( d ) == "string" then d = d .. "\n" end
+					MsgC( c, d )
+					end
+				end
+			else	
+				MsgC( COLOR.WHITE, msg .. "\n" )
+			end
 		end
 	end
 )
