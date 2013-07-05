@@ -49,14 +49,12 @@ if SERVER then
 		
 		self:PrintEcho( { COLOR.NAME, reader:ReadSender():Nick(), COLOR.NORM, " has deleted the rank ", COLOR.NAME, rank.Name } )
 		
-		exsto.RankDB:DropRow( id )
-		
-		timer.Simple( 0.1, function()
+		exsto.RankDB:DropRow( id, function() 
 			exsto.aLoader.Initialize()
-			exsto.SendRanks( player.GetAll() )
 		end )
 		
 	end
+	PLUGIN:CreateReader( "ExDelRankFromClient", PLUGIN.DeleteRank )
 	
 	function PLUGIN:CommitChanges( reader )
 		local id = reader:ReadString()
@@ -66,27 +64,22 @@ if SERVER then
 		PLUGIN:PrintEcho( { COLOR.NAME, ply:Nick(), COLOR.NORM, " has updated the rank ", COLOR.NAME, exsto.Ranks[ id ] and exsto.Ranks[ id ].Name or id } )
 
 		-- Write the data
-		PLUGIN:WriteAccess( id, reader:ReadString(), reader:ReadString(), reader:ReadColor(), reader:ReadTable() )
-		
-		-- Give him immunity.
-		if !exsto.Ranks[ id ] then
-			PLUGIN:WriteImmunity( id, 10 )
-		end
-		
-		-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
-		exsto.aLoader.Initialize()
-		
-		-- If everything is successful, lets reload.
-		if exsto.aLoader.Errors and table.Count( exsto.aLoader.Errors ) == 0 then
-			-- We sadly have to resend everything, with flags and stuff being the way they are.
-			exsto.SendRanks( player.GetAll() )
+		PLUGIN:WriteAccess( id, reader:ReadString(), reader:ReadString(), reader:ReadColor(), reader:ReadTable(), function( q, d )
 			
-			-- Reload the rank editor.
-			hook.Call( "ExOnRankCreate", nil, id )
-		else
-			-- We've got some errors.  We need to send these to the client and then notify the laddy who was making this rank he sucks.
-			exsto.SendRankErrors( ply )
-		end
+			-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
+			exsto.aLoader.Initialize()
+			
+			-- If everything is successful, lets reload.
+			if exsto.aLoader.Errors and table.Count( exsto.aLoader.Errors ) == 0 then
+				
+				-- Reload the rank editor.
+				hook.Call( "ExOnRankCreate", nil, id )
+			else
+				-- We've got some errors.  We need to send these to the client and then notify the laddy who was making this rank he sucks.
+				exsto.SendRankErrors( ply )
+			end
+			
+		end )
 	end
 	PLUGIN:CreateReader( "ExPushRankToSrv", PLUGIN.CommitChanges )
 	
@@ -94,7 +87,7 @@ if SERVER then
 		local id = reader:ReadString()
 		local im = reader:ReadShort()
 		
-		self:Debug( "Updating immunity for '" .. id .. "' to '" .. im .. "'" )
+		self:Debug( "Updating immunity for '" .. id .. "' to '" .. im .. "'", 1 )
 		exsto.RankDB:AddRow( {
 			ID = id;
 			Immunity = im;
@@ -108,7 +101,7 @@ if SERVER then
 			Immunity = reader:ReadShort();
 		} )
 	end
-	exsto.CreateReader( "ExRecImmuneChange", PLUGIN.WriteImmunityData )
+	--exsto.CreateReader( "ExRecImmuneChange", PLUGIN.WriteImmunityData )
 	
 	function PLUGIN:ExClientData( hook, ply, data )
 		if hook == "ExRecImmuneChange" or hook == "ExRecRankData" then
@@ -123,14 +116,15 @@ if SERVER then
 		} )
 	end
 	
-	function PLUGIN:WriteAccess( id, name, derive, color, flagsallow )
+	function PLUGIN:WriteAccess( id, name, derive, color, flagsallow, callback )
 		exsto.RankDB:AddRow( {
 			Name = name;
 			ID = id;
 			Parent = derive;
 			Color = von.serialize( color );
 			FlagsAllow = von.serialize( flagsallow );
-		} )
+			Immunity = exsto.Ranks[ id ] and exsto.Ranks[ id ].Immunity or 10;
+		}, callback )
 	end
 
 elseif CLIENT then
