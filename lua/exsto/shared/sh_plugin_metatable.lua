@@ -93,7 +93,7 @@ function plugin:Register()
 	if SERVER then -- Server side plugin checking.
 		-- Do we exist in the settings db?
 		local f = false
-		for _, data in ipairs( exsto.PluginDB:ReadAll() ) do
+		for _, data in ipairs( exsto.PluginSettings ) do
 			if data.ID == self:GetID() then f = data end
 		end
 		
@@ -107,6 +107,8 @@ function plugin:Register()
 			} )
 		end
 	end
+	
+	exsto.LastPluginRegister = self
 	
 	-- Proper checks are done.  Check to make sure we can inject ourselves, if we're not disabled.
 	self:Debug( "Checking disabled state.", 2 )
@@ -157,7 +159,6 @@ function plugin:Inject()
 	
 	self:Init()
 	self.Initialized = true
-	exsto.LastPluginRegister = self
 	
 	hook.Call( "ExPluginRegister", nil, self )
 end
@@ -213,7 +214,7 @@ function plugin:IsEnabled()
 	if CLIENT then
 		if exsto.ServerPluginSettings[ self:GetID() ] == false then return false end
 	elseif SERVER then
-		for _, data in ipairs( exsto.PluginDB:ReadAll() ) do
+		for _, data in ipairs( exsto.PluginSettings ) do
 			if data.ID == self:GetID() then return tobool( data.Enabled ) end
 		end
 	end
@@ -227,6 +228,12 @@ function plugin:Enable()
 		Enabled = 1;
 	} )
 	
+	if SERVER then
+		for _, d in ipairs( exsto.PluginSettings ) do
+			if d.ID == self:GetID() then exsto.PluginSettings[ _ ].Enabled = 1 end
+		end
+	end
+	
 	self:Register()
 	
 	exsto.SendPluginSettings( player.GetAll() )
@@ -238,6 +245,12 @@ function plugin:Disable( r )
 		ID = self:GetID();
 		Enabled = 0;
 	} )
+	
+	if SERVER then
+		for _, d in ipairs( exsto.PluginSettings ) do
+			if d.ID == self:GetID() then exsto.PluginSettings[ _ ].Enabled = 0 end
+		end
+	end
 	
 	self:Debug( "Disabling!" )
 	self.Disabled = true
@@ -252,8 +265,8 @@ function plugin:GetName() return self.Info.Name end
 function plugin:CanCleanlyUnload() return self.Info.CleanUnload end
 
 function plugin:Print( enum, ... )
-	if type( enum ) == "string" then
-		exsto.Print( exsto_CONSOLE_LOGO, COLOR.EXSTO, self:GetName(), COLOR.WHITE, " --> " .. enum )
+	if type( enum ) == "string" or type( enum ) == "table" then
+		exsto.Print( exsto_CONSOLE_LOGO, COLOR.EXSTO, self:GetName(), COLOR.WHITE, " --> ", enum, ... )
 		return
 	end
 
