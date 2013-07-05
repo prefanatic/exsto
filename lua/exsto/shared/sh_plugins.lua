@@ -23,6 +23,7 @@ exsto.NeedSaved = {}
 exsto.Plugins = {}
 exsto.LoadedPlugins = {}
 exsto.Hooks = {}
+exsto.PluginSettings = {}
 exsto.PlugLocation = "exsto/plugins/"
 exsto.PluginLocations = {
 	cl = "exsto/plugins/client/";
@@ -37,7 +38,7 @@ if SERVER then
 	Description: Sends the plugin settings to a player.
      ----------------------------------- ]]
 	function exsto.SendPluginSettings( ply )
-		local db = exsto.PluginDB:ReadAll()
+		local db = exsto.PluginSettings
 		local sender = exsto.CreateSender( "ExRecPlugSettings", ply )
 			sender:AddShort( #db )
 			for _, data in ipairs( db ) do
@@ -101,10 +102,21 @@ end
 
 --[[ -----------------------------------
 	Function: exsto.LoadPlugins
-	Description: Reads all the plugins from the plugin folder.
+	Description: Sets up stuff.
      ----------------------------------- ]]
 function exsto.LoadPlugins()
-	-- Do nothin nomore
+	if SERVER then
+		-- Create the settings database.
+		exsto.Debug( "Plugins --> Creating settings table.", 2 );
+		exsto.PluginDB = FEL.CreateDatabase( "exsto_plugin_settings" )
+			exsto.PluginDB:SetDisplayName( "Plugin Settings" )
+			exsto.PluginDB:ConstructColumns( {
+				ID = "VARCHAR(255):not_null:primary";
+				Enabled = "TINYINT:not_null";
+			} )
+			
+		exsto.PluginDB:GetAll( function( q, d ) exsto.PluginSettings = d end )
+	end
 end
 
 --[[ -----------------------------------
@@ -115,17 +127,6 @@ function exsto.InitPlugins()
 	exsto.Print( exsto_CONSOLE, "Plugins --> Starting load." );
 	local last = exsto.GetLastPluginRegister
 	
-	if SERVER then
-		-- Create the settings database.
-		exsto.Debug( "Plugins --> Creating settings table.", 2 );
-		exsto.PluginDB = FEL.CreateDatabase( "exsto_plugin_settings" )
-			exsto.PluginDB:SetDisplayName( "Plugin Settings" )
-			exsto.PluginDB:ConstructColumns( {
-				ID = "VARCHAR(255):not_null:primary";
-				Enabled = "TINYINT:not_null";
-			} )
-	end
-
 	exsto.Debug( "Plugins --> Looping into load process.", 2 );
 	
 	-- Client
@@ -133,8 +134,10 @@ function exsto.InitPlugins()
 	for _, name in pairs( loc ) do
 		exsto.Debug( "Plugins --> Including client: " .. name, 3 )
 		exstoClient( "plugins/client/" .. name )
-		last().Location = "plugins/client/" .. name 
-		last().Side = "cl"
+		if last() then
+			last().Location = "plugins/client/" .. name 
+			last().Side = "cl"
+		end
 	end
 	
 	-- Shared
@@ -142,8 +145,10 @@ function exsto.InitPlugins()
 	for _, name in pairs( loc ) do
 		exsto.Debug( "Plugins --> Including shared: " .. name, 3 )
 		exstoShared( "plugins/shared/" .. name )
-		last().Location = "plugins/shared/" .. name 
-		last().Side = "sh"
+		if last() then
+			last().Location = "plugins/shared/" .. name 
+			last().Side = "sh"
+		end
 	end
 	
 	if SERVER then
@@ -151,8 +156,10 @@ function exsto.InitPlugins()
 		for _, name in pairs( loc ) do
 			exsto.Debug( "Plugins --> Including server: " .. name, 3 )
 			exstoServer( "plugins/server/" .. name )
-			last().Location = "plugins/server/" .. name 
-			last().Side = "sv"
+			if last() then
+				last().Location = "plugins/server/" .. name 
+				last().Side = "sv"
+			end
 		end
 	end
 	
