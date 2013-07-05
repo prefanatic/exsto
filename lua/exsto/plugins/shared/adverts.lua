@@ -60,21 +60,23 @@ if SERVER then
 			
 		
 		-- Throw our saved data into our own table.
-		for _, data in pairs( self.DB:ReadAll() ) do
-			self.Adverts[ data.ID ] = {
-				ID = data.ID;
-				Display = data.Display;
-				Contents = von.deserialize( data.Contents );
-				StringContents = data.StringContents;
-				Location = data.Location;
-				Delay = data.Delay;
-				Data = von.deserialize( data.Data );
-				Enabled = data.Enabled
-			}
-			
-			-- Start the advert
-			self:StartAdvert( data.ID )
-		end
+		self.DB:GetAll( function( q, d )
+			for _, data in pairs( d ) do
+				self.Adverts[ data.ID ] = {
+					ID = data.ID;
+					Display = data.Display;
+					Contents = von.deserialize( data.Contents );
+					StringContents = data.StringContents;
+					Location = data.Location;
+					Delay = data.Delay;
+					Data = von.deserialize( data.Data );
+					Enabled = data.Enabled
+				}
+				
+				-- Start the advert
+				self:StartAdvert( data.ID )
+			end
+		end )
 		
 	end
 	
