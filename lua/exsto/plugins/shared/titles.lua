@@ -36,13 +36,13 @@ if SERVER then
 
 	function PLUGIN:ExInitSpawn( ply, sid )
 		-- Load their data.
-		local title = exsto.HeadDB:GetData( sid, "Title" )
-		
-		-- If their title doesn't exist, don't continue.
-		if !title then return end
-		
-		-- If we have it, store it.
-		ply:SetNWString( "title", title )
+		exsto.HeadDB:GetData( sid, "Title", function( q, d )
+			-- If their title doesn't exist, don't continue.
+			if !d then return end
+			
+			-- If we have it, store it.
+			ply:SetNWString( "title", d.Title )
+		end )
 		
 	end
 	
