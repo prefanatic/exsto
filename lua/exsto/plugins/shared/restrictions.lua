@@ -37,25 +37,35 @@ if SERVER then
 				Entities = "TEXT";
 				Sweps = "TEXT";
 			} )
+			
+		self.NextCacheUpdate = exsto.CreateVariable( "ExRestrictionUpdate", "Refresh Delay", 30, "How often restrictions should update from the SQL tables.  The shorter the value, the more 'in-sync' restrictions will be with other servers, at the cost of more lag." )
+			self.NextCacheUpdate:SetCategory( "Restrictions" )
+			self.NextCacheUpdate:SetUnit( "Delay (minutes)" )
+			self.NextCacheUpdate:SetMin( 1 )
+		self.NextThink = CurTime() + ( self.NextCacheUpdate:GetValue() * 60 )
+			
+		self.Storage = {}
 		
 		-- Quality of service on the ranks database.
-		local data = self.DB:ReadAll()
-		for rID, rank in pairs( exsto.Ranks ) do
-			local f = false
-			for _, d in ipairs( data ) do
-				if d.ID == rID then f = true end
+		self.DB:GetAll( function( q, d )
+			for rID, rank in pairs( exsto.Ranks ) do
+				local f = false
+				for _, d in ipairs( d ) do
+					if d.ID == rID then f = true break end
+				end
+				
+				if not f then
+					self.DB:AddRow( {
+						ID = rID;
+						Props = von.serialize( {} );
+						Stools = von.serialize( {} );
+						Entities = von.serialize( {} );
+						Sweps = von.serialize( {} );
+					} )
+				end
 			end
-			
-			if not f then
-				self.DB:AddRow( {
-					ID = rID;
-					Props = von.serialize( {} );
-					Stools = von.serialize( {} );
-					Entities = von.serialize( {} );
-					Sweps = von.serialize( {} );
-				} )
-			end
-		end
+			self:RefreshStorage()
+		end )
 		
 		-- Restriction types
 		self.RestrictionTypes = {
@@ -67,6 +77,19 @@ if SERVER then
 		
 		self.LimitHandler = {}
 	
+	end
+	
+	function PLUGIN:RefreshStorage()
+		self.DB:GetAll( function( q, d )
+			for _, r in ipairs( d ) do
+				self.Storage[ r.ID ] = {
+					Props = self:VonDeserialize( r.Props );
+					Stools = self:VonDeserialize( r.Stools );
+					Entities = self:VonDeserialize( r.Entities );
+					Sweps = self:VonDeserialize( r.Sweps );
+				}
+			end
+		end )
 	end
 	
 	function PLUGIN:OverrideGetCount()
@@ -83,6 +106,12 @@ if SERVER then
 		if self.FuncTamperSeal != exsto.Registry.Player.GetCount then -- We've been overridden.
 			self:Debug( "GetCount has been tampered.  Over-riding.", 1 )
 			self:OverrideGetCount()
+		end
+		
+		if CurTime() > self.NextThink then
+			self:Debug( "Updating restriction storage.", 1 )
+			self:RefreshStorage()
+			self.NextThink = CurTime() + ( self.NextCacheUpdate:GetValue() * 60 )
 		end
 	end
 	
@@ -148,7 +177,6 @@ if SERVER then
 		self:Debug( "Sending '" .. w .. "' restriction for '" .. id .. "' on player '" .. pn .. "'", 1 )
 		
 		local data = self:GetRestrictionData( id, w )
-		
 		if w == 3 then self:SendPropRestrictionData( data, w, ply, sender ) return end
 		
 		sender:AddShort( w )
@@ -177,9 +205,9 @@ if SERVER then
 		local ply = reader:ReadSender()
 		
 		self:Debug( "Restricting '" .. w .. "' class '" .. class .. "' under identifier '" .. id .. "' as value '" .. tostring( enabled ) .. "'", 1 )
-		
+
+
 		local data = self:GetRestrictionData( id, w )
-		
 		self:UpdateEntry( w, id, data, class, enabled )
 	end
 	PLUGIN:CreateReader( "ExUpdateRestriction", PLUGIN.UpdateRestriction )
@@ -189,14 +217,14 @@ if SERVER then
 		for k, d in pairs( data ) do
 			if d.Class == class then
 				f = true
-				data[ k ].Enabled = enabled
+				self.Storage[ id ][ self:GetRestrictionType( w ) ][ k ].Enabled = enabled
 			end
 		end
 		if not f then
-			table.insert( data, { Class = class, Enabled = enabled } )
+			table.insert( self.Storage[ id ][ self:GetRestrictionType( w ) ], { Class = class, Enabled = enabled } )
 		end
 			
-		self.DB:AddRow( self:ConstructDataSave( w, id, von.serialize( data ) ) )
+		self.DB:AddRow( self:ConstructDataSave( w, id, von.serialize( self.Storage[ id ][ self:GetRestrictionType( w ) ] ) ) )
 		
 		-- Resend
 		self:SendRestrictionData( w, id, exsto.GetMenuPlayers() )
@@ -224,14 +252,23 @@ if SERVER then
 	end
 	PLUGIN:CreateReader( "ExNoLimit", PLUGIN.SetNoLimits )
 	
+	function PLUGIN:VonDeserialize( d )
+		if d == nil then d = "" end
+		if d == "NULL" then d = "" end
+		return von.deserialize( d )
+	end
+	
 	-- NOTE FOR THE FUTURE:  I believe that after saving into a database, either FEL or SQLite/MySQL automagically changes null entries to become NULL strings.
 	-- Which then von starts to deserialize because fuck it, and thats why this bug exists.
-	function PLUGIN:GetRestrictionData( id, w )
-		local data = self.DB:GetData( id, self:GetRestrictionType( w ) )
-			data = data or ""
+	function PLUGIN:GetRestrictionData( id, w, c )
+		--[[self.DB:GetData( id, self:GetRestrictionType( w ), function( q, data )
+			data = data[ self:GetRestrictionType( w ) ] or ""
 			
-		if data == "NULL" then data = "" end
-		return von.deserialize( data )
+			if data == "NULL" then data = "" end
+			c( von.deserialize( data ) )
+		end )]]
+		
+		return self.Storage[ id ][ self:GetRestrictionType( w ) ]
 	end
 	
 	function PLUGIN:NoLimitRank( caller, rank )
