@@ -129,6 +129,14 @@ function exsto.Registry.Player:GetRank()
 end
 
 --[[ -----------------------------------
+	Function: player:GetRankColor
+	Description: Returns the rank color of a player.
+	----------------------------------- ]]
+function exsto.Registry.Player:GetRankColor()
+	return exsto.Ranks[ self:GetRank() ] and exsto.Ranks[ self:GetRank() ].Color or nil
+end
+
+--[[ -----------------------------------
 	Function: player:IsAdmin
 	Description: Returns true if the player is an admin
 	----------------------------------- ]]
