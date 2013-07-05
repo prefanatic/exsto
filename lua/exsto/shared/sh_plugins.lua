@@ -74,26 +74,38 @@ end
 	Function: exsto.HookCall
 	Description: Calls hooks for plugins.
      ----------------------------------- ]]
+local errCount, s = {}, {}
+local function sort( a, b ) return a[2] < b[2] end
 function exsto.HookCall( name, gm, ... )
+	s = {}
 	for _, plug in ipairs( exsto.Plugins ) do
 		if type( plug[ name ] ) == "function" and plug:IsEnabled() and plug.Initialized then
+			table.insert( s, { plug, plug:GetHookPriority( name ) } )
+		end
+	end
+	
+	table.sort( s, sort )
+	for _, d in ipairs( s ) do
+		local plug = d[1]
+		local data = { pcall( plug[ name ], plug, ... ) }
+		
+		-- data[1] == Status
+		-- data[2] == Error or First Return
+		-- data[3+] == Returns
+		
+		-- If we are returning something...
 
-			local data = { pcall( plug[ name ], plug, ... ) }
+		if data[1] == true and data[2] != nil then
+			table.remove( data, 1 )
+			return unpack( data )
+		elseif data[1] == false then -- It returned an error, catch it.
+			if not errCount[ name ] then errCount[ name ] = {} end
+			if not errCount[ name ][ plug:GetID() ] then errCount[ name ][ plug:GetID() ] = 0 end
 			
-			-- data[1] == Status
-			-- data[2] == Error or First Return
-			-- data[3+] == Returns
-			
-			-- If we are returning something...
-
-			if data[1] == true and data[2] != nil then
-				table.remove( data, 1 )
-				return unpack( data )
-			elseif data[1] == false then -- It returned an error, catch it.
-				exsto.ErrorNoHalt( "Hook '" .. name .. "' failed in plugin '" .. plug:GetID() .. "' error: " )
-				exsto.ErrorNoHalt( data[2] )
-				if SERVER then exsto.Plugins[ _ ]:Disable( "Unloaded to prevent error spam." ) end
-			end
+			errCount[ name ][ plug:GetID() ] = errCount[ name ][ plug:GetID() ] + 1
+			exsto.ErrorNoHalt( "Hook '" .. name .. "' failed in plugin '" .. plug:GetID() .. "' error: " )
+			exsto.ErrorNoHalt( data[2] )
+			if SERVER and errCount[ name ][ plug:GetID() ] > 10 then exsto.Plugins[ _ ]:Disable( "Unloaded to prevent error spam." ) end
 		end
 	end
 	

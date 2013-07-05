@@ -36,6 +36,7 @@ function exsto.CreatePlugin()
 	obj.Variables = {}
 	obj.Overrides = {}
 	obj.QuickmenuRequests = {}
+	obj.HookPriority = {}
 	
 	-- Set defaults for info.
 	obj.Info = {
@@ -325,6 +326,11 @@ end
 function plugin:RequestQuickmenuSlot( commandName, dispName, _data )
 	table.insert( self.QuickmenuRequests, { name = commandName, data = _data, disp = dispName } )
 end
+
+function plugin:SetHookPriority( name, p )
+	self.HookPriority[ name ] = p;
+end
+function plugin:GetHookPriority( name ) return self.HookPriority[ name ] or 10 end
 
 --[[ -----------------------------------
 	Function: plugin:AddHook
