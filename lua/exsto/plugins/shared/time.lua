@@ -52,6 +52,14 @@ if SERVER then
 		function meta:GetTotalTime()
 			return self:GetFixedTime() + self:GetSessionTime()
 		end
+		
+		function meta:GetLastTime()
+			return self:GetNWInt( "ExLastTime" )
+		end
+		
+		function meta:SetLastTime( n )
+			self:SetNWInt( "ExLastTime", n )
+		end
 
 	end
 	
@@ -63,9 +71,11 @@ if SERVER then
 		meta.GetFixedTime = nil
 		meta.GetSessionTime = nil
 		meta.GetTotalTime = nil
+		meta.GetLastTime = nil
+		meta.SetLastTime = nil
 	end
 	
-	function PLUGIN:Save( ply, time, online, session )
+	function PLUGIN:Save( ply, time, online, session, new )
 		self.DB:AddRow( {
 			Player = ply:Nick();
 			SteamID = ply:SteamID();
@@ -76,23 +86,32 @@ if SERVER then
 		} )
 	end
 	
+	function PLUGIN:ExPlayerAuthed( ply )	
+		self.DB:GetData( ply:SteamID(), "Time, Last", function( q, d )			
+			ply:SetJoinTime( CurTime() )
+			
+			if not d then
+				self:Save( ply, 0, 1, 0, true )
+				ply:SetFixedTime( 0 )
+				return
+			end
+			
+			local time, last = d.Time, d.Last
+			self:Debug( "Time for '" .. ply:Nick() .. "' is '" .. tostring( time ) .. "' last '" .. tostring( last ) .. "'", 1 )
+			
+			ply:SetFixedTime( time )
+			ply:SetLastTime( last )
+		end )
+	end
+	
 	function PLUGIN:ExInitSpawn( ply, sid )
-		local time, last = self.DB:GetData( sid, "Time, Last" )
-		
-		self:Debug( "Time for '" .. ply:Nick() .. "' is '" .. tostring( time ) .. "' last '" .. tostring( last ) .. "'", 1 )
-		
-		ply:SetJoinTime( CurTime() )
-		
-		if not time and not last then -- We haven't been filed yet.
-			self:Save( ply, 0, 1, 0 )
-			ply:SetFixedTime( 0 )
+		if ply:GetFixedTime() == 0 then
 			ply:Print( exsto_CHAT, COLOR.NORM, "Welcome ", COLOR.NAME, ply:Nick(), COLOR.NORM, ".  It seems this is your first time here, have fun!" )
 			return
 		end
 		
-		ply:SetFixedTime( time )
 		ply:Print( exsto_CHAT, COLOR.NORM, "Welcome back ", COLOR.NAME, ply:Nick(), COLOR.NORM, "!" )
-		ply:Print( exsto_CHAT, COLOR.NORM, "You last visited ", COLOR.NAME, os.date( "%A (%x) at %I:%M %p", last ) )
+		ply:Print( exsto_CHAT, COLOR.NORM, "You last visited ", COLOR.NAME, os.date( "%A (%x) at %I:%M %p", ply:GetLastTime() ) )
 	end
 	
 	function PLUGIN:PlayerDisconnected( ply )
