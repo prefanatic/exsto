@@ -54,19 +54,24 @@ function PLUGIN:CompareCRC()
 	if #invalid > 0 then -- Notify of the invalidations.
 		self:Error( "Invalidations found!  CRC errors exist on the following files." )
 		
+		
+		local msg = "Invalid files:\n"
 		for I = 1, #invalid do
-			self:Print( "\t" .. invalid[ I ].File .. "\tGlobal: " .. invalid[ I ].Global .. "\tLocal: " .. invalid[ I ].Local )
+			msg = msg .. invalid[ I ].File .. "\n"
 		end
-		self:Print( "This means either that an Exsto update exists, or someone has tampered with Exsto.  Take action!" )
-		self:Print( "If you've tampered with Exsto, consider submitting your changes upstream to the github!" )
+		self:Print( COLOR.GREY, msg )
+		self:Print( "Exsto has either been ", COLOR.NAME, "modified", COLOR.WHITE, " or ", COLOR.NAME, "an update exists", COLOR.WHITE, "." )
+		self:Print( "If you've ", COLOR.NAME, "modified", COLOR.WHITE, " Exsto, consider submitting your changes upstream to the github!" )
 		
 		-- Notify those who have the crcinvalnotify flag
 		for _, ply in ipairs( player.GetAll() ) do
 			if ply:IsAllowed( "crcinvalnotify" ) then 
 				ply:Print( exsto_CHAT, COLOR.NAME, "Warning, ", COLOR.NORM, "CRC checks failed.  An update is availible, or Exsto has been modified.  ", COLOR.NAME, "Suspect files have been printed to your console." )
+				local msg = "Invalid files:\n"
 				for I = 1, #invalid do
-					ply:Print( exsto_CLIENT, ply, "\t" .. invalid[ I ].File .. "\tGlobal: " .. invalid[ I ].Global .. "\tLocal: " .. invalid[ I ].Local )
+					msg = msg .. invalid[ I ].File .. "\n"
 				end
+				ply:Print( exsto_CLIENT, ply, msg )
 			end
 		end
 		
