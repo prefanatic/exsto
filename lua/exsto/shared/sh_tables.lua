@@ -60,6 +60,7 @@ COLOR = {}
 	COLOR.EXSTOCOMP = Color( 255, 68, 255, 255 )
 	COLOR.WHITE = Color( 255, 255, 255, 255 )
 	COLOR.HAZARDYELLOW = Color( 238, 210, 2, 255 )
+	COLOR.GREY = Color( 200, 200, 200, 255 )
 	
 -- Complementary color generator.  Adapted from easyrgb.com
 function exsto.GenerateComplementaryColor( col )
