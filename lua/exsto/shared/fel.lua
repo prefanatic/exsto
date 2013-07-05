@@ -320,7 +320,15 @@ function db:Print( msg )
 end
 
 function db:Debug( msg, level )
-	FEL.Debug( self.dbName .. " --> " .. msg, level )
+	if type( msg ) == "table" then
+		table.insert( msg, 1, COLOR.EXSTO )
+		table.insert( msg, 2, self.dbName )
+		table.insert( msg, 3, COLOR.WHITE )
+		table.insert( msg, 4, " --> " )
+		FEL.Debug( msg, level )
+		return
+	end
+	FEL.Debug( { COLOR.EXSTO, self.dbName, COLOR.WHITE, " --> " .. msg }, level )
 end
 
 function db:InjectInstance()
@@ -341,7 +349,7 @@ function db:OnMySQLConnect()
 	self:Print( "MySQL connected!" )
 	self._mysqlSuccess = true
 	
-	self:InjectInstance()
+	--self:InjectInstance()
 	
 	if self._AttemptingMySQLReconnect then -- Grab us back into motion.
 		self:Query( self._PreMySQLQueryErr, false )
@@ -430,7 +438,9 @@ function db:ConstructColumns( columnData )
 		Create = "CREATE TABLE IF NOT EXISTS " .. self.dbName .. "(%s)";
 		Datatypes = "%s %s";
 		Update = "UPDATE " .. self.dbName .. " SET %s WHERE " .. formatted._PrimaryKey .. " = %s";
-		Insert = "INSERT INTO " .. self.dbName .. "(%s) VALUES(%s)";
+		Insert = "INSERT OR REPLACE INTO " .. self.dbName .. "(%s) VALUES(%s)";
+		InsertDuplicate = "INSERT INTO " .. self.dbName .. " (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;";
+		DuplicateSet = "%s = VALUES(%s)";
 		Set = "%s = %s";
 		Delete = "DELETE FROM %s WHERE %s = %s";
 	}
@@ -439,9 +449,9 @@ function db:ConstructColumns( columnData )
 	self:Debug( "Running table construction query.", 2 )
 	self:Query( self:ConstructQuery( "create" ), false )
 	
-	self:GetCacheData( false )
+	--[[self:GetCacheData( false )
 	self:CheckIntegrity()	
-	self:QOSCheck()	
+	self:QOSCheck()	]]
 end
 
 function db:SetRefreshRate( time )
@@ -614,7 +624,24 @@ function db:CheckCache( id, data )
 end
 
 function db:ConstructQuery( style, data )
-	if style == "new" then
+	if style == "insert_duplicate" then
+		local query = self.Queries.InsertDuplicate
+		
+		self._clk = 1
+		local count = table.Count( data )
+		for column, rowData in pairs( data ) do
+			if type( rowData ) == "string" then rowData = self:Escape( rowData ) end
+			if self._clk == count then
+				query = string.format( query, column, tostring( rowData ), string.format( self.Queries.Set, column, tostring( rowData ) ) )
+			else
+				query = string.format( query, column .. ", %s", tostring( rowData ) .. ", %s", string.format( self.Queries.Set, column, tostring( rowData ) ) .. ", %s" )
+			end
+			
+			self._clk = self._clk + 1
+		end
+		
+		return query
+	elseif style == "new" then
 		local query = self.Queries.Insert
 		
 		self._clk = 1
@@ -678,12 +705,13 @@ function db:OnQueryError( err, query )
 	end		
 end
 
-function db:QueryEnd()
+function db:QueryEnd( ignoreDebug )
+	if ignoreDebug then return end
 	self.qTEnd = SysTime();
 	self:Debug( "Took '" .. self.qTEnd - self.qTStart .. "' seconds to run this query.", 3 )
 end
 
-function db:Query( str, threaded, callback )
+function db:Query( str, threaded, callback, ignoreDebug )
 	if self._Disabled then
 		self:Print( "Disabled! " .. self._DisabledMsg )
 		return
@@ -691,8 +719,10 @@ function db:Query( str, threaded, callback )
 	hook.Call( "FEL_OnQuery", nil, str, threaded )
 	
 	-- Debug reasons.
-	self.qTStart = SysTime();
-	self:Debug( "Query (mysql: " .. tostring( self._mysqlSuccess ) .. ", threaded: " .. tostring( threaded ) .. ") - " .. str, 3 )
+	if not ignoreDebug then
+		self.qTStart = SysTime();
+		self:Debug( { "Query (mysql: ", COLOR.NAME, tostring( self._mysqlSuccess ), COLOR.WHITE, ", threaded: ", COLOR.NAME, tostring( threaded ), COLOR.WHITE, ") - ", COLOR.GREY, str }, 3 )
+	end
 	
 	if self._mysqlSuccess == true and self._forcedLocal != true then -- We are MySQL baby
 		self._mysqlQuery = self._mysqlDB:query( str )
@@ -701,10 +731,10 @@ function db:Query( str, threaded, callback )
 		
 		if threaded == false then -- If we request not to be threaded.
 			self._mysqlQuery:wait()
-			self:QueryEnd()
+			self:QueryEnd( ignoreDebug )
 			return self._mysqlQuery:getData()
 		else
-			self:QueryEnd()
+			self:QueryEnd( ignoreDebug )
 			if callback then
 				self._mysqlQuery.onSuccess = callback
 			end
@@ -715,9 +745,9 @@ function db:Query( str, threaded, callback )
 		if result == false then
 			-- An error, holy buggers!
 			self:OnQueryError( sql.LastError() )
-			self:QueryEnd()
+			self:QueryEnd( ignoreDebug )
 		else
-			self:QueryEnd()
+			self:QueryEnd( ignoreDebug )
 			if callback then -- Call it.
 				callback( str, result )
 			end
@@ -758,8 +788,8 @@ function db:Think()
 
 		-- Heartbeat please.
 		if self:IsMySQL() and self._forcedLocal != true then 
-			--self:Query( "SELECT 1 + 1", true ) 
-			self:Query( "SELECT * FROM " .. self.dbName .. "_instances", true, function( q, data )
+			self:Query( "SELECT 1 + 1", true, nil, true ) 
+			--[[self:Query( "SELECT * FROM " .. self.dbName .. "_instances", true, function( q, data )
 				for entry, d in ipairs( data ) do
 					if ( d.CacheUpdate > self._CacheUpdate ) and d.ExID != self._ExID then -- Another instance has updated data!  PULL IT IN!
 						self:CacheRefresh()
@@ -769,17 +799,17 @@ function db:Think()
 						self:Query( "UPDATE " .. self.dbName .. "_instances SET CacheUpdate=" .. d.CacheUpdate .." WHERE ExID=" .. self._ExID .. ";", true )
 					end
 				end
-			end )
+			end )]]
 		end
 		
 		
 		self._lastThink = CurTime()
 	end
 	
-	if ( CurTime() > self._lastRefreshCheck + self.cacheResetRate ) and self.cacheResetRate != 0 then
+	--[[if ( CurTime() > self._lastRefreshCheck + self.cacheResetRate ) and self.cacheResetRate != 0 then
 		self:CacheRefresh()
 		self._lastRefreshCheck = CurTime()
-	end
+	end]]
 	
 	if ( CurTime() > self._lastBackup + self.backupRate ) and self.backupRate != 0 then
 		self:Backup()
@@ -836,12 +866,23 @@ function db:QOSCheck() -- Quality of Service brother....
 	end
 end
 
-function db:AddRow( data, options )
-	options = options or {}
+function db:AddRow( data, callback )
 	
 	-- I hate you inconsistencies; lets be redundant and check our data vs data types.
 	if !self:DataInconsistancies( data ) then return end
 	
+	if not callback then
+		self:Debug( "No callback given for '" .. self:GetName() .. ":AddRow()'  We are going to thread it anyways!  This 'might' cause issues.", 1 )
+	end
+	
+	if self._mysqlSuccess then
+		self:Query( self:ConstructQuery( "insert_duplicate", data ), true, callback )
+	else
+		self:Query( self:ConstructQuery( "new", data ), true, callback )
+	end
+	
+	
+	--[[  We no longer are using a cache.  We're just going to commit and do our shit.
 	-- Check our _new and _changed first brother.
 	if self:CheckCache( "_new", data ) then
 		table.Merge( self.Cache._new[ self._LastKey ], data )
@@ -856,7 +897,6 @@ function db:AddRow( data, options )
 	end
 		
 	if self:CheckCache( "_cache", data ) then
-		if options.Update == false then return end	
 		table.Merge( self.Cache._cache[ self._LastKey ], data )		
 		self:TblInsert( self.Cache._changed, data )
 		self:PushSaves()
@@ -867,30 +907,43 @@ function db:AddRow( data, options )
 		self:TblInsert( self.Cache._new, data )
 		self:PushSaves()
 		self:Think( true )
-	end
+	end]]
 end
 
 function db:TblInsert( tbl, data )
 	tbl[ #tbl + 1 ] = data
 end
 
-function db:GetAll()
-	return table.Copy( self.Cache._cache )
-end
-
--- Different from db:GetAll().  Just returns a reference table instead of a copied table.  Not as intensive, for use in think hooks.
-function db:ReadAll()
-	return self.Cache._cache
-end
-
-function db:GetRow( key )
-	for _, rowData in ipairs( self.Cache._cache ) do
-		if key == rowData[ self.Columns._PrimaryKey ] then return rowData end
+function db:GetAll( callback )
+	if not callback then
+		self:Debug( "No callback on '" .. self:GetName() .. ":GetAll()', we are going to halt the server due to this!", 1 )
+		
+		return self:Query( "SELECT * FROM " .. self:GetName() .. ";", false )
 	end
+	
+	self:Query( "SELECT * FROM " .. self:GetName() .. ";", true, callback )
 end
 
-function db:GetData( key, reqs )
-	local data = self:GetRow( key )
+function db:ReadAll()
+	return self:GetAll()
+end
+
+function db:GetRow( key, callback )
+	--[[for _, rowData in ipairs( self.Cache._cache ) do
+		if key == rowData[ self.Columns._PrimaryKey ] then return rowData end
+	end]]
+	
+	if not callback then
+		self:Debug( "No callback on '" .. self:GetName() .. ":GetRow()', we are going to halt the server due to this!", 1 )
+		
+		return self:Query( "SELECT * FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", false )
+	end
+	
+	self:Query( "SELECT * FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", true, function( q, d ) callback( q, d[1] ) end )
+end
+
+function db:GetData( key, reqs, callback )
+	--[[local data = self:GetRow( key )
 	
 	if !data then return end
 	
@@ -899,21 +952,33 @@ function db:GetData( key, reqs )
 		table.insert( ret, data[ req:Trim() ] )
 	end
 	
-	return unpack( ret )
-end
-
-function db:DropRow( key )
-	for _, rowData in ipairs( self.Cache._cache ) do
-		if key == rowData[ self.Columns._PrimaryKey ] then 
-			table.remove( self.Cache._cache, _ )
-			
-			key = type( key ) == "string" and self:Escape( key ) or key
-			self:Query( string.format( self.Queries.Delete, self.dbName, self.Columns._PrimaryKey, key ), true )
-			break
-		end
+	return unpack( ret )]]
+	
+	if not callback then
+		self:Debug( "No callback on '" .. self:GetName() .. ":GetData()', we are going to halt the server due to this!", 1 )
+		
+		return self:Query( "SELECT " .. reqs .. " FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", false )
 	end
 	
-	-- Check our queued data
+	self:Query( "SELECT " .. reqs .. " FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", true, 
+		function( q, d )
+			callback( q, d and d[1] or nil ) 
+		end 
+	)
+end
+
+function db:DropRow( key, callback )
+	--for _, rowData in ipairs( self.Cache._cache ) do
+		--if key == rowData[ self.Columns._PrimaryKey ] then 
+			--table.remove( self.Cache._cache, _ )
+			
+			key = type( key ) == "string" and self:Escape( key ) or key
+			self:Query( string.format( self.Queries.Delete, self.dbName, self.Columns._PrimaryKey, key ), true, callback )
+			--break
+		--end
+	--end
+	
+	--[[ Check our queued data
 	for _, rowData in ipairs( self.Cache._new ) do
 		if key == rowData[ self.Columns._PrimaryKey ] then
 			table.remove( self.Cache._new, _ )
@@ -924,7 +989,7 @@ function db:DropRow( key )
 		if key == rowData[ self.Columns._PrimaryKey ] then
 			table.remove( self.Cache._changed, _ )
 		end
-	end
+	end]]
 end
 
 function db:DropTable( threaded )
@@ -938,9 +1003,9 @@ function db:Reset()
 	self:DropTable( true )
 	self:Query( self:ConstructQuery( "create" ), false )
 	
-	self:GetCacheData( false )
+	--[[self:GetCacheData( false )
 	self:CheckIntegrity()	
-	self:QOSCheck()	
+	self:QOSCheck()	]]
 end
 
 -- Sets automatic backups as an interval of t
