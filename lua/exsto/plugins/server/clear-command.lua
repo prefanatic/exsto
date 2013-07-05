@@ -6,6 +6,7 @@ PLUGIN:SetInfo({
 	ID = "clear",
 	Desc = "Clear's players crap.",
 	Owner = "Hobo",
+	CleanUnload = true;
 } )
 
 local dcClearTime
