@@ -131,6 +131,7 @@ end
 function PLUGIN:PlayerNoClip( ply )
 	if ply:Jailed() then return false end
 end
+PLUGIN:SetHookPriority( "PlayerNoClip", 1 )
 
 function PLUGIN:CanTool( ply, tr, tool )
 	if tr.Entity.IsJailWall then return false end
