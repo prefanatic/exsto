@@ -92,7 +92,7 @@ function exsto.aLoader.LoadRanks()
 	exsto.Debug( "aLoader --> Loading saved ranks.", 2 )
 	exsto.RankDB:GetAll( function( q, d )
 		-- Check to see if defaults need to be saved.
-		if #d == 0 then exsto.aLoader.CreateDefaults() end
+		if not d then exsto.aLoader.CreateDefaults() end
 		
 		for _, data in ipairs( d ) do
 			exsto.Debug( "aLoader --> Pushing data to load process: " .. data.ID, 3 )

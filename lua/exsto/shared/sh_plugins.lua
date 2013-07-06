@@ -127,7 +127,7 @@ function exsto.LoadPlugins()
 				Enabled = "TINYINT:not_null";
 			} )
 			
-		exsto.PluginDB:GetAll( function( q, d ) exsto.PluginSettings = d end )
+		exsto.PluginDB:GetAll( function( q, d ) exsto.PluginSettings = d or {} end )
 	end
 end
 
