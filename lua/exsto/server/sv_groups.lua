@@ -488,7 +488,7 @@ function exsto.AddUsersOnJoin( ply, steamid, uniqueid )
 		end
 	else
 		-- We are running a dedicated server, and someone joined.  Lets check to see if there are any admins.
-		exsto.AdminCheck()
+		exsto.AdminCheck( ply )
 	end
 
 end
@@ -678,7 +678,7 @@ function exsto.AnyAdmins()
 	return false
 end
 
-function exsto.AdminCheck()
+function exsto.AdminCheck( ply )
 	exsto.UserDB:GetAll( function( q, d )
 		for _, p in ipairs( d ) do
 			if p.Rank == "srv_owner" then return true end
@@ -710,10 +710,10 @@ function exsto.InitializePlayer( ply, sid, uid )
 		if game.SinglePlayer() then
 			ply:SetRank( "srv_owner" )
 		else
-			ply:SetRank( d.Rank or "guest", d.Rank and true )	
+			ply:SetRank( d and d.Rank or "guest", d and d.Rank and true )	
 		end
 		
-		ply:UpdateUserFlags( type( d.UserFlags ) == "string" and FEL.NiceDecode( d.UserFlags ) or {} )
+		ply:UpdateUserFlags( type( d and d.UserFlags ) == "string" and FEL.NiceDecode( d and d.UserFlags ) or {} )
 
 		hook.Call( "ExPlayerAuthed", nil, ply, sid, uid )
 	end )
