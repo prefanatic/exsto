@@ -115,7 +115,7 @@ function exsto.aLoader.LoadRanks()
 				ID = data.ID;
 				Parent = data.Parent;
 				FlagsAllow = succF and von.deserialize( data.FlagsAllow ) or nil;
-				Immunity = data.Immunity;
+				Immunity = tonumber( data.Immunity ) or nil;
 				Color = succC and von.deserialize( data.Color ) or nil;
 			}
 		end
