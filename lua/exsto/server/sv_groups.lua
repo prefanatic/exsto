@@ -94,7 +94,7 @@ function exsto.aLoader.LoadRanks()
 		-- Check to see if defaults need to be saved.
 		if not d then exsto.aLoader.CreateDefaults() end
 		
-		for _, data in ipairs( d ) do
+		for _, data in ipairs( d or exsto.DefaultRanks ) do
 			exsto.Debug( "aLoader --> Pushing data to load process: " .. data.ID, 3 )
 			
 			-- Quality check
