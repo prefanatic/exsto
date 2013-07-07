@@ -130,7 +130,7 @@ if SERVER then
 		
 		ply._IsMuted = false
 		
-		local sender = exsto.CreateSender( "ExMutePlayers", player.GetAll() )
+		local sender = exsto.CreateSender( "ExMutePlayer", player.GetAll() )
 			sender:AddEntity( ply )
 			sender:AddBool( false )
 		sender:Send()
