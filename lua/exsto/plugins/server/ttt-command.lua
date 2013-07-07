@@ -29,6 +29,7 @@ PLUGIN:AddCommand( "settraitor", {
 	Call = PLUGIN.SetTraitor,
 	Console = { "traitor" },
 	Chat = { "!traitor" },
+	Desc = "Sets a player as traitor.";
 	Arguments = {
 		{ Name = "Player", Type = COMMAND_PLAYER };
 	};
@@ -46,6 +47,7 @@ PLUGIN:AddCommand( "setdetective", {
 	Call = PLUGIN.SetDetective,
 	Console = { "detective" },
 	Chat = { "!detective" },
+	Desc = "Sets a player as detective.";
 	Arguments = {
 		{ Name = "Player", Type = COMMAND_PLAYER };
 	};
@@ -63,6 +65,7 @@ PLUGIN:AddCommand( "setinnocent", {
 	Call = PLUGIN.SetInnocent,
 	Console = { "innocent" },
 	Chat = { "!innocent" },
+	Desc = "Sets a player as innocent.";
 	Arguments = {
 		{ Name = "Player", Type = COMMAND_PLAYER };
 	};
@@ -71,7 +74,6 @@ PLUGIN:AddCommand( "setinnocent", {
 PLUGIN:RequestQuickmenuSlot( "setinnocent", "Innocent" ) 
 
 function PLUGIN:SetCredits( caller, ply, credits )
-	print( credits )
 	ply:SetCredits( credits )
 	caller:Print( exsto_CHAT, COLOR.NAME, ply:Nick(), COLOR.NORM, "'s credits have been set to ", COLOR.NAME, tostring( credits ) )
 end
@@ -79,6 +81,7 @@ PLUGIN:AddCommand( "setcredits", {
 	Call = PLUGIN.SetCredits,
 	Console = { "setcredits" },
 	Chat = { "!setcredits" },
+	Desc = "Sets the credits of a player.";
 	Arguments = {
 		{ Name = "Player", Type = COMMAND_PLAYER };
 		{ Name = "Credits", Type = COMMAND_NUMBER };
@@ -111,6 +114,7 @@ PLUGIN:AddCommand( "roundslay", {
 	Call = PLUGIN.SlayOnStart,
 	Console = { "roundslay" },
 	Chat = { "!roundslay" },
+	Desc = "Slays a player at the start of the next round.";
 	Arguments = {
 		{ Name = "Player", Type = COMMAND_PLAYER };
 	};
@@ -133,6 +137,7 @@ PLUGIN:AddCommand( "remroundslay", {
 	Call = PLUGIN.RemoveSlayOnStart,
 	Console = { "remroundslay" },
 	Chat = { "!remroundslay" },
+	Desc = "Removes a previously set player from being slain at the next round.";
 	Arguments = {
 		{ Name = "Player", Type = COMMAND_PLAYER };
 	};
