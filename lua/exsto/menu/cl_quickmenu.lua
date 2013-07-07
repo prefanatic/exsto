@@ -19,6 +19,7 @@
 local qm = {
 	Main = nil;
 	List = nil;
+	Starred = {};
 }
 
 local function clearContent( pnl )
@@ -89,8 +90,7 @@ local function clearContent( pnl )
 end
 
 local function starredCommand( id )
-	local starred = qm.Data:ReadAll()
-	for _, data in ipairs( starred ) do
+	for _, data in ipairs( qm.Starred ) do
 		if data.Command == id then return true end
 	end
 	return false
@@ -145,12 +145,25 @@ local function commandRightClicked( list, display, data, line )
 	
 	if starredCommand( data.ID ) then -- We're starred.  Unstar us.
 		qm.Data:DropRow( data.ID )
+		for _, d in ipairs( qm.Starred ) do
+			if data.ID == d.Command then table.remove( qm.Starred, _ ) end
+		end
 		qm.List.Content:Populate()
 	else
 		qm.Data:AddRow( {
 			Command = data.ID;
 			TimesUsed = 1;
 		} )
+		local f = false
+		for _, d in ipairs( qm.Starred ) do
+			if data.ID == d.Command then
+				f = true
+				qm.Starred[ _ ].TimesUsed = qm.Starred[ _ ].TimesUsed + 1;
+			end
+		end
+		if not f then
+			table.insert( qm.Starred, { Command = data.ID, TimesUsed = 1 }  );
+		end
 		qm.List.Content:Populate()
 	end
 end
@@ -198,7 +211,7 @@ local function initList( pnl )
 			cat.List.LineRightSelected = commandRightClicked
 			
 		-- Add the starred to this list.
-		for _, data in ipairs( qm.Data:ReadAll() ) do
+		for _, data in ipairs( qm.Starred ) do
 			local command = exsto.Commands[ data.Command ]
 			if LocalPlayer():IsAllowed( command.ID ) then
 				local line = cat.List:AddRow( { command.DisplayName }, command )
@@ -348,16 +361,23 @@ function exsto.InitQuickMenu()
 		} )
 		
 	-- Check to see if we have anything in data.  If we don't, inject a few commonly used commands.
-	if #qm.Data:ReadAll() == 0 then
-		local common = { "kick", "ban", "rank" }
-		for _, id in ipairs( common ) do
-			qm.Data:AddRow( {
-				Command = id;
-				TimesUsed = 0;
-			} )
+	qm.Data:GetAll( function( q, d )
+		if not d then
+			local common = { "kick", "ban", "rank" }
+			for _, id in ipairs( common ) do
+				qm.Data:AddRow( {
+					Command = id;
+					TimesUsed = 0;
+				} )
+				table.insert( qm.Starred, { Command = id, TimesUsed = 0 } )
+			end
+		else
+			qm.Starred = d;
 		end
-	end
 		
+		PrintTable( qm.Starred )
+	end )
+
 	exsto.Menu.QM = exsto.Menu.CreatePage( "quickmenu", initQuickMenu )
 		exsto.Menu.QM:SetTitle( "Quick Menu" )
 		exsto.Menu.QM:OnShowtime( mainOnShowtime )
