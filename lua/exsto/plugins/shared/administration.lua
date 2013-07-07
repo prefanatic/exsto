@@ -123,6 +123,7 @@ if SERVER then
 		end )
 	
 	end
+	PLUGIN:SetHookPriority( "player_connect", 1 )
 	
 	function PLUGIN:player_disconnect( data )
 		--PrintTable( data )
