@@ -116,7 +116,7 @@ function PLUGIN:PlayerDeath( ply )
 	self:SaveEvent( self:Player( ply ) .. " has died.", "player" )
 end
 
-function PLUGIN:ExInitSpawn( ply, sid, uid )
+function PLUGIN:ExPlayerAuthed( ply, sid, uid )
 	self:SaveEvent( self:Player( ply ) .. " has joined the game.", "player" )
 end
 
