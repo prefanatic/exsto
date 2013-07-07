@@ -116,11 +116,17 @@ function PLUGIN:PlayerDeath( ply )
 	self:SaveEvent( self:Player( ply ) .. " has died.", "player" )
 end
 
-function PLUGIN:ExPlayerAuthed( ply, sid, uid )
-	self:SaveEvent( self:Player( ply ) .. " has joined the game.", "player" )
+function PLUGIN:player_connect( data )
+	exsto.Print( exsto_CONSOLE_LOGO, COLOR.NAME, data.name, COLOR.NORM, "(" .. data.networkid .. ") has joined." )
+	self:SaveEvent( data.name .. "(" .. data.networkid .. ") has joined the game.", "player" )
+end
+
+function PLUGIN:ExPlayerAuthed( ply )
+	self:SaveEvent( self:Player( ply ) .. " has been authed.", "player" )
 end
 
 function PLUGIN:PlayerDisconnected( ply )
+	exsto.Print( exsto_CONSOLE_LOGO, COLOR.NAME, ply:Nick(), COLOR.NORM, "(" .. ply:SteamID() .. ") has disconnected." )
 	self:SaveEvent( self:Player( ply ) .. " has disconnected!", "player" )
 end
 
