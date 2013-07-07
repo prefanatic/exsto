@@ -107,7 +107,7 @@ if SERVER then
 		
 		exsto.BanDB:GetData( data.networkid, "BannedAt, Length, Reason", function( q, d )
 			if not d then callHook( data ) return end
-			local bannedAt, banLen, banReason = d.BannedAt, d.Length, d.Reason
+			local bannedAt, banLen, banReason = tonumber( d.BannedAt ), tonumber( d.Length ), d.Reason
 
 			-- If hes perma banned, designated by length == 0
 			if banLen == 0 then self:Drop( data.userid, "You are perma-banned!" ) return end

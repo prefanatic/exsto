@@ -118,14 +118,20 @@ end
 
 -- Hardcoded function if this API doesn't have any other methods to set mysql information.  This is just an API, not a handle-all.
 -- Developers should implement their own way of setting the mysql information.
+local function q( ply )
+	if !ply:EntIndex() == 0 and game.IsDedicated() then
+		ply:PrintMessage( HUD_PRINTCONSOLE, "This command can only be run on the server console!" )
+		return false
+	elseif ply:EntIndex() == 0 or ply:IsListenServerHost() then
+		return true
+	end
+end
 local function p( msg, ply )
 	if ply:EntIndex() == 0 then print( msg ) return end
 	ply:PrintMessage( HUD_PRINTCONSOLE, msg )
 end
 function FEL.HardcodeMySQLSet( ply, _, args )
-	if !ply:EntIndex() == 0 and game.IsDedicated() then
-		ply:PrintMessage( HUD_PRINTCONSOLE, "This command can only be run on the server console!" )
-	elseif ply:EntIndex() == 0 or ply:IsListenServerHost() then
+	if q( ply ) then
 		if !args[ 1 ] or !args[ 2 ] or !args[ 3 ] or !args[ 4 ] then
 			p( "Invalid arguments!  We need the username, password, database, and the host: in that order.", ply )
 			return
@@ -135,6 +141,32 @@ function FEL.HardcodeMySQLSet( ply, _, args )
 	end
 end
 concommand.Add( "FELSetMySQLInformation", FEL.HardcodeMySQLSet )
+
+function FEL.DropTable( ply, _, args )
+	if q( ply ) then
+		if !args[ 1 ] then
+			p( "No table entered!", ply )
+			return
+		end
+		local db = FEL.GetDatabase( args[ 1 ] )
+		if not db then
+			p( "No table named '" .. args[ 1 ] .. "'", ply )
+			return
+		end
+		p( "Dropping table '" .. db:GetName() .. "'", ply )
+		db:Reset();
+	end
+end
+concommand.Add( "FELDropTable", FEL.DropTable )
+
+function FEL.PrintDatabases( ply, _, args )
+	if q( ply ) then
+		for _, db in pairs( FEL.GetDatabases() ) do
+			p( "Database: " .. db:GetName(), ply )
+		end
+	end
+end
+concommand.Add( "FELListTables", FEL.PrintDatabases )
 
 function FEL.SaveSettings()
 	file.Write( FEL.ConfigFile, von.serialize( FEL.Config ) )
@@ -849,21 +881,29 @@ function db:DataInconsistancies( data )
 	return true
 end
 
-function db:QOSCheck() -- Quality of Service brother....
+function db:QOSCheck( data ) -- Quality of Service brother....
+	if data == nil then return nil end
+	
+	local d = data
 	local columnTypes = {}
 	for column, queryUsed in pairs( self.Columns ) do
 		columnTypes[ column ] = self:GetColumnType( column )
 	end
 	
-	for _, slot in ipairs( self.Cache._cache ) do
+	for _, slot in ipairs( data ) do
 		for column, value in pairs( slot ) do
+			if value == "NULL" then
+				d[_][ column ] = nil
+			end
+			
 			if columnTypes[ column ] == "number" then
-				self.Cache._cache[ _ ][ column ] = tonumber( value )
+				d[_][ column ] = tonumber( value )
 			elseif columnTypes[ column ] == "string" then
-				self.Cache._cache[ _ ][ column ] = tostring( value )
+				d[_][ column ] = tostring( value )
 			end
 		end
 	end
+	return d
 end
 
 function db:AddRow( data, callback )
@@ -921,7 +961,7 @@ function db:GetAll( callback )
 		return self:Query( "SELECT * FROM " .. self:GetName() .. ";", false )
 	end
 	
-	self:Query( "SELECT * FROM " .. self:GetName() .. ";", true, callback )
+	self:Query( "SELECT * FROM " .. self:GetName() .. ";", true, function( q, d ) callback( q, self:QOSCheck( d ) ) end )
 end
 
 function db:ReadAll()
@@ -939,7 +979,7 @@ function db:GetRow( key, callback )
 		return self:Query( "SELECT * FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", false )
 	end
 	
-	self:Query( "SELECT * FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", true, function( q, d ) callback( q, d[1] ) end )
+	self:Query( "SELECT * FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", true, function( q, d ) callback( q, self:QOSCheck( d[1] ) ) end )
 end
 
 function db:GetData( key, reqs, callback )
@@ -962,7 +1002,7 @@ function db:GetData( key, reqs, callback )
 	
 	self:Query( "SELECT " .. reqs .. " FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", true, 
 		function( q, d )
-			callback( q, d and d[1] or nil ) 
+			callback( q, self:QOSCheck( d and d[1] or nil ) ) 
 		end 
 	)
 end

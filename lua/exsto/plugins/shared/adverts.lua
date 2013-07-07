@@ -42,26 +42,31 @@ if SERVER then
 			banner = 2;
 			center = 3;
 		}
-		
-		if not file.Read( "exsto/temporary/adverts_created.txt", "DATA" ) then -- Create an example advert
-			local msg = "[c=COLOR,NORM] This server is running [c=COLOR,EXSTO] Exsto [c=COLOR,NORM] - [c=COLOR,NAME] " .. exsto.VERSION
-			self.DB:AddRow( {
-				ID = "example";
-				Display = "Advert Example";
-				Contents = von.serialize( exsto.CreateColoredPrint( msg ) );
-				StringContents = msg;
-				Location = 1;
-				Delay = 1;
-				Data = von.serialize( {} );
-				Enabled = 0;
-			} )
-			file.Write( "exsto/temporary/adverts_created.txt", "1" )
-		end
-			
-		
+
 		-- Throw our saved data into our own table.
+		self:RefreshData()
+		
+	end
+	
+	function PLUGIN:RefreshData()
 		self.DB:GetAll( function( q, d )
-			for _, data in pairs( d ) do
+			if not d then
+				local msg = "[c=COLOR,NAME] This [c=COLOR,NORM] is an example advert!";
+				self.DB:AddRow( {
+					ID = "example";
+					Display = "Advert Example";
+					Contents = von.serialize( exsto.CreateColoredPrint( msg ) );
+					StringContents = msg;
+					Location = 1;
+					Delay = 1;
+					Data = von.serialize( {} );
+					Enabled = 0;
+				} )
+				timer.Simple( 0.5, function() self:RefreshData() end )
+				return
+			end
+			
+			for _, data in pairs( d ) do				
 				self.Adverts[ data.ID ] = {
 					ID = data.ID;
 					Display = data.Display;
@@ -72,12 +77,11 @@ if SERVER then
 					Data = von.deserialize( data.Data );
 					Enabled = data.Enabled
 				}
-				
+			
 				-- Start the advert
 				self:StartAdvert( data.ID )
 			end
 		end )
-		
 	end
 	
 	function PLUGIN:ExDeleteAdvert( reader )
