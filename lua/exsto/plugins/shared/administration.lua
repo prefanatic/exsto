@@ -112,9 +112,7 @@ if SERVER then
 			-- If hes perma banned, designated by length == 0
 			if banLen == 0 then self:Drop( data.userid, "You are perma-banned!" ) return end
 			
-			banLen = banLen * 60
-			
-			local timeleft = string.ToMinutesSeconds( ( banLen + bannedAt ) - os.time() ) 
+			local timeleft = exsto.NiceTime( ( banLen + bannedAt ) - os.time() ) 
 			
 			-- Make sure we remove his ban if it has expired.
 			if banLen + bannedAt <= os.time() then exsto.BanDB:DropRow( data.networkid ) self:ResendBans() callHook( data ) return end
@@ -279,7 +277,7 @@ if SERVER then
 			if !string.match( steamid, "STEAM_[0-5]:[0-9]:[0-9]+" ) and steamid != "BOT" then
 				-- We don't have a match.  Try checking our ban list for his name like this.
 				for _, ban in ipairs( data ) do
-					if ban.Name == steamid then
+					if ban.Name:lower() == steamid:lower() then
 						-- We found a name of a player; unban him like this.
 						dataUsed = true
 						steamid = ban.SteamID
@@ -409,6 +407,7 @@ if SERVER then
 	 })
 	PLUGIN:RequestQuickmenuSlot( "lookup", "Lookup Info" )]]
 
+	-- Hobo's thing.
 	function timeToString(time)
 		local ttime = time or 0
 		local s = ttime % 60
@@ -420,7 +419,7 @@ if SERVER then
 		local d = ttime % 7
 		local w = math.floor(ttime / 7)
 		local str = ""
-		str = (w>0 and w.." week(s) " or "")..(d>0 and d.."day(s) " or "")
+		str = (w>0 and w.." week(s) " or "")..(d>0 and d.." day(s) " or "")
 		
 		return string.format( str.."%02i hour(s) %02i minute(s) %02i second(s)", h, m, s )
 	end	  
