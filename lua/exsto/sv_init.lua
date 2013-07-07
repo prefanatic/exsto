@@ -55,6 +55,9 @@
 	exstoClient( "menu/cl_skin.lua" )
 	exstoClient( "menu/cl_page.lua" )
 	exstoClient( "menu/cl_menu.lua" )
+	
+	-- This is fucking annoying. 
+	RunConsoleCommand( "sv_kickerrornum", 0 )
 
 --[[ -----------------------------------
 	Category:  Player Utils

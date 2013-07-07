@@ -50,8 +50,17 @@ if SERVER then
 		self.DB:GetAll( function( q, d )
 			for rID, rank in pairs( exsto.Ranks ) do
 				local f = false
-				for _, d in ipairs( d ) do
-					if d.ID == rID then f = true break end
+				for _, r in ipairs( d or {} ) do
+					if r.ID == rID then 
+						self.Storage[ r.ID ] = {
+							Props = self:VonDeserialize( r.Props );
+							Stools = self:VonDeserialize( r.Stools );
+							Entities = self:VonDeserialize( r.Entities );
+							Sweps = self:VonDeserialize( r.Sweps );
+						}
+						f = true
+						break
+					end
 				end
 				
 				if not f then
@@ -64,7 +73,6 @@ if SERVER then
 					} )
 				end
 			end
-			self:RefreshStorage()
 		end )
 		
 		-- Restriction types
@@ -213,6 +221,9 @@ if SERVER then
 	PLUGIN:CreateReader( "ExUpdateRestriction", PLUGIN.UpdateRestriction )
 	
 	function PLUGIN:UpdateEntry( w, id, data, class, enabled )
+		if not self.Storage[ id ] then self.Storage[ id ] = {} end
+		if not self.Storage[ id ][ self:GetRestrictionType( w ) ] then self.Storage[ id ][ self:GetRestrictionType( w ) ] = {} end
+			
 		local f
 		for k, d in pairs( data ) do
 			if d.Class == class then
@@ -268,7 +279,7 @@ if SERVER then
 			c( von.deserialize( data ) )
 		end )]]
 		
-		return self.Storage[ id ][ self:GetRestrictionType( w ) ]
+		return self.Storage[ id ] and self.Storage[ id ][ self:GetRestrictionType( w ) ] or {}
 	end
 	
 	function PLUGIN:NoLimitRank( caller, rank )
