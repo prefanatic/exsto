@@ -402,28 +402,30 @@ end
 --[[ -----------------------------------
 	Function: exsto.NiceTime
 	Description: Returns a number in a nice string
+	Input: Minutes
      ----------------------------------- ]]
 function exsto.NiceTime( num )
-	--[[local ret, int, dec = "", 0, 0
+	local int, dec, rec = 0, 0, ""
 	
-	int, dec = math.modf( 7 * 24 * 60 * num ) -- week
-	if int > 0 then
-		ret = int .. " weeks, "
+	int, dec = math.modf( num / 60 / 24 / 7 )
+	if int > 0 then 
+		rec = int .. " weeks, " 
+		num = num - ( int * 60 * 24 * 7 )
 	end
 	
-	int, dec = math.modf( 24 * 60 * dec ) -- days
+	int, dec = math.modf( num / 60 / 24 )
 	if int > 0 then
-		ret = ret .. int .. " days, "
+		rec = rec .. int .. " days, "
+		num = num - ( int * 60 * 24 )
 	end
 	
-	int, dec = math.modf( 60 * dec ) -- hours
+	int, dec = math.modf( num / 60 )
 	if int > 0 then
-		ret = ret .. int .. " hours, "
+		rec = rec .. int .. " hours, "
+		num = num - ( int * 60 )
 	end
 	
-	int, dec = math.modf( dec )]]
-	
-	return num .. " minutes"
+	return rec .. num .. " minutes."
 end
 
 --[[ -----------------------------------
