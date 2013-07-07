@@ -374,8 +374,6 @@ function exsto.InitQuickMenu()
 		else
 			qm.Starred = d;
 		end
-		
-		PrintTable( qm.Starred )
 	end )
 
 	exsto.Menu.QM = exsto.Menu.CreatePage( "quickmenu", initQuickMenu )
