@@ -32,6 +32,13 @@ if SERVER then
 			self.Sayings = string.Explode( "\n", file.Read( "exsto/gimps.txt" ) )
 		end
 		
+		self.DB = FEL.CreateDatabase( "exsto_plugin_mute" )
+			self.DB:SetDisplayName( "Persistent Mute" )
+			self.DB:ConstructColumns( {
+				ID = "VARCHAR(255):primary:not_null";
+				Muted = "TINYINT";
+			} )
+		
 		util.AddNetworkString( "ExMutePlayer" )
 	end
 
@@ -93,7 +100,7 @@ if SERVER then
 	})
 	PLUGIN:RequestQuickmenuSlot( "ungimp", "Ungimp" )
 
-	function PLUGIN:Mute( owner, ply )
+	function PLUGIN:Mute( owner, ply, persist )
 		if ply._IsMuted then
 			return { owner, COLOR.NAME, ply:Nick(), COLOR.NORM, " is already muted!" }
 		end
@@ -106,19 +113,31 @@ if SERVER then
 			sender:AddBool( true ) -- Designates if we're muting.
 		sender:Send()
 		
+		local wording = " has muted "
+		if persist then
+			wording = " has persistently muted "
+			
+			self.DB:AddRow( {
+				ID = ply:SteamID();
+				Muted = 1;
+			} )
+		end
+		
 		return {
 			Activator = owner,
 			Player = ply,
-			Wording = " has muted ",
+			Wording = wording,
 		}
 	end
 	PLUGIN:AddCommand( "mute", {
 		Call = PLUGIN.Mute,
-		Desc = "Allows users to mute other players.",
+		Desc = "Allows users to mute other players.  Persist allows muting across server restarts.",
 		Console = { "mute" },
 		Chat = { "!mute" },
-		ReturnOrder = "Victim",
-		Args = {Victim = "PLAYER"},
+		Arguments = {
+			{ Name = "Victim", Type = COMMAND_PLAYER };
+			{ Name = "Persist", Type = COMMAND_BOOLEAN, Optional = false };
+		};
 		Category = "Chat",
 	})
 	PLUGIN:RequestQuickmenuSlot( "mute", "Mute" )
@@ -134,6 +153,16 @@ if SERVER then
 			sender:AddEntity( ply )
 			sender:AddBool( false )
 		sender:Send()
+		
+		-- Secretly do this.
+		self.DB:GetAll( function( q, d )
+			if not d then return end
+			for _, p in ipairs( d ) do
+				if ( p.ID == ply:SteamID() ) and p.Muted == 1 then
+					self.DB:DropRow( p.ID )
+				end
+			end
+		end )
 		
 		return {
 			Activator = owner,
@@ -222,6 +251,20 @@ if SERVER then
 				sender:Send()
 			end
 		end
+		
+		-- Look at our persistance and see if we need to mute this dude.
+		self.DB:GetAll( function( q, d )
+			if not d then return end
+			for _, p in ipairs( d ) do
+				if ( p.ID == ply:SteamID() ) and p.Muted == 1 then
+					ply._IsMuted = true
+					local sender = exsto.CreateSender( "ExMutePlayer", player.GetAll() )
+						sender:AddEntity( ply )
+						sender:AddBool( true )
+					sender:Send()
+				end
+			end
+		end )
 	end
 	
 elseif CLIENT then
