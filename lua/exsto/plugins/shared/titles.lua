@@ -36,7 +36,7 @@ if SERVER then
 
 	function PLUGIN:ExInitSpawn( ply, sid )
 		-- Load their data.
-		exsto.HeadDB:GetData( sid, "Title", function( q, d )
+		exsto.HeadDB:GetRow( sid, function( q, d )
 			-- If their title doesn't exist, don't continue.
 			if !d then return end
 			

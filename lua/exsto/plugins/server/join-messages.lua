@@ -52,7 +52,7 @@ function PLUGIN:ExPlayerConnect( data )
 	local name = data.name
 	local addr = data.address
 
-	exsto.UserDB:GetData( data.networkid, "Rank", function( q, d )
+	exsto.UserDB:GetRow( data.networkid, function( q, d )
 		if !d then append = "has connected for the first time!" end
 		
 		local countryStyle = ""

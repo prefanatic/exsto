@@ -87,7 +87,7 @@ if SERVER then
 	end
 	
 	function PLUGIN:ExPlayerAuthed( ply )	
-		self.DB:GetData( ply:SteamID(), "Time, Last", function( q, d )			
+		self.DB:GetRow( ply:SteamID(), function( q, d )			
 			ply:SetJoinTime( CurTime() )
 			
 			if not d then
