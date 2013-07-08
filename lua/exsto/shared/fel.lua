@@ -481,9 +481,11 @@ function db:ConstructColumns( columnData )
 	self:Debug( "Running table construction query.", 2 )
 	self:Query( self:ConstructQuery( "create" ), false )
 	
-	--[[self:GetCacheData( false )
-	self:CheckIntegrity()	
-	self:QOSCheck()	]]
+	-- This has become the gayest thing ever.
+	if not self._mysqlSuccess then
+		self:GetCacheData( false ) -- We want to reimplement the cache on SQLite.
+	end
+	--self:CheckIntegrity()	
 end
 
 function db:SetRefreshRate( time )
@@ -505,7 +507,7 @@ local function pass3( self, data, tbl, index, max )
 	table.Add( tbl, data )
 	
 	if index == max then
-		self.Cache._cache = table.Copy( tbl )
+		self.Cache._cache = self:QOSCheck( table.Copy( tbl ) )
 		if self.CacheUpdated then
 			self:CacheUpdated()
 		end
@@ -513,7 +515,7 @@ local function pass3( self, data, tbl, index, max )
 end
 
 local function pass2( self, data )
-	self.Cache._cache = data or {}
+	self.Cache._cache = self:QOSCheck( data or {} )
 	if self.CacheUpdated then
 		self:CacheUpdated()
 	end
@@ -911,43 +913,49 @@ function db:AddRow( data, callback )
 	-- I hate you inconsistencies; lets be redundant and check our data vs data types.
 	if !self:DataInconsistancies( data ) then return end
 	
-	if not callback then
-		self:Debug( "No callback given for '" .. self:GetName() .. ":AddRow()'  We are going to thread it anyways!  This 'might' cause issues.", 1 )
-	end
-	
 	if self._mysqlSuccess then
+	
+		if not callback then
+			self:Debug( "No callback given for '" .. self:GetName() .. ":AddRow()'  We are going to thread it anyways!  This 'might' cause issues.", 1 )
+		end
 		self:Query( self:ConstructQuery( "insert_duplicate", data ), true, callback )
-	else
-		self:Query( self:ConstructQuery( "new", data ), true, callback )
-	end
-	
-	
-	--[[  We no longer are using a cache.  We're just going to commit and do our shit.
-	-- Check our _new and _changed first brother.
-	if self:CheckCache( "_new", data ) then
-		table.Merge( self.Cache._new[ self._LastKey ], data )
-		self:PushSaves()
-		self:Think( true )
-		return
-	elseif self:CheckCache( "_changed", data ) then
-		table.Merge( self.Cache._changed[ self._LastKey ], data )
-		self:PushSaves()
-		self:Think( true )
-		return
-	end
 		
-	if self:CheckCache( "_cache", data ) then
-		table.Merge( self.Cache._cache[ self._LastKey ], data )		
-		self:TblInsert( self.Cache._changed, data )
-		self:PushSaves()
-		self:Think( true )
-		return
 	else
-		self:TblInsert( self.Cache._cache, data )
-		self:TblInsert( self.Cache._new, data )
-		self:PushSaves()
-		self:Think( true )
-	end]]
+	
+		-- We have the data we want to save.  Add in what we're missing.
+		local pk = self.Columns._PrimaryKey
+		local key = data[ pk ]
+		local d, slot = nil, nil
+		
+		if not key then
+			self:Error( "No primary key given for data save!  We have NO idea where to put this data. :(" )
+			return
+		end
+		
+		for _, row in ipairs( self.Cache._cache ) do
+			if key == row[ pk ] then d = row slot = _ break end
+		end
+
+		if not d then
+			self:Query( self:ConstructQuery( "new", data ), true, function( q, d )
+				if callback then
+					callback( q, d )
+				end
+				table.insert( self.Cache._cache, data )
+			end )
+			return
+		end
+		-- We have the cached data as d.  Fill in with our given data and save it all.
+		for k, v in pairs( data ) do
+			d[ k ] = v
+		end
+		
+		-- Update the cache.
+		self.Cache._cache[ slot ] = d;
+
+		self:Query( self:ConstructQuery( "new", d ), true, callback )
+	end
+
 end
 
 function db:TblInsert( tbl, data )
@@ -955,6 +963,16 @@ function db:TblInsert( tbl, data )
 end
 
 function db:GetAll( callback )
+	if not self._mysqlSuccess then
+		PrintTable( self.Cache._cache )
+		if callback then 
+			callback( nil, table.Copy( self.Cache._cache ) )
+			return
+		else
+			return table.Copy( self.Cache._cache )
+		end
+	end
+	
 	if not callback then
 		self:Debug( "No callback on '" .. self:GetName() .. ":GetAll()', we are going to halt the server due to this!", 1 )
 		
@@ -969,9 +987,25 @@ function db:ReadAll()
 end
 
 function db:GetRow( key, callback )
-	--[[for _, rowData in ipairs( self.Cache._cache ) do
-		if key == rowData[ self.Columns._PrimaryKey ] then return rowData end
-	end]]
+	if not self._mysqlSuccess then
+		for _, rowData in ipairs( self.Cache._cache ) do
+			if key == rowData[ self.Columns._PrimaryKey ] then
+				if callback then
+					callback( nil, rowData )
+					return
+				else
+					return rowData
+				end
+			end
+		end
+		if callback then
+			callback( nil, nil )
+			return
+		else
+			return nil
+		end
+		return
+	end
 	
 	if not callback then
 		self:Debug( "No callback on '" .. self:GetName() .. ":GetRow()', we are going to halt the server due to this!", 1 )
@@ -983,16 +1017,23 @@ function db:GetRow( key, callback )
 end
 
 function db:GetData( key, reqs, callback )
-	--[[local data = self:GetRow( key )
-	
-	if !data then return end
-	
-	local ret = {}
-	for _, req in ipairs( string.Explode( ", ", reqs ) ) do
-		table.insert( ret, data[ req:Trim() ] )
+	if not self._mysqlSuccess then
+		local data = self:GetRow( key )
+		
+		if !data then return end
+		
+		local ret = {}
+		for _, req in ipairs( string.Explode( ", ", reqs ) ) do
+			table.insert( ret, data[ req:Trim() ] )
+		end
+		
+		if callback then
+			callback( nil, ret )
+		else
+			return ret
+		end
+		return
 	end
-	
-	return unpack( ret )]]
 	
 	if not callback then
 		self:Debug( "No callback on '" .. self:GetName() .. ":GetData()', we are going to halt the server due to this!", 1 )
@@ -1008,15 +1049,16 @@ function db:GetData( key, reqs, callback )
 end
 
 function db:DropRow( key, callback )
-	--for _, rowData in ipairs( self.Cache._cache ) do
-		--if key == rowData[ self.Columns._PrimaryKey ] then 
-			--table.remove( self.Cache._cache, _ )
-			
-			key = type( key ) == "string" and self:Escape( key ) or key
-			self:Query( string.format( self.Queries.Delete, self.dbName, self.Columns._PrimaryKey, key ), true, callback )
-			--break
-		--end
-	--end
+	if not self._mysqlSuccess then
+		for _, rowData in ipairs( self.Cache._cache ) do
+			if key == rowData[ self.Columns._PrimaryKey ] then 
+				table.remove( self.Cache._cache, _ )
+			end
+		end
+	end
+
+	key = type( key ) == "string" and self:Escape( key ) or key
+	self:Query( string.format( self.Queries.Delete, self.dbName, self.Columns._PrimaryKey, key ), true, callback )
 	
 	--[[ Check our queued data
 	for _, rowData in ipairs( self.Cache._new ) do
