@@ -79,10 +79,10 @@ function exstoClientFolder( loc )
 end
 
 function exstoResources()
-	local fs = file.Find( "materials/exsto/*", "GAME" )
+	--[[local fs = file.Find( "materials/exsto/*", "GAME" )
 	for _, fl in ipairs( fs ) do
 		resource.AddFile( "materials/exsto/" .. fl )
-	end
+	end]]
 	local fs = file.Find( "resource/fonts/*.ttf", "GAME" )
 	for _, fl in ipairs( fs ) do
 		resource.AddFile( "resource/fonts/" .. fl )
