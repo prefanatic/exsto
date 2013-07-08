@@ -20,7 +20,7 @@
 	Category:  Script Loading/Resources
     ----------------------------------- ]]
 	--resource.AddFile( "materials/gwenskin/exsto_main.png")  We've moved our resources to workshop, now that we can do resource.AddWorkshop.  Thanks garry!
-	--exstoResources()
+	exstoResources()
 	
 	resource.AddWorkshop( "157864671" )
 	
