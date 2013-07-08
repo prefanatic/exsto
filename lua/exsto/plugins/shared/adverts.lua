@@ -354,7 +354,7 @@ if SERVER then
 			exsto.Print( exsto_CHAT_ALL, COLOR.NAME, caller:Nick(), COLOR.NORM, " has enabled the advert ", COLOR.NAME, data.Display )
 			return
 		else
-			exto.Print( exsto_CHAT, caller, COLOR.NORM, "The advert is already ", COLOR.NAME, "enabled" )
+			exsto.Print( exsto_CHAT, caller, COLOR.NORM, "The advert is already ", COLOR.NAME, "enabled" )
 			return
 		end
 		
