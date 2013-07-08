@@ -425,7 +425,7 @@ function exsto.NiceTime( num )
 		num = num - ( int * 60 )
 	end
 	
-	return rec .. num .. " minutes."
+	return rec .. math.Round( num ) .. " minutes"
 end
 
 --[[ -----------------------------------
