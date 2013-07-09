@@ -964,7 +964,6 @@ end
 
 function db:GetAll( callback )
 	if not self._mysqlSuccess then
-		PrintTable( self.Cache._cache )
 		if callback then 
 			callback( nil, table.Copy( self.Cache._cache ) )
 			return
