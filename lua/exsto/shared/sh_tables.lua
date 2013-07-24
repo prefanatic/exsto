@@ -242,6 +242,30 @@ function exsto.GetClosestString( str, possible, member, ply, text )
 end
 
 --[[ -----------------------------------
+	Function: exsto.CreatePaste( title, contents )
+	Description: Creates a pastebin.com paste, returns the ID.
+     ----------------------------------- ]]
+function exsto.CreatePaste( title, contents, callback )
+	http.Post( "http://pastebin.com/api/api_post.php", {
+		api_option = "paste";
+		api_dev_key = "eb2f636561d520d76dfb51ec3e6a49e2";
+		api_paste_private = "1";
+		api_paste_name = title;
+		api_paste_code = contents;
+	}, 	function( str )
+			local id = string.Explode( "/", str )
+			if callback then
+				callback( id[4]	)		
+			end
+	end,
+		function( str )
+			exsto.ErrorNoHalt( "exsto.CreatePaste failed." )
+			print( str )
+	end
+	)
+end
+		
+--[[ -----------------------------------
 	Function: exsto.SmartNumber
 	Description: Returns the number in a table that has no index.
      ----------------------------------- ]]
