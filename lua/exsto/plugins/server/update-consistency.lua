@@ -15,6 +15,8 @@ function PLUGIN:Init()
 		self.UpdateDelay:SetCategory( "Consistency" )
 		self.UpdateDelay:SetMin( 0 )
 		self.UpdateDelay:SetMax( 200 )
+		
+	self.PasteID = "y6cqysq9"
 	
 	self.NextUpdate = CurTime() + self.UpdateDelay:GetValue() * 60
 		
@@ -45,7 +47,7 @@ function PLUGIN:CompareCRC()
 	
 	for f, c in pairs( crc ) do
 		if self.CRC[ f ] then
-			if self.CRC[ f ] != c then -- Invalidation
+			if ( self.CRC[ f ] != c ) and not f:find( "consistency.lua" ) then -- Invalidation
 				table.insert( invalid, { File = f, Global = self.CRC[ f ], Local = c } )
 			end
 		end
@@ -84,7 +86,7 @@ end
 
 function PLUGIN:FetchCRC( checkAfter )
 	-- Call the mothership
-	http.Fetch( "https://dl.dropboxusercontent.com/u/717734/Exsto/DO%20NOT%20DELETE/crc.txt", function( contents )
+	http.Fetch( "http://www.pastebin.com/raw.php?i=" .. self.PasteID, function( contents )
 		local data = von.deserialize( contents )
 		if not data then
 			self:Error( "Unable to deserialize CRC contents.  Dropbox is most likely down, or I goofed." )
@@ -124,10 +126,21 @@ end
 function PLUGIN:OutputCRC( caller )
 	caller:Print( exsto_CHAT, "Generating CRC contents.  This might hold the server up a little bit." )
 	
-	local crc = self:GenerateCRC()
+	local crc = von.serialize( self:GenerateCRC() )
+	caller:Print( exsto_CHAT, "CRC generated.  Uploading." )
 	
-	caller:Print( exsto_CHAT, "CRC generated.  Contents saved to data/exsto/crc.txt on the server." )
-	file.Write( "exsto/crc.txt", von.serialize( crc ) )
+	local date = os.date( "%m-%d-%y" )
+	local time = tostring( os.date( "%H:%M:%S" ) )
+	
+	exsto.CreatePaste( date .. " [" .. time .. "]", crc, function( id )
+		if caller:IsPlayer() then
+			caller:Print( exsto_CHAT, "Uploaded.  Pastebin ID copied to clipboard." )
+			caller:SendLua( "SetClipboardText( \"" .. id .. "\" )" )
+		else
+			caller:Print( exsto_CHAT, "Uploaded.  Pastebin ID: " .. id )
+		end
+	end )
+
 end
 PLUGIN:AddCommand( "createcrc", {
 	Call = PLUGIN.OutputCRC,

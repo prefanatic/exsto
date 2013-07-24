@@ -52,7 +52,7 @@ function PLUGIN:Init()
 	
 	self.Messages = exsto.CreateVariable( "ExGraveMessageLocation",
 		"Message Location",
-		"http://dl.dropbox.com/u/717734/Exsto/DO%20NOT%20DELETE/deathmessages.txt",
+		"http://pastebin.com/raw.php?i=tJtqETT3",
 		"Where the graves messages are located.  Can be HTTP or a file.  If a file, type file: before the location, like file:gravedeath.txt if located in the data folder."
 	)
 	self.Messages:SetCategory( "Graves" )
