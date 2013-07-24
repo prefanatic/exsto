@@ -56,7 +56,7 @@ function PLUGIN:ExVoteFinished( data )
 		
 		local map = self.MapList[ data.Won ]
 		
-		local count = exsto.VotemapDB:GetData( map, "Played" )
+		local count = exsto.VotemapDB:GetRow( map, "Played" )
 		if !count then count = 0 end
 		
 		-- Throw this into the statisitcs table
