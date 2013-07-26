@@ -43,35 +43,31 @@ if SERVER then
 			self.NextCacheUpdate:SetUnit( "Delay (minutes)" )
 			self.NextCacheUpdate:SetMin( 1 )
 		self.NextThink = CurTime() + ( self.NextCacheUpdate:GetValue() * 60 )
+		
+		self.ForceLoadoutRestriction = exsto.CreateVariable( "ExForceLoadoutRestriction", "Restrict Loadout", 0, "Enables or disables restrictions on player loadout." )
+			self.ForceLoadoutRestriction:SetCategory( "Restrictions" )
+			self.ForceLoadoutRestriction:SetBoolean()
+			self.ForceLoadoutRestriction:SetCallback( function( old, new )
+				if new == 1 then
+					self:OverrideGive()
+				else
+					if self.OldGive then
+						exsto.Registry.Player.Give = self.OldGive
+					end
+				end
+			end )
 			
 		self.Storage = {}
 		
 		-- Quality of service on the ranks database.
 		self.DB:GetAll( function( q, d )
-			for rID, rank in pairs( exsto.Ranks ) do
-				local f = false
-				for _, r in ipairs( d or {} ) do
-					if r.ID == rID then 
-						self.Storage[ r.ID ] = {
-							Props = self:VonDeserialize( r.Props );
-							Stools = self:VonDeserialize( r.Stools );
-							Entities = self:VonDeserialize( r.Entities );
-							Sweps = self:VonDeserialize( r.Sweps );
-						}
-						f = true
-						break
-					end
-				end
-				
-				if not f then
-					self.DB:AddRow( {
-						ID = rID;
-						Props = von.serialize( {} );
-						Stools = von.serialize( {} );
-						Entities = von.serialize( {} );
-						Sweps = von.serialize( {} );
-					} )
-				end
+			for _, r in ipairs( d or {} ) do
+				self.Storage[ r.ID ] = {
+					Props = self:VonDeserialize( r.Props );
+					Stools = self:VonDeserialize( r.Stools );
+					Entities = self:VonDeserialize( r.Entities );
+					Sweps = self:VonDeserialize( r.Sweps );
+				}
 			end
 		end )
 		
@@ -84,6 +80,12 @@ if SERVER then
 		}
 		
 		self.LimitHandler = {}
+		
+		timer.Simple( 1, function() self:OverrideGetCount() end )
+		
+		if self.ForceLoadoutRestriction:GetValue() == 1 then
+			self:OverrideGive()
+		end				
 	
 	end
 	
@@ -100,6 +102,14 @@ if SERVER then
 		end )
 	end
 	
+	function PLUGIN:OverrideGive()
+		self.OldGive = exsto.Registry.Player.Give
+		function exsto.Registry.Player:Give( w )
+			if not PLUGIN:Allowed( self, 1, w ) then return end
+			return PLUGIN.OldGive( self, w )
+		end
+	end
+	
 	function PLUGIN:OverrideGetCount()
 		self.OldGetCount = exsto.Registry.Player.GetCount
 		function exsto.Registry.Player.GetCount( s, ... )
@@ -110,12 +120,7 @@ if SERVER then
 		self.FuncTamperSeal = exsto.Registry.Player.GetCount
 	end
 	
-	function PLUGIN:Think()
-		if self.FuncTamperSeal != exsto.Registry.Player.GetCount then -- We've been overridden.
-			self:Debug( "GetCount has been tampered.  Over-riding.", 1 )
-			self:OverrideGetCount()
-		end
-		
+	function PLUGIN:Think()		
 		if CurTime() > self.NextThink then
 			self:Debug( "Updating restriction storage.", 1 )
 			self:RefreshStorage()
