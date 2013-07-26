@@ -25,6 +25,7 @@ FEL = {}
 		mysql_pass = "pass";
 		mysql_database = "main_db";
 		mysql_host = "127.0.0.1";
+		mysql_module = "mysqloo";
 		debug_level = 0;
 		mysql_databases = {};
 		backup_rates = {};
@@ -75,13 +76,32 @@ function FEL.Init()
 	FEL.ReadSettingsFile()
 	
 	-- Check and see if we need MySQL to operate.
-	if FEL.MySQLNeeded() and !mysqloo and SERVER then
-		local s, err = pcall( require, "mysqloo" )
+	local mod, id = FEL.GetMySQLModule()
+	if FEL.MySQLNeeded() and !mod and SERVER then
+		local s, err = pcall( require, id )
 		if !s then
-			ErrorNoHalt( "FEL --> Unable to load 'mysqloo'.  Make the bin is located in lua/bin and libmysql with srcds.\n" )
+			ErrorNoHalt( "FEL --> Unable to load '" .. id .. "'.  Make the bin is located in lua/bin and libmysql with srcds.\n" )
 			ErrorNoHalt( "FEL --> Defaulting to SQLite.\n" )
 		end
 	end
+end
+
+-- Lets hope this fixes us "crashing" on restarts and stuff.
+hook.Add( "ShutDown", "FELStartWaiting", function()
+	FEL.Print( "Lua environment shutting down!  Waiting on every query call until we're finished." )
+	FEL._holdQuery = true
+end )
+
+function FEL.GetMySQLModule()
+	if FEL.Config.mysql_module == "mysqloo" then
+		return mysqloo, "mysqloo"
+	elseif FEL.Config.mysql_module == "tmysql" then
+		return tmysql, "tmysql"
+	end
+end
+
+function FEL.GetMySQLModuleID()
+	return FEL.Config.mysql_module
 end
 
 function FEL.ConstructLocation()
@@ -99,6 +119,12 @@ function FEL.ReadSettingsFile()
 	
 		FEL.Config = von.deserialize( file.Read( FEL.ConfigFile ) )
 		
+		-- Check consistancy.
+		for id, val in pairs( FEL.DefaultConfig ) do
+			if not FEL.Config[ id ] then FEL.Config[ id ] = val end
+		end
+		FEL.SaveSettings();
+		
 		if FEL.Config[ 1 ] == "TableToKeyValue" then -- We're probably on the old util.TableToKeys.  Remove, sorry!
 			file.Write( FEL.ConfigFile, von.serialize( FEL.DefaultConfig ) )
 			FEL.Config = FEL.DefaultConfig
@@ -115,6 +141,11 @@ function FEL.SetMySQLInformation( user, pass, db, host )
 	FEL.Config.mysql_host = host or FEL.Config.mysql_host;
 	FEL.SaveSettings();
 end	
+
+function FEL.SetMySQLModule( module )
+	FEL.Config.mysql_module = module;
+	FEL.SaveSettings();
+end
 
 -- Hardcoded function if this API doesn't have any other methods to set mysql information.  This is just an API, not a handle-all.
 -- Developers should implement their own way of setting the mysql information.
@@ -168,6 +199,17 @@ function FEL.PrintDatabases( ply, _, args )
 end
 concommand.Add( "FELListTables", FEL.PrintDatabases )
 
+function FEL.SetMySQLModuleCom( ply, _, args )
+	if q( ply ) then
+		if args[ 1 ] == "mysqloo" or args[ 1 ] == "tmysql" then
+			FEL.SetMySQLModule( args[ 1 ] )
+		else
+			p( "The only valid modules are 'mysqloo' and 'tmysql'", ply )
+		end
+	end
+end
+concommand.Add( "FELSwitchMySQLModule", FEL.SetMySQLModuleCom )
+
 function FEL.SaveSettings()
 	file.Write( FEL.ConfigFile, von.serialize( FEL.Config ) )
 end
@@ -206,6 +248,25 @@ function FEL.Debug( msg, level )
 		print( "[FELDebug] " .. msg )
 	end
 end
+
+--[[ MySQL database parent.  We want to have FEL have overarching control over the database, not per-object.
+*****
+]]
+
+function FEL.InitMySQL()
+	if FEL.GetMySQLModuleID() == "mysqloo" then
+		if FEL._mysqlDB then FEL._mysqlDB = nil end
+		
+		FEL._mysqlDB = mysqloo.connect( FEL.Config.mysql_host, FEL.Config.mysql_user, FEL.Config.mysql_pass, FEL.Config.mysql_database )
+		FEL._mysqlDB:connect()
+		FEL._mysqlDB.onConnected = function( mysqldb ) self:OnMySQLConnect() end
+		FEL._mysqlDB.onConnectionFailed = function( mysqldb, err ) self:OnMySQLConnectFail( err ) end
+		FEL._mysqlDB:wait()
+	elseif FEL.GetMySQLModuleID() == "tmysql" then
+		tmysql.initialize( FEL.Config.mysql_host, FEL.Config.mysql_user, FEL.Config.mysql_pass, FEL.Config.mysql_database )
+	end
+end
+
 
 FEL.Init()
 
@@ -432,11 +493,16 @@ function db:InitMySQL()
 	if self._mysqlDB then self._mysqlDB = nil end
 	
 	self:Debug( "Creating MySQL object.", 2 )
-	self._mysqlDB = mysqloo.connect( FEL.Config.mysql_host, FEL.Config.mysql_user, FEL.Config.mysql_pass, FEL.Config.mysql_database )
-	self._mysqlDB:connect()
-	self._mysqlDB.onConnected = function( mysqldb ) self:OnMySQLConnect() end
-	self._mysqlDB.onConnectionFailed = function( mysqldb, err ) self:OnMySQLConnectFail( err ) end
-	self._mysqlDB:wait()
+	if FEL.GetMySQLModuleID() == "mysqloo" then
+		self._mysqlDB = mysqloo.connect( FEL.Config.mysql_host, FEL.Config.mysql_user, FEL.Config.mysql_pass, FEL.Config.mysql_database )
+		self._mysqlDB:connect()
+		self._mysqlDB.onConnected = function( mysqldb ) self:OnMySQLConnect() end
+		self._mysqlDB.onConnectionFailed = function( mysqldb, err ) self:OnMySQLConnectFail( err ) end
+		self._mysqlDB:wait()
+	elseif FEL.GetMySQLModuleID() == "tmysql" then
+		tmysql.initialize( FEL.Config.mysql_host, FEL.Config.mysql_user, FEL.Config.mysql_pass, FEL.Config.mysql_database )
+	end
+		
 end
 
 function db:ConstructColumns( columnData )
@@ -763,7 +829,7 @@ function db:Query( str, threaded, callback, ignoreDebug )
 		self._mysqlQuery.onError = function( q, err, qSTR ) self:OnQueryError( err, qSTR ) end
 		self._mysqlQuery:start()
 		
-		if threaded == false then -- If we request not to be threaded.
+		if ( threaded == false ) or FEL._holdQuery then -- If we request not to be threaded.
 			self._mysqlQuery:wait()
 			self:QueryEnd( ignoreDebug )
 			return self._mysqlQuery:getData()

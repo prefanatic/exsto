@@ -58,6 +58,13 @@ if SERVER then
 			exsto.MySQLHost:SetCallback( function( old, new ) 
 				FEL.SetMySQLInformation( nil, nil, nil, new )
 			end )
+			
+		exsto.MySQLModule = exsto.CreateVariable( "ExMySQLModule", "Module", FEL.Config.mysql_module, "The module Exsto will use for MySQL communication." )
+			exsto.MySQLModule:SetCategory( "MySQL" )
+			exsto.MySQLModule:SetPossible( "mysqloo" )
+			exsto.MySQLModule:SetCallback( function( old, new )
+				FEL.SetMySQLModule( new )
+			end )
 	end )
 	
 end
