@@ -21,7 +21,7 @@ function PLUGIN:Init()
 		{ pos = Vector( 0, 35, 60 ), ang = Angle( 0, 90, 0 ), mdl = self.Model2 },
 		{ pos = Vector( 0, -35, 60 ), ang = Angle( 0, 90, 0 ), mdl = self.Model2 },
 		{ pos = Vector( 0, 0, 110 ), ang = Angle( 90, 0, 0 ), mdl = self.Model1 },
-		{ pos = Vector( 0, 0, -5 ), ang = Angle( 90, 0, 0 ), mdl = self.Model1 },
+		{ pos = Vector( 0, 0, 0 ), ang = Angle( 90, 0, 0 ), mdl = self.Model1 },
 	}
 	
 	self.JailedLeavers = {}
@@ -93,6 +93,10 @@ function PLUGIN:Init()
 		
 		if time > 0 then timer.Simple(time,function() self:RemoveJail() end) end
 		self.JailTime = time
+		
+		-- Move us up a little bit to "close" the jail
+		local pos = self:GetPos()
+		self:SetPos( pos + Vector( 0, 0, 5 ) )
 		
 	end
 
