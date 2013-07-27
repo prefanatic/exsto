@@ -16,7 +16,7 @@ function PLUGIN:Init()
 		self.UpdateDelay:SetMin( 0 )
 		self.UpdateDelay:SetMax( 200 )
 		
-	self.PasteID = "2qLjd9yK"
+	self.PasteID = "9PGnWWRL"
 	
 	self.NextUpdate = CurTime() + self.UpdateDelay:GetValue() * 60
 		
