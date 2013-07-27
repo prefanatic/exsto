@@ -12,7 +12,7 @@ function PLUGIN:StartVotemap( caller )
 	if not self.Threshold then self.Threshold = {} end
 	
 	table.insert( self.Threshold, caller )
-	
+
 	if percent == 0 or math.floor( ( #self.Threshold / #player.GetAll() ) * 100 )  >= percent then
 		self:Votemap()
 		self.Threshold = {}
@@ -20,7 +20,8 @@ function PLUGIN:StartVotemap( caller )
 	end
 	
 	-- Calculate how many people are needed to start.
-	local needed = math.floor( #player.GetAll() / percent )
+	local have = #self.Threshold
+	local needed = math.floor( #player.GetAll() * ( percent / 100 ) ) - have
 	exsto.Print( exsto_CHAT_ALL, COLOR.NAME, tostring( needed ), COLOR.NORM, " more players needed to ", COLOR.NAME, "!votemap." )
 end
 PLUGIN:AddCommand( "votemap", {
@@ -57,7 +58,7 @@ function PLUGIN:Votemap()
 		-- Clean the map list and only let ttt maps go through.
 		for map, data in pairs( maplist ) do
 			if data.Category:lower():find( self.Filter:GetValue() ) then 
-				table.insert( lst, map ) 
+				table.insert( lst, map:gsub( "%.bsp", "" ) ) 
 				if !dt[ map ] then dt[ map ] = 0 end
 			end
 		end
