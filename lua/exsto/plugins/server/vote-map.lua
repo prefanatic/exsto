@@ -11,6 +11,14 @@ function PLUGIN:StartVotemap( caller )
 	local percent = self.StartThreshold:GetValue()
 	if not self.Threshold then self.Threshold = {} end
 	
+	-- Are we already here?
+	for _, p in ipairs( self.Threshold ) do
+		if p:SteamID() == caller:SteamID() then
+			caller:Print( exsto_CHAT, COLOR.NORM, "You have already used ", COLOR.NAME, "!votemap" )
+			return
+		end
+	end
+	
 	table.insert( self.Threshold, caller )
 
 	if percent == 0 or math.floor( ( #self.Threshold / #player.GetAll() ) * 100 )  >= percent then
@@ -21,7 +29,7 @@ function PLUGIN:StartVotemap( caller )
 	
 	-- Calculate how many people are needed to start.
 	local have = #self.Threshold
-	local needed = math.floor( #player.GetAll() * ( percent / 100 ) ) - have
+	local needed = math.ceil( #player.GetAll() * ( percent / 100 ) ) - have
 	exsto.Print( exsto_CHAT_ALL, COLOR.NAME, tostring( needed ), COLOR.NORM, " more players needed to ", COLOR.NAME, "!votemap." )
 end
 PLUGIN:AddCommand( "votemap", {
