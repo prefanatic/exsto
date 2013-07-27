@@ -224,14 +224,33 @@ elseif CLIENT then
 		PLUGIN.ActiveVote = {}
 		PLUGIN.Question = "#VOTEMSG"
 		PLUGIN.VoteData = {}
+		PLUGIN.VoteLarge.Icons = {}
 	end
 	exsto.CreateReader( "ExVoteClear", clrVote )
 	
 	local function updateVote( reader )
-		local id, val = reader:ReadShort(), reader:ReadShort()
+		local id, val, name = reader:ReadShort(), reader:ReadShort()
+		
+		--[[if not PLUGIN.VoteData[ id ] then -- this is new
+			if PLUGIN.VoteStyle == "large" then -- and we're super large.
+				local icon = vgui.Create( "DImageButton" )
+					icon:SetIcon( "exsto/greentick.png" )
+					icon:SetSize( 16, 16 )
+					icon.DoClick = function() end 
+					
+				exsto.Animations.Create( icon )
+				
+				if not PLUGIN.VoteLarge.Icons[ icon ]
+				table.insert( PLUGIN.VoteLarge.Icons[ id ], icon )
+			end
+		end]]
+		
 		PLUGIN.VoteData[ id ] = val
 		
-		if PLUGIN.VoteData[ id ] == 0 then PLUGIN.VoteData[ id ] = nil end
+		if PLUGIN.VoteData[ id ] == 0 then 
+			PLUGIN.VoteData[ id ] = nil 
+			--PLUGIN.VoteLarge.Icons[ id ]:Remove()
+		end
 		
 		if PLUGIN.VoteStyle == "large" then
 			PLUGIN.VoteLarge.List:Update()
@@ -295,6 +314,7 @@ elseif CLIENT then
 			self.VoteLarge.List:SetSpaceX( 12 )
 			self.VoteLarge.List:SetSpaceY( 10 )
 			self.VoteLarge.List:SetLayoutDir( TOP )
+			self.VoteLarge.Icons = {}
 			
 		local function countdownPaint( pnl )	
 			pnl._TIMEW = math.Approach( pnl._TIMEW, pnl:GetWide() - 20, FrameTime() * PLUGIN.TimeDelta )
@@ -308,15 +328,6 @@ elseif CLIENT then
 		end
 		self.VoteLarge.PaintOver = countdownPaint
 			
-		local function btnPaint( btn )
-			-- Votes under text
-			if !PLUGIN.VoteData[ btn._VoteIndex ] or PLUGIN.VoteData[ btn._VoteIndex ] == 0 then return end
-			surface.SetMaterial( PLUGIN.VoteCheck )
-			for I = 1, PLUGIN.VoteData[ btn._VoteIndex ] do
-				if I > 9 then return end
-				surface.DrawTexturedRect( 2 + ( I * 16 ), btn:GetTall() - 17, 16, 16 )
-			end
-		end
 		local function btnClick( btn )
 			PLUGIN:VoteOn( btn._VoteIndex )
 		end
@@ -332,8 +343,13 @@ elseif CLIENT then
 					btn:SetAlignX( TEXT_ALIGN_CENTER )
 					btn:SetAlignY( TEXT_ALIGN_TOP )
 					btn._VoteIndex = _
-					btn.OnPaint = btnPaint
+					--btn.OnPaint = btnPaint
 					btn.OnClick = btnClick
+					
+					btn.Dock = vgui.Create( "DPanel", btn )
+						btn.Dock.Paint = function() end
+						btn.Dock:SetPos( 2, btn:GetTall() - 17 )
+						btn.Dock:SetSize( btn:GetWide() - 4, 16 )
 				table.insert( lst.Buttons, btn )
 				lst:Add( btn )
 			end
@@ -350,8 +366,25 @@ elseif CLIENT then
 			for key, button in ipairs( copy ) do
 				button:SetParent( nil )
 				lst:Add( button )
+				
+				for _, icon in ipairs( button.Dock:GetChildren() ) do
+					icon:Remove()
+				end
+				
+				-- Do our icons
+				--if PLUGIN.VoteData[ button._VoteIndex ] and PLUGIN.VoteData[ button._VoteIndex ] != 0 then
+					for I = 1, PLUGIN.VoteData[ button._VoteIndex ] or 0 do
+						local icon = vgui.Create( "DImageButton", button.Dock )
+							icon:SetIcon( "exsto/greentick.png" )
+							icon:SetSize( 16, 16 )
+							icon.DoClick = function() end
+
+						icon:Dock( RIGHT )
+					end
+				--end
 			end
 			lst:Layout()
+
 		end
 		
 		exsto.Animations.CreateAnimation( self.VoteLarge )
