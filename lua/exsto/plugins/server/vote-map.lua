@@ -58,7 +58,8 @@ function PLUGIN:Votemap()
 		-- Clean the map list and only let ttt maps go through.
 		for map, data in pairs( maplist ) do
 			if data.Category:lower():find( self.Filter:GetValue() ) then 
-				table.insert( lst, map:gsub( "%.bsp", "" ) ) 
+				local map = map:gsub( "%.bsp", "" )
+				table.insert( lst, map ) 
 				if !dt[ map ] then dt[ map ] = 0 end
 			end
 		end
