@@ -16,7 +16,7 @@ function PLUGIN:Init()
 		self.UpdateDelay:SetMin( 0 )
 		self.UpdateDelay:SetMax( 200 )
 		
-	self.PasteID = "9PGnWWRL"
+	self.PasteID = "9yYQ9yhS"
 	
 	self.NextUpdate = CurTime() + self.UpdateDelay:GetValue() * 60
 		
@@ -87,18 +87,22 @@ end
 function PLUGIN:FetchCRC( checkAfter )
 	-- Call the mothership
 	http.Fetch( "http://www.pastebin.com/raw.php?i=" .. self.PasteID, function( contents )
-		local data = von.deserialize( contents )
-		if not data then
-			self:Error( "Unable to deserialize CRC contents.  Dropbox is most likely down, or I goofed." )
-			return
-		end
-		self:Debug( "Global CRC info received.", 1 )
-		
-		if checkAfter then -- Check our CRC.
-			timer.Simple( 0.1, function() self:CompareCRC() end )
-		end
-		
-		self.CRC = data;
+		-- Contents is the location of the CRC thing.  Run fetch again to grab it.
+		print( contents )
+		http.Fetch( "http://www.pastebin.com/raw.php?i=" .. contents, function( contents )
+			local data = von.deserialize( contents )
+			if not data then
+				self:Error( "Unable to deserialize CRC contents.  Dropbox is most likely down, or I goofed." )
+				return
+			end
+			self:Debug( "Global CRC info received.", 1 )
+			
+			if checkAfter then -- Check our CRC.
+				timer.Simple( 0.1, function() self:CompareCRC() end )
+			end
+			
+			self.CRC = data;
+		end )
 	end )
 end
 
