@@ -104,7 +104,12 @@ function PLUGIN:ExPrintCalled( enum, data )
 			--construct .. "[" .. trace.source .. ", N:" .. trace.name .. ", " .. trace.linedefined .. "-" .. trace.currentline .. "-" .. trace.lastlinedefined .. "]"
 		self:SaveEvent( construct, "errors" )
 	elseif enum == exsto_DEBUG and self.SaveDebug:GetValue() == 1 then
-		self:SaveEvent( table.concat( data, " " ), "debug" )
+		-- Clean out colors.
+		local tbl = {}
+		for _, v in ipairs( data ) do
+			if type( v ) == "string" then table.insert( tbl, v ) end
+		end
+		self:SaveEvent( table.concat( tbl, " " ), "debug" )
 	end
 end
 
