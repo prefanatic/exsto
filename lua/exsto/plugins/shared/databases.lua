@@ -240,8 +240,6 @@ if CLIENT then
 		local pnl = page.Content
 		local data = PLUGIN.WorkingDB
 		
-		PrintTable( data )
-		
 		pnl.Cat.Header:SetText( data.niceDisplay )
 		pnl.MySQL:SetValue( data.mysql )
 		pnl.HardName:SetText( data.db )

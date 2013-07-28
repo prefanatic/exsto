@@ -317,7 +317,7 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	-- Set our backup rate.
 	local f = false
 	for _, tbl in ipairs( FEL.Config.backup_rates ) do
-		if tbl[1] == obj:GetName() then obj:SetAutoBackup( tbl[2] ) f = true end
+		if tbl[1] == obj:GetName() then obj:SetAutoBackup( tbl[2] / 60 ) f = true end
 	end
 	
 	-- Insert into backup rates if we don't already exist.
