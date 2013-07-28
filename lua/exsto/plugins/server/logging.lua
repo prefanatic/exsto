@@ -105,6 +105,9 @@ function PLUGIN:ExPrintCalled( enum, data )
 		self:SaveEvent( construct, "errors" )
 	elseif enum == exsto_DEBUG and self.SaveDebug:GetValue() == 1 then
 		-- Clean out colors.
+		if data[ 2 ] == 0 then -- This is coming from FEL.
+			data = data[1]
+		end
 		local tbl = {}
 		for _, v in ipairs( data ) do
 			if type( v ) == "string" then table.insert( tbl, v ) end
