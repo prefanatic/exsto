@@ -2,9 +2,7 @@
 
 Exsto is an administration framework Garry's Mod, with prime focus on a modular design.
 
-There are two branches, choose wisely.  This branch (master) aims to be the most stable branch.  No new features are added, just fixed.  Developmental is the new feature branch.
-
-As of writing (4/22), developmental is most likely the most stable.  Master has become 4 months out of date.
+There are two main branches. This branch (master) aims to be the most stable branch.  No new features are added directly; just fixed.  Developmental is the new feature branch.
 
 ----
 
