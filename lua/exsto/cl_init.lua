@@ -51,14 +51,13 @@
 	-- I don't know why or how, but sometimes LocalPlayer is completely valid BEFORE clientside actually finishes a load....
 	-- SO!  Lets check.  If we're good, we good.  If not, lets make sure we GET good.
 	if LocalPlayer() and IsValid( LocalPlayer() ) then
-		print( "Local player is valid.  Loading through standard method." )
 		hook.Call( "ExClientLoading" )
 		exsto.CreateSender( "ExClientLoad" ):Send()
 	else
-	
+		-- I just found out we NEVER have to do this.  By the time exsto's client core loads, LocalPlayer() will ALWAYS be valid, due to how I load it up.
+		-- So, I'm just leaving this here for legacy purposes incase something goes wrong.
 		hook.Add( "OnEntityCreated", "ExPlayerCheck", function( ent )
 			if ent == LocalPlayer() and IsValid( ent ) then
-				print( "Local player was just created, and is valid.  Loading through OnEntityCreated." )
 				hook.Call( "ExClientLoading" )
 				exsto.CreateSender( "ExClientLoad" ):Send()
 				hook.Remove( "OnEntityCreated", "ExPlayerCheck" )

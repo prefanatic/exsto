@@ -132,10 +132,13 @@ end
 if SERVER then
 	exstoInit()
 	
-	concommand.Add( "exsto_cl_load", function( ply, _, args )
-		umsg.Start( "clexsto_load", ply )
-			umsg.Short( exsto.VERSION )
-		umsg.End()
+	util.AddNetworkString( "ExCoreClientLoad" )
+	util.AddNetworkString( "ExCoreClientStart" )
+	
+	net.Receive( "ExCoreClientStart", function( len, pl )
+		net.Start( "ExCoreClientLoad" )
+			net.WriteString( exsto.VERSION )
+		net.Send( pl )
 	end )
 	
 	concommand.Add( "_ExRestartInitSpawn", function( ply, _, args )
@@ -145,15 +148,16 @@ if SERVER then
 	
 elseif CLIENT then
 
-	local function init( UM )
-		exstoInit( UM:ReadShort() )
+	local function init()
+		exstoInit( net.ReadString() )
 		hook.Call( "ExInitialized" )
 	end
-	usermessage.Hook( "clexsto_load", init )
+	net.Receive( "ExCoreClientLoad", init )
 
 	local function onEntCreated( ent )
-		if LocalPlayer():IsValid() then
-			LocalPlayer():ConCommand( "exsto_cl_load\n" )
+		if ent == LocalPlayer() and IsValid( ent ) then
+			net.Start( "ExCoreClientStart" )
+			net.SendToServer()
 			hook.Remove( "OnEntityCreated", "ExSystemLoad" )
 		end
 	end
