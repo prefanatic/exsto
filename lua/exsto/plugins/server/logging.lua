@@ -52,6 +52,19 @@ function PLUGIN:CanTool( ply, tr, tool )
 	self:SaveEvent( self:Player( ply ) .. " has attempted to use tool (" .. tostring( tool ) .. ") on " .. ( tr.Entity and self:FormatEntity( tr.Entity ) ) or "Unknown", "player" )
 end
 
+function PLUGIN:ShutDown()
+	self:SaveEvent( "The server is shutting down/switching maps!", "server" )
+end
+
+function PLUGIN:ExInitialized()
+	self:SaveEvent( "Exsto has finished loading.", "server" )
+end
+
+function PLUGIN:CanTool( ply, tr, tool )
+	local ent = IsValid( tr.Entity ) and tr.Entity:GetClass() or "Unknown"
+	self:SaveEvent( self:Player( ply ) .. " has attempted to use tool (" .. tool .. ") on " .. ent, "player" )
+end
+
 function PLUGIN:PlayerSpawnProp( ply, mdl )
 	self:SaveEvent( self:Player( ply ) .. " has spawned prop (" .. mdl .. ")", "spawns" )
 end
@@ -91,7 +104,15 @@ function PLUGIN:ExPrintCalled( enum, data )
 			--construct .. "[" .. trace.source .. ", N:" .. trace.name .. ", " .. trace.linedefined .. "-" .. trace.currentline .. "-" .. trace.lastlinedefined .. "]"
 		self:SaveEvent( construct, "errors" )
 	elseif enum == exsto_DEBUG and self.SaveDebug:GetValue() == 1 then
-		self:SaveEvent( table.concat( data, " " ), "debug" )
+		-- Clean out colors.
+		if data[ 2 ] == 0 then -- This is coming from FEL.
+			data = data[1]
+		end
+		local tbl = {}
+		for _, v in ipairs( data ) do
+			if type( v ) == "string" then table.insert( tbl, v ) end
+		end
+		self:SaveEvent( table.concat( tbl, " " ), "debug" )
 	end
 end
 
@@ -103,11 +124,17 @@ function PLUGIN:PlayerDeath( ply )
 	self:SaveEvent( self:Player( ply ) .. " has died.", "player" )
 end
 
-function PLUGIN:ExInitSpawn( ply, sid, uid )
-	self:SaveEvent( self:Player( ply ) .. " has joined the game.", "player" )
+function PLUGIN:player_connect( data )
+	exsto.Print( exsto_CONSOLE_LOGO, COLOR.NAME, data.name, COLOR.NORM, "(" .. data.networkid .. ") has joined." )
+	self:SaveEvent( data.name .. "(" .. data.networkid .. ") has joined the game.", "player" )
+end
+
+function PLUGIN:ExPlayerAuthed( ply )
+	self:SaveEvent( self:Player( ply ) .. " has been authed.", "player" )
 end
 
 function PLUGIN:PlayerDisconnected( ply )
+	exsto.Print( exsto_CONSOLE_LOGO, COLOR.NAME, ply:Nick(), COLOR.NORM, "(" .. ply:SteamID() .. ") has disconnected." )
 	self:SaveEvent( self:Player( ply ) .. " has disconnected!", "player" )
 end
 

@@ -19,6 +19,7 @@
 local qm = {
 	Main = nil;
 	List = nil;
+	Starred = {};
 }
 
 local function clearContent( pnl )
@@ -37,8 +38,8 @@ local function mainOnShowtime( obj )
 	-- Loop through our players to construct the ranks table.
 	local tbl = {}
 	for _, ply in ipairs( player.GetAll() ) do
-		if !tbl[ ply:GetRank() ] then tbl[ ply:GetRank() ] = {} end;
-		table.insert( tbl[ ply:GetRank() ], { Player = ply, Immunity = exsto.Ranks[ ply:GetRank() ].Immunity } )
+		if !tbl[ ply:GetRank() ] then tbl[ ply:GetRank() ] = { Immunity = exsto.Ranks[ ply:GetRank() ].Immunity } end;
+		table.insert( tbl[ ply:GetRank() ], { Player = ply } )
 	end
 	pnl.FormattedTable = tbl;
 	
@@ -89,8 +90,7 @@ local function clearContent( pnl )
 end
 
 local function starredCommand( id )
-	local starred = qm.Data:ReadAll()
-	for _, data in ipairs( starred ) do
+	for _, data in ipairs( qm.Starred ) do
 		if data.Command == id then return true end
 	end
 	return false
@@ -98,6 +98,13 @@ end
 
 local function executeCommand()
 	local data = qm.WorkingData
+	
+	-- Make sure the player is still valid
+	if not IsValid( qm.WorkingPlayer ) then
+		chat.AddText( exsto_CHAT, COLOR.NORM, "The player you were running the command on has ", COLOR.NAME, "left" )
+		return
+	end
+	
 	local execTbl = { data.CallerID, qm.WorkingPlayer:Nick() }
 
 	for _, arg in ipairs( data.ReturnOrder ) do
@@ -116,6 +123,12 @@ local function commandClicked( list, display, data, line )
 	qm.WorkingData = data
 	qm.WorkingExecute = { }
 	
+	-- But before we do that, make sure this isn't the rank command.
+	if data.ID == "rank" then -- shit.
+		exsto.Menu.OpenPage( qm.Argument )
+		return
+	end
+	
 	for count, arg in ipairs( data.ReturnOrder ) do
 		qm.WorkingExecute[ arg ] = data.Optional[ arg ]
 	end
@@ -128,16 +141,29 @@ end
 
 local function commandRightClicked( list, display, data, line )
 	line._OMGRIGHTCLICKED = 1
-	timer.Simple( 0.1, function() line._OMGRIGHTCLICKED = 0 end ) -- Because gayre doesn't have any of this standard?
+	timer.Simple( 0.1, function() if IsValid( line ) then line._OMGRIGHTCLICKED = 0 end end ) -- Because gayre doesn't have any of this standard?
 	
 	if starredCommand( data.ID ) then -- We're starred.  Unstar us.
 		qm.Data:DropRow( data.ID )
+		for _, d in ipairs( qm.Starred ) do
+			if data.ID == d.Command then table.remove( qm.Starred, _ ) end
+		end
 		qm.List.Content:Populate()
 	else
 		qm.Data:AddRow( {
 			Command = data.ID;
 			TimesUsed = 1;
 		} )
+		local f = false
+		for _, d in ipairs( qm.Starred ) do
+			if data.ID == d.Command then
+				f = true
+				qm.Starred[ _ ].TimesUsed = qm.Starred[ _ ].TimesUsed + 1;
+			end
+		end
+		if not f then
+			table.insert( qm.Starred, { Command = data.ID, TimesUsed = 1 }  );
+		end
 		qm.List.Content:Populate()
 	end
 end
@@ -185,15 +211,19 @@ local function initList( pnl )
 			cat.List.LineRightSelected = commandRightClicked
 			
 		-- Add the starred to this list.
-		for _, data in ipairs( qm.Data:ReadAll() ) do
+		for _, data in ipairs( qm.Starred ) do
 			local command = exsto.Commands[ data.Command ]
-			local line = cat.List:AddRow( { command.DisplayName }, command )
-			
-			if table.Count( command.ExtraOptionals ) > 0 then
-				-- Overlay our quick button
-				line.Quick = vgui.Create( "ExQuickOverlay", line )
-					line.Quick.OnClick = quickOnClick
-					line.Quick.CommandData = command
+			if LocalPlayer():IsAllowed( command.ID ) then
+				local line = cat.List:AddRow( { command.DisplayName }, command )
+				
+				if table.Count( command.ExtraOptionals ) > 0 then
+					-- Overlay our quick button
+					line.Quick = vgui.Create( "ExButton", line )
+						line.Quick:Dock( RIGHT )
+						line.Quick:Text( "More Args" )
+						line.Quick.OnClick = quickOnClick
+						line.Quick.CommandData = command
+				end
 			end
 			
 			--exsto.Animations.Create( line.Quick )
@@ -227,7 +257,9 @@ local function initList( pnl )
 				
 				if table.Count( command.ExtraOptionals ) > 0 then
 					-- Overlay our quick button
-					line.Quick = vgui.Create( "ExQuickOverlay", line )
+					line.Quick = vgui.Create( "ExButton", line )
+						line.Quick:Dock( RIGHT )
+						line.Quick:Text( "More Args" )
 						line.Quick.OnClick = quickOnClick
 						line.Quick.CommandData = command
 				end
@@ -329,16 +361,21 @@ function exsto.InitQuickMenu()
 		} )
 		
 	-- Check to see if we have anything in data.  If we don't, inject a few commonly used commands.
-	if #qm.Data:ReadAll() == 0 then
-		local common = { "kick", "ban", "rank" }
-		for _, id in ipairs( common ) do
-			qm.Data:AddRow( {
-				Command = id;
-				TimesUsed = 0;
-			} )
+	qm.Data:GetAll( function( q, d )
+		if not d then
+			local common = { "kick", "ban", "rank" }
+			for _, id in ipairs( common ) do
+				qm.Data:AddRow( {
+					Command = id;
+					TimesUsed = 0;
+				} )
+				table.insert( qm.Starred, { Command = id, TimesUsed = 0 } )
+			end
+		else
+			qm.Starred = d;
 		end
-	end
-		
+	end )
+
 	exsto.Menu.QM = exsto.Menu.CreatePage( "quickmenu", initQuickMenu )
 		exsto.Menu.QM:SetTitle( "Quick Menu" )
 		exsto.Menu.QM:OnShowtime( mainOnShowtime )

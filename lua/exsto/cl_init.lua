@@ -54,12 +54,12 @@
 		hook.Call( "ExClientLoading" )
 		exsto.CreateSender( "ExClientLoad" ):Send()
 	else
-	
+		-- I just found out we NEVER have to do this.  By the time exsto's client core loads, LocalPlayer() will ALWAYS be valid, due to how I load it up.
+		-- So, I'm just leaving this here for legacy purposes incase something goes wrong.
 		hook.Add( "OnEntityCreated", "ExPlayerCheck", function( ent )
-			print( ent, ent == LocalPlayer() )
 			if ent == LocalPlayer() and IsValid( ent ) then
 				hook.Call( "ExClientLoading" )
-				exsto.CreateSender( "ExClientLoading" ):Send()
+				exsto.CreateSender( "ExClientLoad" ):Send()
 				hook.Remove( "OnEntityCreated", "ExPlayerCheck" )
 			end
 		end )

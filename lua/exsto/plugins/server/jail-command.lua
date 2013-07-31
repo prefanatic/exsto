@@ -8,6 +8,7 @@ PLUGIN:SetInfo({
 	ID = "jail",
 	Desc = "A plugin that adds the !jail command.",
 	Owner = "Prefanatic",
+	CleanUnload = true;
 } )
 
 function PLUGIN:Init()
@@ -20,16 +21,121 @@ function PLUGIN:Init()
 		{ pos = Vector( 0, 35, 60 ), ang = Angle( 0, 90, 0 ), mdl = self.Model2 },
 		{ pos = Vector( 0, -35, 60 ), ang = Angle( 0, 90, 0 ), mdl = self.Model2 },
 		{ pos = Vector( 0, 0, 110 ), ang = Angle( 90, 0, 0 ), mdl = self.Model1 },
-		{ pos = Vector( 0, 0, -5 ), ang = Angle( 90, 0, 0 ), mdl = self.Model1 },
+		{ pos = Vector( 0, 0, 0 ), ang = Angle( 90, 0, 0 ), mdl = self.Model1 },
 	}
 	
 	self.JailedLeavers = {}
+	
+	-- Store these meta registries in here, so we don't create them when we don't init.
+	function exsto.Registry.Player:Jailed()
+		return self.IsJailed
+	end
+
+	function exsto.Registry.Player:MoveToJail()
+		if self.JailedPos then
+			self:SetPos( self.JailedPos )
+		end
+	end
+
+	function exsto.Registry.Player:JailStrip()
+		self.Weapons = {}
+		for k,v in pairs( self:GetWeapons() ) do
+			table.insert( self.Weapons, v:GetClass() )
+		end
+		self:StripWeapons()
+	end
+
+	function exsto.Registry.Player:JailReturn()
+		if type( self.Weapons ) == "table" then
+			for k,v in pairs( self.Weapons ) do
+				self:Give( tostring( v ) )
+			end		
+		end
+	end
+
+	function exsto.Registry.Player:CreateJail(time)
+		self:JailStrip()
+
+		if self:InVehicle() then
+			local vehicle = self:GetParent()
+			self:ExitVehicle()
+			vehicle:Remove()
+		end
+			
+		self:SetMoveType( MOVETYPE_WALK )
+
+		local pos = self:GetPos()
+		local ent, text
+		self.JailWalls = {}
+		for _, item in ipairs( PLUGIN.WallPositions ) do
+			ent = ents.Create( "prop_physics" )
+				ent:SetModel( item.mdl )
+				ent:SetPos( pos + item.pos )
+				ent:SetAngles( item.ang )
+				ent:Spawn()
+				ent:GetPhysicsObject():EnableMotion( false )
+				ent:SetMoveType( MOVETYPE_NONE )
+				ent.IsJailWall = true
+				table.insert( self.JailWalls, ent )
+		end
+		
+		text = ents.Create( "3dtext" )
+			text:SetPos( pos + Vector( 35, 0, 60 ) )
+			text:SetAngles( Angle( 0, 0, 0 ) )
+			text:Spawn()
+			text:SetPlaceObject( self.JailWalls[1] )
+			text:SetText( self:Nick() .. "'s Jail" )
+			text:SetScale( 0.1 )
+			table.insert( self.JailWalls, text )
+		
+		self.IsJailed = true
+		self.JailedPos = pos
+		
+		if time > 0 then timer.Simple(time,function() self:RemoveJail() end) end
+		self.JailTime = time
+		
+		-- Move us up a little bit to "close" the jail
+		local pos = self:GetPos()
+		self:SetPos( pos + Vector( 0, 0, 5 ) )
+		
+	end
+
+	function exsto.Registry.Player:RemoveJail()
+		if self:EntIndex() == 0 then return end
+		if type( self.JailWalls ) == "table" then
+			for _, ent in ipairs( self.JailWalls ) do
+				if IsValid( ent ) then ent:Remove() end
+			end
+		end
+		
+		self:JailReturn()
+
+		self.IsJailed = false
+	end
+	
+end
+
+function PLUGIN:OnUnload()
+	for _, ply in ipairs( player.GetAll() ) do
+		if ply:Jailed() then
+			ply:RemoveJail()
+		end
+	end
+	
+	-- Clean out our meta registries
+	exsto.Registry.Player.RemoveJail = nil
+	exsto.Registry.Player.CreateJail = nil
+	exsto.Registry.Player.JailReturn = nil
+	exsto.Registry.Player.JailStrip = nil
+	exsto.Registry.Player.MoveToJail = nil
+	exsto.Registry.Player.Jailed = nil
 	
 end
 
 function PLUGIN:PlayerNoClip( ply )
 	if ply:Jailed() then return false end
 end
+PLUGIN:SetHookPriority( "PlayerNoClip", 1 )
 
 function PLUGIN:CanTool( ply, tr, tool )
 	if tr.Entity.IsJailWall then return false end
@@ -76,7 +182,7 @@ end
 function PLUGIN:PlayerSpawn( ply )
 	if ply:Jailed() then
 		ply:MoveToJail()
-		timer.Create( "stripSweps"..ply:EntIndex(), 0.1, 1, exsto.Registry.Player.Player.StripWeapons, ply )
+		timer.Simple( 0.1, function() ply:StripWeapons() end )
 	end
 end
 
@@ -122,116 +228,51 @@ local removeoncommand = function( ply, callargs )
 	end
 end
 
-function exsto.Registry.Player:Jailed()
-	return self.IsJailed
-end
-
-function exsto.Registry.Player:MoveToJail()
-	if self.JailedPos then
-		self:SetPos( self.JailedPos )
+function PLUGIN:UnJail( owner, ply, time )
+	if not ply.IsJailed then
+		owner:Print( exsto_CHAT, COLOR.NAME, ply:Nick(), COLOR.NORM, " is not jailed." )
+		return
 	end
+
+	ply:RemoveJail()
+	exsto.NotifyChat( COLOR.NAME, owner:Nick(), COLOR.NORM, " has unjailed ", COLOR.NAME, ply:Nick() )	
 end
-
-function exsto.Registry.Player:JailStrip()
-	self.Weapons = {}
-	for k,v in pairs( self:GetWeapons() ) do
-		table.insert( self.Weapons, v:GetClass() )
-	end
-	self:StripWeapons()
-end
-
-function exsto.Registry.Player:JailReturn()
-	if type( self.Weapons ) == "table" then
-		for k,v in pairs( self.Weapons ) do
-			self:Give( tostring( v ) )
-		end		
-	end
-end
-
-function exsto.Registry.Player:CreateJail(time)
-	self:JailStrip()
-
-	if self:InVehicle() then
-		local vehicle = self:GetParent()
-		self:ExitVehicle()
-		vehicle:Remove()
-	end
-		
-	self:SetMoveType( MOVETYPE_WALK )
-
-	local pos = self:GetPos()
-	local ent, text
-	self.JailWalls = {}
-	for _, item in ipairs( PLUGIN.WallPositions ) do
-		ent = ents.Create( "prop_physics" )
-			ent:SetModel( item.mdl )
-			ent:SetPos( pos + item.pos )
-			ent:SetAngles( item.ang )
-			ent:Spawn()
-			ent:GetPhysicsObject():EnableMotion( false )
-			ent:SetMoveType( MOVETYPE_NONE )
-			ent.IsJailWall = true
-			table.insert( self.JailWalls, ent )
-	end
-	
-	text = ents.Create( "3dtext" )
-		text:SetPos( pos + Vector( 35, 0, 60 ) )
-		text:SetAngles( Angle( 0, 0, 0 ) )
-		text:Spawn()
-		text:SetPlaceObject( self.JailWalls[1] )
-		text:SetText( self:Nick() .. "'s Jail" )
-		text:SetScale( 0.1 )
-		table.insert( self.JailWalls, text )
-	
-	self.IsJailed = true
-	self.JailedPos = pos
-	
-	if time > 0 then timer.Simple(time,function() self:RemoveJail() end) end
-	self.JailTime = time
-	
-end
-
-function exsto.Registry.Player:RemoveJail()
-	if self:EntIndex() == 0 then return end
-	if type( self.JailWalls ) == "table" then
-		for _, ent in ipairs( self.JailWalls ) do
-			if ent:IsValid() then ent:Remove() end
-		end
-	end
-	
-	self:JailReturn()
-
-	self.IsJailed = false
-end
+PLUGIN:AddCommand( "unjail", {
+	Call = PLUGIN.UnJail,
+	Desc = "Allows users to remove other users in jail.",
+	Console = { "unjail" },
+	Chat = { "!unjail" },
+	Arguments = {
+		{ Name = "Player", Type = COMMAND_PLAYER };
+	};
+	Category = "Fun",
+})
+PLUGIN:RequestQuickmenuSlot( "unjail", "Unjail")
 	
 function PLUGIN:Jail( owner, ply, time )
+	if ply.IsJailed then
+		owner:Print( exsto_CHAT, COLOR.NAME, ply:Nick(), COLOR.NORM, " is already jailed." )
+		return
+	end
 
-	if !ply.IsJailed then
-		ply:CreateJail(time)
-		if time > 0 then 
-			return { exsto_CHAT,COLOR.NAME,owner:Nick(),COLOR.NORM," has jailed ",COLOR.NAME,ply:Nick(),
-				COLOR.NORM," for ", COLOR.NAME,tostring(time),COLOR.NORM, " seconds." }
-		else
-			return { exsto_CHAT,COLOR.NAME,owner:Nick(),COLOR.NORM," has jailed ",COLOR.NAME,ply:Nick(),COLOR.NORM,"!" }		
-		end
+	ply:CreateJail(time)
+	if time > 0 then 
+		return { exsto_CHAT,COLOR.NAME,owner:Nick(),COLOR.NORM," has jailed ",COLOR.NAME,ply:Nick(),
+			COLOR.NORM," for ", COLOR.NAME,tostring(time),COLOR.NORM, " seconds." }
 	else
-		ply:RemoveJail()
-		return {
-			Activator = owner,
-			Player = ply,
-			Wording = " has un-jailed ",
-		}
+		return { exsto_CHAT,COLOR.NAME,owner:Nick(),COLOR.NORM," has jailed ",COLOR.NAME,ply:Nick(),COLOR.NORM,"!" }		
 	end
 	
 end
 PLUGIN:AddCommand( "jail", {
 	Call = PLUGIN.Jail,
 	Desc = "Allows users to put other users in jail.",
-	Console = { "jail", "unjail" },
-	Chat = { "!jail", "!unjail" },
-	ReturnOrder = "Victim-Time",
-	Args = {Victim = "PLAYER", Time = "NUMBER"},
-	Optional = { Time = 0 },
+	Console = { "jail" },
+	Chat = { "!jail" },
+	Arguments = {
+		{ Name = "Player", Type = COMMAND_PLAYER };
+		{ Name = "Time", Type = COMMAND_NUMBER, Optional = 0 };
+	};
 	Category = "Fun",
 })
 PLUGIN:RequestQuickmenuSlot( "jail", "Jail", {

@@ -22,9 +22,9 @@
 -- Variables
 
 exsto.PrintStyles = {}
-exsto.TextStart = "[Exsto] "
-exsto.ErrorStart = "[EXSTO ERROR]"
-exsto.DebugStart = "[ExDebug] "
+exsto.TextStart = "[Ex] "
+exsto.ErrorStart = "[EXERR]"
+exsto.DebugStart = "[Ex] "
 
 --[[ -----------------------------------
 	Function: AddPrint
@@ -96,8 +96,25 @@ exsto_CONSOLE = AddPrint(
 exsto_CONSOLE_NOLOGO = exsto_CONSOLE
 
 exsto_CONSOLE_LOGO = AddPrint(
-	function( msg, extra )
-		print( exsto.TextStart .. msg )
+	function( ... )
+		local a = {...}
+		if table.Count( a ) == 1 then
+			MsgC( COLOR.EXSTOGREEN, exsto.TextStart )
+			MsgC( COLOR.WHITE, a[1] .. "\n" )
+			return
+		end
+		
+		MsgC( COLOR.EXSTOGREEN, exsto.TextStart )
+		
+		local c = COLOR.WHITE
+		for _, d in ipairs( a ) do
+			if type( d ) == "table" then c = d;
+			else
+			if #a == _ and type( d ) == "string" then d = d .. "\n" end
+			MsgC( c, d )
+			end
+		end
+		
 	end
 )
 	
@@ -150,18 +167,11 @@ exsto_CLIENT = AddPrint(
 			exsto.Print( exsto_CONSOLE, msg )
 			return
 		end
-		
-		-- Check if we should use our UMSG system.
-		if msg:len() > 200 then
-		
-			local sender = exsto.CreateSender( "ExClientPrint", ply )
-				sender:AddString( msg )
-			sender:Send()
-			
-		else
-			ply:PrintMessage( HUD_PRINTCONSOLE, msg )
-		end
-		
+
+		local sender = exsto.CreateSender( "ExClientPrint", ply )
+			sender:AddString( msg )
+		sender:Send()
+	
 	end, true
 )
 exsto_CLIENT_NOLOGO = exsto_CLIENT
@@ -204,7 +214,20 @@ exsto_DEBUG = AddPrint(
 		end
 		
 		if exsto.DebugLevel and exsto.DebugLevel != 0 and ( exsto.DebugLevel:GetValue() >= level ) then
-			MsgC( COLOR.DEBUG, exsto.DebugStart .. msg .. "\n" )
+			MsgC( COLOR.HAZARDYELLOW, exsto.DebugStart )
+			
+			if type( msg ) == "table" then
+				local c = COLOR.WHITE
+				for _, d in ipairs( msg ) do
+					if type( d ) == "table" then c = d;
+					else
+					if #msg == _ and type( d ) == "string" then d = d .. "\n" end
+					MsgC( c, d )
+					end
+				end
+			else	
+				MsgC( COLOR.WHITE, msg .. "\n" )
+			end
 		end
 	end
 )
@@ -275,6 +298,10 @@ end
 
 function exsto.Debug( msg, level )
 	exsto.Print( exsto_DEBUG, msg, level or 1 )
+end
+
+function exsto.NotifyChat( ... )
+	exsto.Print( exsto_CHAT_ALL, unpack( {...} ) )
 end
 
 hook.Call( "ExPrintingInit" )

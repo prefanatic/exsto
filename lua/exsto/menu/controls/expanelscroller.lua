@@ -26,17 +26,17 @@ function PANEL:Init()
 	
 	self.Material = Material( "exsto/gradient.png" )
 	
-	self.List = vgui.Create( "DCategoryList", self )
-		self.List:Dock( FILL )
-		self.List:DockMargin( 4, 0, 4, 0 )
-		self.List.pnlCanvas:DockPadding( 2, 5, 2, 5 )
-		self.List.VBar:SetWide( 3 )
-		self.List.PaintOver = function( pnl )
+	self.CatList = vgui.Create( "DCategoryList", self )
+		self.CatList:Dock( FILL )
+		self.CatList:DockMargin( 4, 0, 4, 0 )
+		self.CatList.pnlCanvas:DockPadding( 2, 5, 2, 5 )
+		self.CatList.VBar:SetWide( 3 )
+		self.CatList.PaintOver = function( pnl )
 			surface.SetMaterial( self.Material )
 			surface.SetDrawColor( 255, 255, 255, 255 )
 			surface.DrawTexturedRect( 0, 0, pnl:GetWide(), 9 )
 		end
-		self.List.Paint = function( pnl )
+		self.CatList.Paint = function( pnl )
 			pnl:GetSkin().tex.Input.ListBox.Background( 0, 0, pnl:GetWide(), pnl:GetTall() );
 		end
 
@@ -49,14 +49,14 @@ function PANEL:Paint()
 end
 
 function PANEL:Think()
-	--if self.List.VBar:IsVisible() and self._VBarDisabled then print( "Fixing vbar" ) self:DisableScroller() end
-	--if !self.List.VBar:IsVisible() and !self._VBarDisabled then print( "drgu" ) self.List.VBar:SetEnabled( true ) end
+	--if self.CatList.VBar:IsVisible() and self._VBarDisabled then print( "Fixing vbar" ) self:DisableScroller() end
+	--if !self.CatList.VBar:IsVisible() and !self._VBarDisabled then print( "drgu" ) self.CatList.VBar:SetEnabled( true ) end
 end
 
 function PANEL:DisableScroller()
-	--self.List.VBar:SetEnabled( false )
-	self.List.VBar:SetVisible( false )
-	self.List.VBar.Enabled = false
+	--self.CatList.VBar:SetEnabled( false )
+	self.CatList.VBar:SetVisible( false )
+	self.CatList.VBar.Enabled = false
 	self._VBarDisabled = true
 end
 
@@ -79,9 +79,9 @@ end
 
 local function createTitle( o, txt )
 	local title = vgui.Create( "ExText", o )
+		title:SetTextColor( Color( 0, 180, 255, 255 ) )
 		title:SetText( txt )
 		title:SetFont( "ExGenericText18" )
-		title:SetTextColor( Color( 0, 180, 255, 255 ) )
 		title:Dock( TOP )
 	return title
 end
@@ -109,6 +109,21 @@ local function createMultichoice( o )
 	return button
 end
 
+local function createNumberChoice( o )
+	local button = vgui.Create( "ExNumberChoice", o )
+		button:Dock( TOP )
+		button:SetTall( 40 )
+	return button
+end
+
+local function createTextChoice( o )
+	local button = vgui.Create( "DTextEntry", o )
+		button:Dock( TOP )
+		button:SetFont( "ExGenericText14" )
+		button:SetTall( 40 )
+	return button
+end
+
 local function setHideable( o, b )
 	if b then o.Header.DoClick = o.Header._OldDoClick return end
 	o.Header.DoClick = function() end
@@ -117,7 +132,7 @@ end
 function PANEL:CreateCategory( catName )
 	self.Categories = self.Categories or {}
 
-	local cat = self.List:Add( catName )
+	local cat = self.CatList:Add( catName )
 		cat.Header:SetTextColor( Color( 0, 180, 255, 255 ) )
 		cat.Header:SetFont( "ExGenericText20" )
 		cat.Header.UpdateColours = function( self, skin ) end
@@ -154,6 +169,8 @@ function PANEL:CreateCategory( catName )
 			print( "Doing something?" )
 		end]] 
 		
+		cat.CreateTextChoice = createTextChoice
+		cat.CreateNumberChoice = createNumberChoice
 		cat.CreateMultiChoice = createMultichoice
 		cat.SetHideable = setHideable
 		cat.CreateButton = createButton

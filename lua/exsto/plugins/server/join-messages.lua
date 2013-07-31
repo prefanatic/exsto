@@ -52,30 +52,31 @@ function PLUGIN:ExPlayerConnect( data )
 	local name = data.name
 	local addr = data.address
 
-	local rank = exsto.UserDB:GetData( data.networkid, "Rank" ) -- To see if we've been here.
-	if !rank then append = "has connected for the first time!" end
-	
-	local countryStyle = ""
-	if GeoIP and countryVar == true then
-		local data = GeoIP.Get( string.Explode( ":", addr )[1] )
-		countryStyle = "[" .. data.country_name .. "] "
-	end
-	
-	if var == "admins-only" then
-		for _, ply in ipairs( player.GetAll() ) do
-			if ply:IsAdmin() then
-				ply:Print( exsto_CHAT, COLOR.NAME, name, " (", addr, ") ", countryStyle, COLOR.NORM, append )
-			else
-				ply:Print( exsto_CHAT, COLOR.NAME, name, " ", countryStyle, COLOR.NORM, append );
-			end
+	exsto.UserDB:GetRow( data.networkid, function( q, d )
+		if !d then append = "has connected for the first time!" end
+		
+		local countryStyle = ""
+		if GeoIP and countryVar == true then
+			local data = GeoIP.Get( string.Explode( ":", addr )[1] )
+			countryStyle = "[" .. data.country_name .. "] "
 		end
-		return
-	elseif var == "all" then
-		exsto.Print( exsto_CHAT_ALL, COLOR.NAME, name, " (", addr, ") ", countryStyle, COLOR.NORM, append );
-		return
-	end
-	
-	exsto.Print( exsto_CHAT_ALL, COLOR.NAME, name, " ", countryStyle, COLOR.NORM, append );
+		
+		if var == "admins-only" then
+			for _, ply in ipairs( player.GetAll() ) do
+				if ply:IsAdmin() then
+					ply:Print( exsto_CHAT, COLOR.NAME, name, " (", addr, ") ", countryStyle, COLOR.NORM, append )
+				else
+					ply:Print( exsto_CHAT, COLOR.NAME, name, " ", countryStyle, COLOR.NORM, append );
+				end
+			end
+			return
+		elseif var == "all" then
+			exsto.Print( exsto_CHAT_ALL, COLOR.NAME, name, " (", addr, ") ", countryStyle, COLOR.NORM, append );
+			return
+		end
+		
+		exsto.Print( exsto_CHAT_ALL, COLOR.NAME, name, " ", countryStyle, COLOR.NORM, append );
+	end )
 
 end
 

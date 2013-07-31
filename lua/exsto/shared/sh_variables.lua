@@ -43,12 +43,13 @@ if SERVER then
 			sender:AddString( obj:GetHelp() )
 			sender:AddVariable( obj:Protected() == true and "*******" or obj:GetValue() )
 			sender:AddString( obj:GetType() )
-			sender:AddShort( obj.NumMax )
-			sender:AddShort( obj.NumMin )
+			sender:AddShort( obj.Maximum )
+			sender:AddShort( obj.Minimum )
 			sender:AddString( obj:GetCategory() )
 			sender:AddTable( obj:GetPossible() or {} )
-			sender:AddBoolean( obj._MultiChoice or false )
+			sender:AddBoolean( obj.Multi or false )
 			sender:AddString( obj:GetUnit() )
+			sender:AddBool( obj:GetClientOverride() or false )
 		sender:Send()
 	end
 	
@@ -79,8 +80,15 @@ elseif CLIENT then
 			Possible = reader:ReadTable(),
 			Multi = reader:ReadBoolean(),
 			Unit = reader:ReadString(),
+			ClientOverride = reader:ReadBool(),
 		}
 		exsto.Debug( "Variables --> Received '" .. id .. "' from the server!", 3 )
+		
+		-- Can we override an existing client variable?
+		if exsto.Variables[ id ] and exsto.ServerVariables[ id ].ClientOverride then
+			exsto.Debug( "Variables --> Overriding client variable '" .. id .. "' with server value.", 2 )
+			exsto.Variables[ id ]:SetValue( exsto.ServerVariables[ id ].Value )
+		end
 	end )
 	
 	function exsto.GetServerValue( id )
@@ -123,11 +131,7 @@ function exsto.CreateVariable( id, display, default, help, eVars )
 		exsto.Debug( "Variables --> '" .. id .. "' is an incorrect boolean!  Please change to use 0, 1 booleans instead of true, false.", 3 )
 		
 		default = ( default == true and 1 ) or ( 0 )
-		obj:SetPossible( 0, 1 ) 
-		obj:SetDataType( "number" )
-		
-		obj:SetMaximum( 1 )
-		obj:SetMinimum( 0 )
+		obj:SetBoolean()
 	end
 	
 	-- Now we need to set the 'default' to either a number or string, because CreateConVar can't handle anything else.
@@ -145,7 +149,7 @@ function exsto.CreateVariable( id, display, default, help, eVars )
 	-- Callback for the cvar.
 	cvars.AddChangeCallback( id, function( cid, oldval, newval )
 		exsto.Debug( "Variables --> Attempting variable change on '" .. cid .. "' from '" .. oldval .. "' to '" .. newval .. "'", 3 )
-		
+
 		if obj._IgnoreCallback then obj._IgnoreCallback = false return end
 		if oldval == newval then return end -- No need.
 			
@@ -176,7 +180,7 @@ function exsto.CreateVariable( id, display, default, help, eVars )
 		hook.Call( "ExVariableChanged", nil, obj, obj:GetValue() )
 		
 		if !obj.Callback then return end
-		local succ, err = pcall( obj.Callback, oldval, newval )
+		local succ, err = pcall( obj.Callback, oldval, obj:GetValue() )
 		if !succ then
 			exsto.ErrorNoHalt( "Variables --> Callback for '" .. cid .. "' failed with:" )
 			exsto.ErrorNoHalt( err )
@@ -203,24 +207,26 @@ function var:Protected() return self._Protected end
 
 -- Extraneous settings for the settings page.
 function var:SetMaximum( num )
-	self.NumMax = num
+	self.Maximum = num
 end
 var.SetMax = var.SetMaximum
 
 function var:SetMinimum( num )
-	self.NumMin = num
+	self.Minimum = num
 end
 var.SetMin = var.SetMinimum
 
 -- Helper to designate between variables being booleans or not.
 function var:IsBoolean()
-	if self.NumMax == 1 and self.NumMin == 0 then return true end
+	if self.Maximum == 1 and self.Minimum == 0 then return true end
 	return false
 end
 
 -- Helper to set booleans as numbers
 function var:SetBoolean()
 	self:SetPossible( 0, 1 ) 
+	
+	self:SetDataType( "number" )
 	
 	self:SetMaximum( 1 )
 	self:SetMinimum( 0 )
@@ -264,7 +270,7 @@ function var:SetPossible( ... )
 end
 
 function var:SetMultiChoice()
-	self._MultiChoice = true
+	self.Multi = true
 	self.Type = "multi"
 end
 
@@ -280,7 +286,7 @@ function var:SetValue( val )
 end
 
 function var:GetValue()
-	if CLIENT and exsto.ServerVariables and exsto.ServerVariables[ var:GetID() ] then
+	if CLIENT and exsto.ServerVariables and exsto.ServerVariables[ var:GetID() ] and exsto.ServerVariables[ var:GetID() ].ClientOverride then
 		local svVar = exsto.ServerVariables[ var:GetID() ]
 		return svVar.Value
 	end
@@ -288,6 +294,8 @@ function var:GetValue()
 	return dataTypes[ self.Type ]( self ) or self:GetString()
 end
 
+function var:SetClientOverride( bool ) self.ClientOverride = bool end
+function var:GetClientOverride() return self.ClientOverride end
 function var:GetConsoleEditable() return self.ConsoleEditable end
 function var:SetConsoleEditable( bool ) self.ConsoleEditable = bool end
 function var:GetID() return self.ID end

@@ -22,6 +22,8 @@ if SERVER then
 
 	function PLUGIN:Init()
 	
+		exsto.CreateFlag( "restrictions", "Allows access to the restrictions menu." )
+	
 		util.AddNetworkString( "ExReqRestrict" )
 		util.AddNetworkString( "ExReceiveRestriction" )
 		util.AddNetworkString( "ExUpdateRestriction" )
@@ -35,25 +37,39 @@ if SERVER then
 				Entities = "TEXT";
 				Sweps = "TEXT";
 			} )
+			
+		self.NextCacheUpdate = exsto.CreateVariable( "ExRestrictionUpdate", "Refresh Delay", 30, "How often restrictions should update from the SQL tables.  The shorter the value, the more 'in-sync' restrictions will be with other servers, at the cost of more lag." )
+			self.NextCacheUpdate:SetCategory( "Restrictions" )
+			self.NextCacheUpdate:SetUnit( "Delay (minutes)" )
+			self.NextCacheUpdate:SetMin( 1 )
+		self.NextThink = CurTime() + ( self.NextCacheUpdate:GetValue() * 60 )
+		
+		self.ForceLoadoutRestriction = exsto.CreateVariable( "ExForceLoadoutRestriction", "Restrict Loadout", 0, "Enables or disables restrictions on player loadout." )
+			self.ForceLoadoutRestriction:SetCategory( "Restrictions" )
+			self.ForceLoadoutRestriction:SetBoolean()
+			self.ForceLoadoutRestriction:SetCallback( function( old, new )
+				if new == 1 then
+					self:OverrideGive()
+				else
+					if self.OldGive then
+						exsto.Registry.Player.Give = self.OldGive
+					end
+				end
+			end )
+			
+		self.Storage = {}
 		
 		-- Quality of service on the ranks database.
-		local data = self.DB:ReadAll()
-		for rID, rank in pairs( exsto.Ranks ) do
-			local f = false
-			for _, d in ipairs( data ) do
-				if d.ID == rID then f = true end
+		self.DB:GetAll( function( q, d )
+			for _, r in ipairs( d or {} ) do
+				self.Storage[ r.ID ] = {
+					Props = self:VonDeserialize( r.Props );
+					Stools = self:VonDeserialize( r.Stools );
+					Entities = self:VonDeserialize( r.Entities );
+					Sweps = self:VonDeserialize( r.Sweps );
+				}
 			end
-			
-			if not f then
-				self.DB:AddRow( {
-					ID = rID;
-					Props = von.serialize( {} );
-					Stools = von.serialize( {} );
-					Entities = von.serialize( {} );
-					Sweps = von.serialize( {} );
-				} )
-			end
-		end
+		end )
 		
 		-- Restriction types
 		self.RestrictionTypes = {
@@ -64,7 +80,34 @@ if SERVER then
 		}
 		
 		self.LimitHandler = {}
+		
+		timer.Simple( 1, function() self:OverrideGetCount() end )
+		
+		if self.ForceLoadoutRestriction:GetValue() == 1 then
+			self:OverrideGive()
+		end				
 	
+	end
+	
+	function PLUGIN:RefreshStorage()
+		self.DB:GetAll( function( q, d )
+			for _, r in ipairs( d ) do
+				self.Storage[ r.ID ] = {
+					Props = self:VonDeserialize( r.Props );
+					Stools = self:VonDeserialize( r.Stools );
+					Entities = self:VonDeserialize( r.Entities );
+					Sweps = self:VonDeserialize( r.Sweps );
+				}
+			end
+		end )
+	end
+	
+	function PLUGIN:OverrideGive()
+		self.OldGive = exsto.Registry.Player.Give
+		function exsto.Registry.Player:Give( w )
+			if not PLUGIN:Allowed( self, 1, w ) then return end
+			return PLUGIN.OldGive( self, w )
+		end
 	end
 	
 	function PLUGIN:OverrideGetCount()
@@ -77,10 +120,11 @@ if SERVER then
 		self.FuncTamperSeal = exsto.Registry.Player.GetCount
 	end
 	
-	function PLUGIN:Think()
-		if self.FuncTamperSeal != exsto.Registry.Player.GetCount then -- We've been overridden.
-			self:Debug( "GetCount has been tampered.  Over-riding.", 1 )
-			self:OverrideGetCount()
+	function PLUGIN:Think()		
+		if CurTime() > self.NextThink then
+			self:Debug( "Updating restriction storage.", 1 )
+			self:RefreshStorage()
+			self.NextThink = CurTime() + ( self.NextCacheUpdate:GetValue() * 60 )
 		end
 	end
 	
@@ -89,7 +133,7 @@ if SERVER then
 	end
 	function PLUGIN:GetRestrictionList( short )
 		if short == 1 then 
-			local lst = table.Copy( weapons.GetList() )
+			local lst = table.Copy( list.Get( "Weapon" ) )
 				lst[ "gmod_tool" ] = nil
 			return lst 
 		elseif short == 2 then 
@@ -146,7 +190,6 @@ if SERVER then
 		self:Debug( "Sending '" .. w .. "' restriction for '" .. id .. "' on player '" .. pn .. "'", 1 )
 		
 		local data = self:GetRestrictionData( id, w )
-		
 		if w == 3 then self:SendPropRestrictionData( data, w, ply, sender ) return end
 		
 		sender:AddShort( w )
@@ -175,26 +218,29 @@ if SERVER then
 		local ply = reader:ReadSender()
 		
 		self:Debug( "Restricting '" .. w .. "' class '" .. class .. "' under identifier '" .. id .. "' as value '" .. tostring( enabled ) .. "'", 1 )
-		
+
+
 		local data = self:GetRestrictionData( id, w )
-		
 		self:UpdateEntry( w, id, data, class, enabled )
 	end
 	PLUGIN:CreateReader( "ExUpdateRestriction", PLUGIN.UpdateRestriction )
 	
 	function PLUGIN:UpdateEntry( w, id, data, class, enabled )
+		if not self.Storage[ id ] then self.Storage[ id ] = {} end
+		if not self.Storage[ id ][ self:GetRestrictionType( w ) ] then self.Storage[ id ][ self:GetRestrictionType( w ) ] = {} end
+			
 		local f
 		for k, d in pairs( data ) do
 			if d.Class == class then
 				f = true
-				data[ k ].Enabled = enabled
+				self.Storage[ id ][ self:GetRestrictionType( w ) ][ k ].Enabled = enabled
 			end
 		end
 		if not f then
-			table.insert( data, { Class = class, Enabled = enabled } )
+			table.insert( self.Storage[ id ][ self:GetRestrictionType( w ) ], { Class = class, Enabled = enabled } )
 		end
 			
-		self.DB:AddRow( self:ConstructDataSave( w, id, von.serialize( data ) ) )
+		self.DB:AddRow( self:ConstructDataSave( w, id, von.serialize( self.Storage[ id ][ self:GetRestrictionType( w ) ] ) ) )
 		
 		-- Resend
 		self:SendRestrictionData( w, id, exsto.GetMenuPlayers() )
@@ -222,14 +268,23 @@ if SERVER then
 	end
 	PLUGIN:CreateReader( "ExNoLimit", PLUGIN.SetNoLimits )
 	
+	function PLUGIN:VonDeserialize( d )
+		if d == nil then d = "" end
+		if d == "NULL" then d = "" end
+		return von.deserialize( d )
+	end
+	
 	-- NOTE FOR THE FUTURE:  I believe that after saving into a database, either FEL or SQLite/MySQL automagically changes null entries to become NULL strings.
 	-- Which then von starts to deserialize because fuck it, and thats why this bug exists.
-	function PLUGIN:GetRestrictionData( id, w )
-		local data = self.DB:GetData( id, self:GetRestrictionType( w ) )
-			data = data or ""
+	function PLUGIN:GetRestrictionData( id, w, c )
+		--[[self.DB:GetData( id, self:GetRestrictionType( w ), function( q, data )
+			data = data[ self:GetRestrictionType( w ) ] or ""
 			
-		if data == "NULL" then data = "" end
-		return von.deserialize( data )
+			if data == "NULL" then data = "" end
+			c( von.deserialize( data ) )
+		end )]]
+		
+		return self.Storage[ id ] and self.Storage[ id ][ self:GetRestrictionType( w ) ] or {}
 	end
 	
 	function PLUGIN:NoLimitRank( caller, rank )
@@ -282,7 +337,7 @@ if SERVER then
 		Args = { Player = "PLAYER" },
 		Category = "Restrictions",
 	})
-	PLUGIN:RequestQuickmenuSlot( "nolimits" )
+	PLUGIN:RequestQuickmenuSlot( "nolimits", "No Limits" )
 	
 	function PLUGIN:ExOnRankCreate( ID )
 		-- TODO
@@ -292,13 +347,13 @@ if SERVER then
 		-- Is the PLAYER allowed?
 		local data = self:GetRestrictionData( ply:SteamID(), w )
 		for _, d in pairs( data ) do
-			if d.Class == class then return not d.Enabled end
+			if ( d.Class:lower() == class ) and d.Enabled then return false end
 		end
-		
+
 		-- If we passed the player, is the RANK allowed?
 		local data = self:GetRestrictionData( ply:GetRank(), w )
 		for _, d in pairs( data ) do
-			if d.Class == class then return not d.Enabled end
+			if ( d.Class:lower() == class ) and d.Enabled then return false end
 		end
 	
 		return true
@@ -325,7 +380,7 @@ if SERVER then
 	end
 	
 	function PLUGIN:PlayerSpawnProp( ply, prop )
-		if not self:Allowed( ply, 3, prop ) then
+		if not self:Allowed( ply, 3, prop:lower() ) then
 			ply:Print( exsto_CHAT, COLOR.NORM, "The prop ", COLOR.NAME, prop, COLOR.NORM, " is disabled for your rank!" )
 			return false
 		end
@@ -849,15 +904,18 @@ elseif CLIENT then
 
 	function PLUGIN:Init()
 		self.List = exsto.Menu.CreatePage( "restrictions", restrictInit )
+			self.List:SetFlag( "restrictions" )
 			self.List:SetTitle( "Restrictions" )
 			self.List:SetSearchable( true )
 			self.List:OnShowtime( onRestrictShowtime )
+			self.List:SetIcon( "exsto/restriction.png" )
 			self.List:OnSearchTyped( function( e ) 
 				self.List.Content.RankList:Populate( exsto.Ranks, e:GetValue() )
 				self.List.Content.PlayerList:Populate( e:GetValue() )
 			end )
 			
 		self.Select = exsto.Menu.CreatePage( "restrictionselect", selectInit )
+			self.Select:SetFlag( "restrictions" )
 			self.Select:SetTitle( "Restrictions" )
 			self.Select:OnShowtime( onSelectShowtime )
 			self.Select:SetUnaccessable()
@@ -869,6 +927,7 @@ elseif CLIENT then
 			end )
 			
 		self.WeaponPage = exsto.Menu.CreatePage( "restrictweapon", weaponInit )
+			self.WeaponPage:SetFlag( "restrictions" )
 			self.WeaponPage:SetTitle( "Weapons" )
 			self.WeaponPage:OnShowtime( function( obj ) request( 1 ) end )
 			self.WeaponPage:SetBackFunction( backToSelect )
@@ -876,6 +935,7 @@ elseif CLIENT then
 			self.WeaponPage:SetUnaccessable()
 			
 		self.ToolPage = exsto.Menu.CreatePage( "restricttool", toolInit )
+			self.ToolPage:SetFlag( "restrictions" )
 			self.ToolPage:SetTitle( "Tools" )
 			self.ToolPage:OnShowtime( function( obj ) request( 2 ) end )
 			self.ToolPage:SetBackFunction( backToSelect )
@@ -883,6 +943,7 @@ elseif CLIENT then
 			self.ToolPage:SetUnaccessable()
 			
 		self.ENTPage = exsto.Menu.CreatePage( "restrictent", ENTInit )
+			self.ENTPage:SetFlag( "restrictions" )
 			self.ENTPage:SetTitle( "Entities" )
 			self.ENTPage:OnShowtime( function( obj ) request( 4 ) end )
 			self.ENTPage:SetBackFunction( backToSelect )
@@ -890,6 +951,7 @@ elseif CLIENT then
 			self.ENTPage:SetUnaccessable()
 			
 		self.PropPage = exsto.Menu.CreatePage( "restrictprop", propInit )
+			self.PropPage:SetFlag( "restrictions" )
 			self.PropPage:SetTitle( "Props" )
 			self.PropPage:OnShowtime( function( obj ) request( 3 ) end )
 			self.PropPage:SetBackFunction( backToSelect )
@@ -936,6 +998,44 @@ elseif CLIENT then
 				end
 			end,
 		} )
+		
+		-- This is going to be some really fancy ass shit right here.  Hold onto your butts.
+		self._DermaMenuOption = DMenu.AddOption
+		local trigger = 0
+		function DMenu.AddOption( d, txt, func )
+			print( "HELLO!", txt, trigger )
+			if txt == "Edit Icon" then trigger = trigger + 1 end
+			if trigger == 1 and txt == "Delete" then 
+				local pnl = self._DermaMenuOption( d, txt, func )
+				local sub = d:AddSubMenu( "Add to Exsto Restrictions" )
+				
+				for rID, rank in pairs( exsto.Ranks ) do
+					sub:AddOption( rank.Name, function()
+						PLUGIN.WorkingItem = {
+							Type = 1,
+							Data = rID,
+						}
+						update( 3, { ent:GetModel(), false } )
+					end )
+				end
+				
+				sub:AddSpacer()
+				
+				for _, ply in ipairs( player.GetAll() ) do
+					sub:AddOption( ply:Nick(), function()
+						PLUGIN.WorkingItem = {
+							Type = 0,
+							Data = ply:SteamID(),
+						}
+						update( 3, { ent:GetModel(), false } )
+					end )
+				end
+				trigger = 0
+				return
+			end		
+			
+			return self._DermaMenuOption( d, txt, func )
+		end
 	end
 	
 	

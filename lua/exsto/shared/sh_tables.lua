@@ -55,6 +55,12 @@ COLOR = {}
 	COLOR.BLUE = Color( 50, 50, 200, 255 )
 	COLOR.EXSTO = Color( 116, 202, 254, 255 )
 	COLOR.NAME = Color( 255, 105, 105, 255 )
+	COLOR.MENU = Color( 133, 133, 133, 255 ) 
+	COLOR.EXSTOGREEN = Color( 146, 232, 136, 255 )
+	COLOR.EXSTOCOMP = Color( 255, 68, 255, 255 )
+	COLOR.WHITE = Color( 255, 255, 255, 255 )
+	COLOR.HAZARDYELLOW = Color( 238, 210, 2, 255 )
+	COLOR.GREY = Color( 200, 200, 200, 255 )
 	
 -- Complementary color generator.  Adapted from easyrgb.com
 function exsto.GenerateComplementaryColor( col )
@@ -94,7 +100,7 @@ function exsto.ConvertHSLtoRGB( h, s, l )
 		b = 255 * hue2RGB( t1, t2, h - ( 1 / 3 ) )
 	end
 	
-	return Color( r, g, b, 255 )
+	return Color( math.Round( r ), math.Round( g ), math.Round( b ), 255 )
 end
 
 function exsto.ConvertRGBtoHSL( col )
@@ -127,8 +133,6 @@ function exsto.ConvertRGBtoHSL( col )
 		if h > 1 then h = h - 1 end
 	end
 	
-	print( h, s, l )
-	
 	return h, s, l
 end
 
@@ -141,8 +145,63 @@ end
 
 --[[ -----------------------------------
 	Function: exsto.CreateColoredPrint
-	Description: Returns a table w/ colors for exsto.Print
+	Description: Returns a table w/ colors for exsto.Print.  Parses str into a table and substitutes color commands for the color table.
+	Input: str: String to print.
     ----------------------------------- ]]
+function exsto.CreateColoredPrint( str )
+	-- Explode our string
+	local tbl, strBuffer = string.Explode( " ", str ), ""
+	
+	-- Loop through to construct our new table.
+	local new, clStart, clEnd, clTag, r, g, b, a = {}
+	for _, word in ipairs( tbl ) do
+		clStart, clEnd, clTag, r, g, b, a = string.find( word, "(%[c=(%d+),(%d+),(%d+),(%d+)%])" )
+		if clStart then -- We've found a color.  Input it
+			-- Flush strBuffer
+			if strBuffer != "" then
+				table.insert( new, strBuffer )
+				strBuffer = ""
+			end
+			
+			table.insert( new, Color( r, g, b, a ) )
+		else -- No color.  Insert string.
+			-- But wait, can we throw in one of our COLOR colors?
+			clStart, clEnd, clTag, c2 = string.find( word, "(%[c=COLOR,(%u+)%])" )
+			if clStart and COLOR[ c2 ] then
+				-- Flush strBuffer
+				if strBuffer != "" then
+					table.insert( new, strBuffer )
+					strBuffer = ""
+				end
+				
+				table.insert( new, COLOR[ c2 ] )
+			else
+				-- Append to the str buffer
+				strBuffer = strBuffer .. word .. " " 
+			end
+		end
+	end
+	
+	table.insert( new, strBuffer )
+	return new
+end	
+
+--[[ -----------------------------------
+	Function: exsto.CreateStringColorPrint
+	Description: Converts table returned by exsto.CreateColoredPrint back into a string format.
+	Input: tbl: The above
+    ----------------------------------- ]]
+function exsto.CreateStringColorPrint( tbl )
+	local strBuffer = ""
+	for _, d in ipairs( tbl ) do
+		if type( d ) == "table" then
+			strBuffer = strBuffer .. "[c=" .. d.r .. "," .. d.g .. "," .. d.b .. "," .. d.a .. "] "
+		else
+			strBuffer = strBuffer .. d
+		end
+	end
+	return strBuffer
+end
 
 --[[ -----------------------------------
 	Function: exsto.GetClosestString
@@ -182,6 +241,30 @@ function exsto.GetClosestString( str, possible, member, ply, text )
 	return new
 end
 
+--[[ -----------------------------------
+	Function: exsto.CreatePaste( title, contents )
+	Description: Creates a pastebin.com paste, returns the ID.
+     ----------------------------------- ]]
+function exsto.CreatePaste( title, contents, callback )
+	http.Post( "http://pastebin.com/api/api_post.php", {
+		api_option = "paste";
+		api_dev_key = "eb2f636561d520d76dfb51ec3e6a49e2";
+		api_paste_private = "1";
+		api_paste_name = title;
+		api_paste_code = contents;
+	}, 	function( str )
+			local id = string.Explode( "/", str )
+			if callback then
+				callback( id[4]	)		
+			end
+	end,
+		function( str )
+			exsto.ErrorNoHalt( "exsto.CreatePaste failed." )
+			print( str )
+	end
+	)
+end
+		
 --[[ -----------------------------------
 	Function: exsto.SmartNumber
 	Description: Returns the number in a table that has no index.
@@ -278,7 +361,7 @@ function exsto.GetAddonFolder()
 		-- Create a fake debug so we can grab where we are running from.
 		local runningLoc = debug.getinfo( 1, "S" ).short_src
 		
-		runningLoc = string.Explode( "\\", runningLoc )
+		runningLoc = string.Explode( "/", runningLoc )
 		folder = runningLoc[2]
 	end
 	
@@ -343,28 +426,30 @@ end
 --[[ -----------------------------------
 	Function: exsto.NiceTime
 	Description: Returns a number in a nice string
+	Input: Minutes
      ----------------------------------- ]]
 function exsto.NiceTime( num )
-	--[[local ret, int, dec = "", 0, 0
+	local int, dec, rec = 0, 0, ""
 	
-	int, dec = math.modf( 7 * 24 * 60 * num ) -- week
-	if int > 0 then
-		ret = int .. " weeks, "
+	int, dec = math.modf( num / 60 / 24 / 7 )
+	if int > 0 then 
+		rec = int .. " weeks, " 
+		num = num - ( int * 60 * 24 * 7 )
 	end
 	
-	int, dec = math.modf( 24 * 60 * dec ) -- days
+	int, dec = math.modf( num / 60 / 24 )
 	if int > 0 then
-		ret = ret .. int .. " days, "
+		rec = rec .. int .. " days, "
+		num = num - ( int * 60 * 24 )
 	end
 	
-	int, dec = math.modf( 60 * dec ) -- hours
+	int, dec = math.modf( num / 60 )
 	if int > 0 then
-		ret = ret .. int .. " hours, "
+		rec = rec .. int .. " hours, "
+		num = num - ( int * 60 )
 	end
 	
-	int, dec = math.modf( dec )]]
-	
-	return num .. " minutes"
+	return rec .. math.Round( num ) .. " minutes"
 end
 
 --[[ -----------------------------------
@@ -380,10 +465,10 @@ exsto.DefaultRanks = {
 		Immunity = 0,
 		FlagsAllow = von.serialize( {
 			"issuperadmin", "variable", "resendplug", "deletevar", "createvar", "reloadplug", "playertitle", "addgimp",  "luarun", "cexec",
-			"rankeditor", "addadvert", "allowentity", "allowprop", "allowstool", "allowswep", "ban", "banid", "deladvert",
+			"rankeditor", "allowentity", "allowprop", "allowstool", "allowswep", "ban", "banid",
 			"denyentity", "denyprop", "denystool", "denyswep", "entspawn", "felbackup", "feldetails", "felsettings", "immunity",
-			"rank", "rankid", "settingsdetails", "settings", "banlistdetails", "afkkickignore", "command", "findghosts",
-			"playerpickup", "setconvar", "unban", "pluginpage", "nolimitrank"
+			"rank", "rankid", "server-settings", "banlistdetails", "afkkickignore", "command", "findghosts",
+			"playerpickup", "setconvar", "unban", "pluginpage", "nolimitrank", "crcinvalnotify"
 		} );
 		FlagsDeny = von.serialize( {
 		} );
@@ -418,7 +503,7 @@ exsto.DefaultRanks = {
 		Immunity = 9,
 		FlagsAllow = von.serialize( {
 			"getrank", "search", "menu", "gettotaltime", "title", "displayheadtags", "mytitle", "togglechatanim", "updateownerrank",
-			"helppage", "review", "round", "voteban", "votekick", "voteno", "voteyes", "quickmenu",
+			"helppage", "review", "round", "voteban", "votekick", "voteno", "voteyes", "quickmenu", "settings", "motd"
 		} );
 		FlagsDeny = von.serialize( {
 		} );

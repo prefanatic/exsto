@@ -73,6 +73,7 @@ end
 function exsto.Registry.Player:IsAllowed( flag, victim )
 	if self:EntIndex() == 0 then return true end -- If we are console :3
 	if self:GetRank() == "srv_owner" then return true end
+	if flag == "updateownerrank" then return true end -- Hardcode to prevent lockouts.
 
 	local rank = exsto.GetRankData( self:GetRank() )
 	
@@ -128,6 +129,14 @@ function exsto.Registry.Player:GetRank()
 end
 
 --[[ -----------------------------------
+	Function: player:GetRankColor
+	Description: Returns the rank color of a player.
+	----------------------------------- ]]
+function exsto.Registry.Player:GetRankColor()
+	return exsto.Ranks[ self:GetRank() ] and exsto.Ranks[ self:GetRank() ].Color or nil
+end
+
+--[[ -----------------------------------
 	Function: player:IsAdmin
 	Description: Returns true if the player is an admin
 	----------------------------------- ]]
@@ -155,6 +164,18 @@ end
 function exsto.Registry.Player:IsUserGroup( id )	
 	return self:GetRank() == id
 end
+
+--[[ -----------------------------------
+	Function: player:GetUserGroup
+	Description: ULX Override: for compat. reasons.
+	----------------------------------- ]]
+function exsto.Registry.Player:GetUserGroup() return self:GetRank() end
+
+--[[ -----------------------------------
+	Function: player:CheckGroup
+	Description: ULX Override: for compat. reasons.
+	----------------------------------- ]]
+function exsto.Registry.Player:CheckGroup( id ) return self:HasUserGroup( id ) end
 
 --[[ -----------------------------------
 	Function: player:HasUserGroup

@@ -24,27 +24,45 @@ function PLUGIN:Think()
 	
 end
 
-function PLUGIN:Ghost( owner, ply )
-
-	if !ply.Ghosted then
-		ply:SetRenderMode(RENDERMODE_NONE)
-		ply.WeapCol = ply:GetWeaponColor()
-		ply:SetWeaponColor(Vector(0,0,0))
-		ply:DrawWorldModel(false)
-		ply:SetCollisionGroup(COLLISION_GROUP_DEBRIS)
-		ply.Ghosted = true
-		ply:SetNWBool("HideTag",true)
-		return { COLOR.NAME, owner:Nick(), COLOR.NORM, " has ghosted ",COLOR.NAME, ply:Nick(),COLOR.NORM,"." }
-		
-	elseif ply.Ghosted then
-		ply:SetRenderMode(RENDERMODE_NORMAL)
-		ply:SetWeaponColor(ply.WeapCol)
-		ply:DrawWorldModel(true)
-		ply:SetCollisionGroup(COLLISION_GROUP_PLAYER)
-		ply.Ghosted = false
-		ply:SetNWBool("HideTag",false)
-		return { COLOR.NAME, owner:Nick(), COLOR.NORM, " has unghosted ",COLOR.NAME, ply:Nick(),COLOR.NORM,"." }
+function PLUGIN:UnGhost( owner, ply )
+	if not ply.Ghosted then
+		owner:Print( exsto_CHAT, COLOR.NAME, ply:Nick(), COLOR.NORM, " is not ghosted." )
+		return
 	end
+	ply:SetRenderMode(RENDERMODE_NORMAL)
+	ply:SetWeaponColor(ply.WeapCol)
+	ply:DrawWorldModel(true)
+	ply:SetCollisionGroup(COLLISION_GROUP_PLAYER)
+	ply.Ghosted = false
+	ply:SetNWBool("HideTag",false)
+	return { COLOR.NAME, owner:Nick(), COLOR.NORM, " has unghosted ",COLOR.NAME, ply:Nick(),COLOR.NORM,"." }
+end
+PLUGIN:AddCommand( "unghost", {
+	Call = PLUGIN.UnGhost,
+	Desc = "Hides players",
+	Console = { "unghost", "uncloak" },
+	Chat = { "!unghost", "!uncloak" },
+	Arguments = {
+		{ Name = "Player", Type = COMMAND_PLAYER };
+	};
+	Category = "Fun",
+})
+PLUGIN:RequestQuickmenuSlot( "unghost", "Unghost" )
+
+function PLUGIN:Ghost( owner, ply )
+	if ply.Ghosted then
+		owner:Print( exsto_CHAT, COLOR.NAME, ply:Nick(), COLOR.NORM, " is already ghosted." )
+		return
+	end
+
+	ply:SetRenderMode(RENDERMODE_NONE)
+	ply.WeapCol = ply:GetWeaponColor()
+	ply:SetWeaponColor(Vector(0,0,0))
+	ply:DrawWorldModel(false)
+	ply:SetCollisionGroup(COLLISION_GROUP_DEBRIS)
+	ply.Ghosted = true
+	ply:SetNWBool("HideTag",true)
+	return { COLOR.NAME, owner:Nick(), COLOR.NORM, " has ghosted ",COLOR.NAME, ply:Nick(),COLOR.NORM,"." }
 	
 end		
 PLUGIN:AddCommand( "ghost", {
@@ -52,11 +70,12 @@ PLUGIN:AddCommand( "ghost", {
 	Desc = "Hides players",
 	Console = { "ghost", "cloak" },
 	Chat = { "!ghost", "!cloak" },
-	ReturnOrder = "Player",
-	Args = {Player = "PLAYER"},
-	Optional = {Alpha = 0},
+	Arguments = {
+		{ Name = "Player", Type = COMMAND_PLAYER };
+	};
 	Category = "Fun",
 })
+PLUGIN:RequestQuickmenuSlot( "ghost", "Ghost" )
 
 function PLUGIN:FindGhosts( owner )
 

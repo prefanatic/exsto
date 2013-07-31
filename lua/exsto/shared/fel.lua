@@ -25,6 +25,7 @@ FEL = {}
 		mysql_pass = "pass";
 		mysql_database = "main_db";
 		mysql_host = "127.0.0.1";
+		mysql_module = "mysqloo";
 		debug_level = 0;
 		mysql_databases = {};
 		backup_rates = {};
@@ -75,13 +76,32 @@ function FEL.Init()
 	FEL.ReadSettingsFile()
 	
 	-- Check and see if we need MySQL to operate.
-	if FEL.MySQLNeeded() and !mysqloo and SERVER then
-		local s, err = pcall( require, "mysqloo" )
+	local mod, id = FEL.GetMySQLModule()
+	if FEL.MySQLNeeded() and !mod and SERVER then
+		local s, err = pcall( require, id )
 		if !s then
-			ErrorNoHalt( "FEL --> Unable to load 'mysqloo'.  Make the bin is located in lua/bin and libmysql with srcds.\n" )
+			ErrorNoHalt( "FEL --> Unable to load '" .. id .. "'.  Make the bin is located in lua/bin and libmysql with srcds.\n" )
 			ErrorNoHalt( "FEL --> Defaulting to SQLite.\n" )
 		end
 	end
+end
+
+-- Lets hope this fixes us "crashing" on restarts and stuff.
+hook.Add( "ShutDown", "FELStartWaiting", function()
+	FEL.Print( "Lua environment shutting down!  Waiting on every query call until we're finished." )
+	FEL._holdQuery = true
+end )
+
+function FEL.GetMySQLModule()
+	if FEL.Config.mysql_module == "mysqloo" then
+		return mysqloo, "mysqloo"
+	elseif FEL.Config.mysql_module == "tmysql" then
+		return tmysql, "tmysql"
+	end
+end
+
+function FEL.GetMySQLModuleID()
+	return FEL.Config.mysql_module
 end
 
 function FEL.ConstructLocation()
@@ -98,6 +118,12 @@ function FEL.ReadSettingsFile()
 	else
 	
 		FEL.Config = von.deserialize( file.Read( FEL.ConfigFile ) )
+		
+		-- Check consistancy.
+		for id, val in pairs( FEL.DefaultConfig ) do
+			if not FEL.Config[ id ] then FEL.Config[ id ] = val end
+		end
+		FEL.SaveSettings();
 		
 		if FEL.Config[ 1 ] == "TableToKeyValue" then -- We're probably on the old util.TableToKeys.  Remove, sorry!
 			file.Write( FEL.ConfigFile, von.serialize( FEL.DefaultConfig ) )
@@ -116,16 +142,27 @@ function FEL.SetMySQLInformation( user, pass, db, host )
 	FEL.SaveSettings();
 end	
 
+function FEL.SetMySQLModule( module )
+	FEL.Config.mysql_module = module;
+	FEL.SaveSettings();
+end
+
 -- Hardcoded function if this API doesn't have any other methods to set mysql information.  This is just an API, not a handle-all.
 -- Developers should implement their own way of setting the mysql information.
+local function q( ply )
+	if !ply:EntIndex() == 0 and game.IsDedicated() then
+		ply:PrintMessage( HUD_PRINTCONSOLE, "This command can only be run on the server console!" )
+		return false
+	elseif ply:EntIndex() == 0 or ply:IsListenServerHost() then
+		return true
+	end
+end
 local function p( msg, ply )
 	if ply:EntIndex() == 0 then print( msg ) return end
 	ply:PrintMessage( HUD_PRINTCONSOLE, msg )
 end
 function FEL.HardcodeMySQLSet( ply, _, args )
-	if !ply:EntIndex() == 0 and game.IsDedicated() then
-		ply:PrintMessage( HUD_PRINTCONSOLE, "This command can only be run on the server console!" )
-	elseif ply:EntIndex() == 0 or ply:IsListenServerHost() then
+	if q( ply ) then
 		if !args[ 1 ] or !args[ 2 ] or !args[ 3 ] or !args[ 4 ] then
 			p( "Invalid arguments!  We need the username, password, database, and the host: in that order.", ply )
 			return
@@ -135,6 +172,43 @@ function FEL.HardcodeMySQLSet( ply, _, args )
 	end
 end
 concommand.Add( "FELSetMySQLInformation", FEL.HardcodeMySQLSet )
+
+function FEL.DropTable( ply, _, args )
+	if q( ply ) then
+		if !args[ 1 ] then
+			p( "No table entered!", ply )
+			return
+		end
+		local db = FEL.GetDatabase( args[ 1 ] )
+		if not db then
+			p( "No table named '" .. args[ 1 ] .. "'", ply )
+			return
+		end
+		p( "Dropping table '" .. db:GetName() .. "'", ply )
+		db:Reset();
+	end
+end
+concommand.Add( "FELDropTable", FEL.DropTable )
+
+function FEL.PrintDatabases( ply, _, args )
+	if q( ply ) then
+		for _, db in pairs( FEL.GetDatabases() ) do
+			p( "Database: " .. db:GetName(), ply )
+		end
+	end
+end
+concommand.Add( "FELListTables", FEL.PrintDatabases )
+
+function FEL.SetMySQLModuleCom( ply, _, args )
+	if q( ply ) then
+		if args[ 1 ] == "mysqloo" or args[ 1 ] == "tmysql" then
+			FEL.SetMySQLModule( args[ 1 ] )
+		else
+			p( "The only valid modules are 'mysqloo' and 'tmysql'", ply )
+		end
+	end
+end
+concommand.Add( "FELSwitchMySQLModule", FEL.SetMySQLModuleCom )
 
 function FEL.SaveSettings()
 	file.Write( FEL.ConfigFile, von.serialize( FEL.Config ) )
@@ -175,6 +249,25 @@ function FEL.Debug( msg, level )
 	end
 end
 
+--[[ MySQL database parent.  We want to have FEL have overarching control over the database, not per-object.
+*****
+]]
+
+function FEL.InitMySQL()
+	if FEL.GetMySQLModuleID() == "mysqloo" then
+		if FEL._mysqlDB then FEL._mysqlDB = nil end
+		
+		FEL._mysqlDB = mysqloo.connect( FEL.Config.mysql_host, FEL.Config.mysql_user, FEL.Config.mysql_pass, FEL.Config.mysql_database )
+		FEL._mysqlDB:connect()
+		FEL._mysqlDB.onConnected = function( mysqldb ) self:OnMySQLConnect() end
+		FEL._mysqlDB.onConnectionFailed = function( mysqldb, err ) self:OnMySQLConnectFail( err ) end
+		FEL._mysqlDB:wait()
+	elseif FEL.GetMySQLModuleID() == "tmysql" then
+		tmysql.initialize( FEL.Config.mysql_host, FEL.Config.mysql_user, FEL.Config.mysql_pass, FEL.Config.mysql_database )
+	end
+end
+
+
 FEL.Init()
 
 -- Database metaobject
@@ -201,6 +294,7 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	obj._lastRefreshCheck = CurTime()
 	obj._lastBackup = CurTime()
 	obj._forcedLocal = forceLocal
+	obj._CacheUpdate = os.time()
 	obj.cacheResetRate = 0
 	obj.backupRate = 0
 	
@@ -210,6 +304,11 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	
 	table.insert( FEL.Databases, obj )
 	hook.Add( "Think", "FELDBTHINK_" .. dbName, function() obj:Think() end )
+	hook.Add( "ShutDown", "FELDBSHUTDOWN_" .. dbName, function()
+		if obj:IsMySQL() and obj._ExID then
+			obj:Query( "DELETE FROM " .. dbName .. "_instances WHERE ExID=" .. obj._ExID .. ";", false )
+		end 
+	end )
 	
 	-- Do we need to initiate a MySQL object?
 	if obj:RequiresMySQL() and FEL.HasMySQLCapacity() then obj:InitMySQL()
@@ -218,7 +317,7 @@ function FEL.CreateDatabase( dbName, forceLocal )
 	-- Set our backup rate.
 	local f = false
 	for _, tbl in ipairs( FEL.Config.backup_rates ) do
-		if tbl[1] == obj:GetName() then obj:SetAutoBackup( tbl[2] ) f = true end
+		if tbl[1] == obj:GetName() then obj:SetAutoBackup( tbl[2] / 60 ) f = true end
 	end
 	
 	-- Insert into backup rates if we don't already exist.
@@ -314,12 +413,36 @@ function db:Print( msg )
 end
 
 function db:Debug( msg, level )
-	FEL.Debug( self.dbName .. " --> " .. msg, level )
+	if type( msg ) == "table" then
+		table.insert( msg, 1, COLOR.EXSTO )
+		table.insert( msg, 2, self.dbName )
+		table.insert( msg, 3, COLOR.WHITE )
+		table.insert( msg, 4, " --> " )
+		FEL.Debug( msg, level )
+		return
+	end
+	FEL.Debug( { COLOR.EXSTO, self.dbName, COLOR.WHITE, " --> " .. msg }, level )
+end
+
+function db:InjectInstance()
+	-- This is going to create an accessor table, filled with exsto instances using the table.
+	-- We will consistantly check this table, and we can use it to push out notifications that we need cache updates.
+	self:Query( "CREATE TABLE IF NOT EXISTS " .. self.dbName .. "_instances ( ExID int NOT NULL AUTO_INCREMENT, CacheUpdate int NOT NULL, PRIMARY KEY (ExID) );", true,
+		function( q, data )
+			self:Query( "INSERT INTO " .. self.dbName .. "_instances (ExID, CacheUpdate) VALUES(NULL, " .. os.time() .. ");", true,
+				function( q, data )
+					self._ExID = q:lastInsert()
+				end 
+			)
+		end
+	)
 end
 
 function db:OnMySQLConnect()
 	self:Print( "MySQL connected!" )
 	self._mysqlSuccess = true
+	
+	--self:InjectInstance()
 	
 	if self._AttemptingMySQLReconnect then -- Grab us back into motion.
 		self:Query( self._PreMySQLQueryErr, false )
@@ -347,7 +470,7 @@ function db:OnMySQLConnectFail( err )
 	self:Error( "MySQL Error: " .. tostring( err ) )
 	self._mysqlSuccess = false
 	
-	if self._AttemptingMySQLReconnect and self._AttemptingMySQLReconnect > 3 then -- Three times.
+	if self._AttemptingMySQLReconnect and self._AttemptingMySQLReconnect > 4 then -- Three times.
 		self:Error( "Unable to reconnect to MYSQL.  Forcing SQLite." )
 		self._forcedLocal = true
 		self._AttemptingMySQLReconnect = nil
@@ -370,11 +493,16 @@ function db:InitMySQL()
 	if self._mysqlDB then self._mysqlDB = nil end
 	
 	self:Debug( "Creating MySQL object.", 2 )
-	self._mysqlDB = mysqloo.connect( FEL.Config.mysql_host, FEL.Config.mysql_user, FEL.Config.mysql_pass, FEL.Config.mysql_database )
-	self._mysqlDB:connect()
-	self._mysqlDB.onConnected = function( mysqldb ) self:OnMySQLConnect() end
-	self._mysqlDB.onConnectionFailed = function( mysqldb, err ) self:OnMySQLConnectFail( err ) end
-	self._mysqlDB:wait()
+	if FEL.GetMySQLModuleID() == "mysqloo" then
+		self._mysqlDB = mysqloo.connect( FEL.Config.mysql_host, FEL.Config.mysql_user, FEL.Config.mysql_pass, FEL.Config.mysql_database )
+		self._mysqlDB:connect()
+		self._mysqlDB.onConnected = function( mysqldb ) self:OnMySQLConnect() end
+		self._mysqlDB.onConnectionFailed = function( mysqldb, err ) self:OnMySQLConnectFail( err ) end
+		self._mysqlDB:wait()
+	elseif FEL.GetMySQLModuleID() == "tmysql" then
+		tmysql.initialize( FEL.Config.mysql_host, FEL.Config.mysql_user, FEL.Config.mysql_pass, FEL.Config.mysql_database )
+	end
+		
 end
 
 function db:ConstructColumns( columnData )
@@ -408,7 +536,9 @@ function db:ConstructColumns( columnData )
 		Create = "CREATE TABLE IF NOT EXISTS " .. self.dbName .. "(%s)";
 		Datatypes = "%s %s";
 		Update = "UPDATE " .. self.dbName .. " SET %s WHERE " .. formatted._PrimaryKey .. " = %s";
-		Insert = "INSERT INTO " .. self.dbName .. "(%s) VALUES(%s)";
+		Insert = "INSERT OR REPLACE INTO " .. self.dbName .. "(%s) VALUES(%s)";
+		InsertDuplicate = "INSERT INTO " .. self.dbName .. " (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;";
+		DuplicateSet = "%s = VALUES(%s)";
 		Set = "%s = %s";
 		Delete = "DELETE FROM %s WHERE %s = %s";
 	}
@@ -417,9 +547,11 @@ function db:ConstructColumns( columnData )
 	self:Debug( "Running table construction query.", 2 )
 	self:Query( self:ConstructQuery( "create" ), false )
 	
-	self:GetCacheData( false )
-	self:CheckIntegrity()	
-	self:QOSCheck()	
+	-- This has become the gayest thing ever.
+	if not self._mysqlSuccess then
+		self:GetCacheData( false ) -- We want to reimplement the cache on SQLite.
+	end
+	--self:CheckIntegrity()	
 end
 
 function db:SetRefreshRate( time )
@@ -430,7 +562,7 @@ function db:SetRefreshRate( time )
 	self:Debug( "Setting cache refresh rate at '" .. time .. "' seconds.", 1 )
 end
 
-function db:CacheRefresh()
+function db:CacheRefresh( callback )
 	self:GetCacheData( true )
 	self:QOSCheck()
 	
@@ -441,12 +573,18 @@ local function pass3( self, data, tbl, index, max )
 	table.Add( tbl, data )
 	
 	if index == max then
-		self.Cache._cache = table.Copy( tbl )
+		self.Cache._cache = self:QOSCheck( table.Copy( tbl ) )
+		if self.CacheUpdated then
+			self:CacheUpdated()
+		end
 	end
 end
 
 local function pass2( self, data )
-	self.Cache._cache = data or {}
+	self.Cache._cache = self:QOSCheck( data or {} )
+	if self.CacheUpdated then
+		self:CacheUpdated()
+	end
 end
 
 local function pass( self, cacheData, thread )
@@ -586,7 +724,24 @@ function db:CheckCache( id, data )
 end
 
 function db:ConstructQuery( style, data )
-	if style == "new" then
+	if style == "insert_duplicate" then
+		local query = self.Queries.InsertDuplicate
+		
+		self._clk = 1
+		local count = table.Count( data )
+		for column, rowData in pairs( data ) do
+			if type( rowData ) == "string" then rowData = self:Escape( rowData ) end
+			if self._clk == count then
+				query = string.format( query, column, tostring( rowData ), string.format( self.Queries.Set, column, tostring( rowData ) ) )
+			else
+				query = string.format( query, column .. ", %s", tostring( rowData ) .. ", %s", string.format( self.Queries.Set, column, tostring( rowData ) ) .. ", %s" )
+			end
+			
+			self._clk = self._clk + 1
+		end
+		
+		return query
+	elseif style == "new" then
 		local query = self.Queries.Insert
 		
 		self._clk = 1
@@ -650,12 +805,13 @@ function db:OnQueryError( err, query )
 	end		
 end
 
-function db:QueryEnd()
+function db:QueryEnd( ignoreDebug )
+	if ignoreDebug then return end
 	self.qTEnd = SysTime();
 	self:Debug( "Took '" .. self.qTEnd - self.qTStart .. "' seconds to run this query.", 3 )
 end
 
-function db:Query( str, threaded, callback )
+function db:Query( str, threaded, callback, ignoreDebug )
 	if self._Disabled then
 		self:Print( "Disabled! " .. self._DisabledMsg )
 		return
@@ -663,20 +819,22 @@ function db:Query( str, threaded, callback )
 	hook.Call( "FEL_OnQuery", nil, str, threaded )
 	
 	-- Debug reasons.
-	self.qTStart = SysTime();
-	self:Debug( "Query (mysql: " .. tostring( self._mysqlSuccess ) .. ", threaded: " .. tostring( threaded ) .. ") - " .. str, 3 )
+	if not ignoreDebug then
+		self.qTStart = SysTime();
+		self:Debug( { "Query (mysql: ", COLOR.NAME, tostring( self._mysqlSuccess ), COLOR.WHITE, ", threaded: ", COLOR.NAME, tostring( threaded ), COLOR.WHITE, ") - ", COLOR.GREY, str }, 3 )
+	end
 	
 	if self._mysqlSuccess == true and self._forcedLocal != true then -- We are MySQL baby
 		self._mysqlQuery = self._mysqlDB:query( str )
-		self._mysqlQuery.onError = function( query, err ) self:OnQueryError( err, query ) end
+		self._mysqlQuery.onError = function( q, err, qSTR ) self:OnQueryError( err, qSTR ) end
 		self._mysqlQuery:start()
 		
-		if threaded == false then -- If we request not to be threaded.
+		if ( threaded == false ) or FEL._holdQuery then -- If we request not to be threaded.
 			self._mysqlQuery:wait()
-			self:QueryEnd()
+			self:QueryEnd( ignoreDebug )
 			return self._mysqlQuery:getData()
 		else
-			self:QueryEnd()
+			self:QueryEnd( ignoreDebug )
 			if callback then
 				self._mysqlQuery.onSuccess = callback
 			end
@@ -687,9 +845,9 @@ function db:Query( str, threaded, callback )
 		if result == false then
 			-- An error, holy buggers!
 			self:OnQueryError( sql.LastError() )
-			self:QueryEnd()
+			self:QueryEnd( ignoreDebug )
 		else
-			self:QueryEnd()
+			self:QueryEnd( ignoreDebug )
 			if callback then -- Call it.
 				callback( str, result )
 			end
@@ -717,6 +875,11 @@ function db:PushSaves()
 	end
 	
 	self:SetLastUpdateTime( os.time() )
+	
+	-- Set our notification that sql data has changed.
+	if self:IsMySQL() and self._ExID then -- In no case will we NOT have self._ExID due to an error.  If we don't have it, assume the server is hibernating.
+		self:Query( "UPDATE " .. self.dbName .. "_instances SET CacheUpdate=".. os.time() .." WHERE ExID=" .. self._ExID .. ";", true )
+	end
 end
 
 function db:Think()
@@ -724,15 +887,29 @@ function db:Think()
 	if ( CurTime() > self._lastThink + self.thinkDelay ) then
 
 		-- Heartbeat please.
-		if self:IsMySQL() and self._forcedLocal != true then self:Query( "SELECT 1 + 1", true ) end
+		if self:IsMySQL() and self._forcedLocal != true then 
+			self:Query( "SELECT 1 + 1", true, nil, true ) 
+			--[[self:Query( "SELECT * FROM " .. self.dbName .. "_instances", true, function( q, data )
+				for entry, d in ipairs( data ) do
+					if ( d.CacheUpdate > self._CacheUpdate ) and d.ExID != self._ExID then -- Another instance has updated data!  PULL IT IN!
+						self:CacheRefresh()
+						self._CacheUpdate = d.CacheUpdate
+
+						-- Update our instance to the last update that we received.
+						self:Query( "UPDATE " .. self.dbName .. "_instances SET CacheUpdate=" .. d.CacheUpdate .." WHERE ExID=" .. self._ExID .. ";", true )
+					end
+				end
+			end )]]
+		end
+		
 		
 		self._lastThink = CurTime()
 	end
 	
-	if ( CurTime() > self._lastRefreshCheck + self.cacheResetRate ) and self.cacheResetRate != 0 then
+	--[[if ( CurTime() > self._lastRefreshCheck + self.cacheResetRate ) and self.cacheResetRate != 0 then
 		self:CacheRefresh()
 		self._lastRefreshCheck = CurTime()
-	end
+	end]]
 	
 	if ( CurTime() > self._lastBackup + self.backupRate ) and self.backupRate != 0 then
 		self:Backup()
@@ -772,101 +949,183 @@ function db:DataInconsistancies( data )
 	return true
 end
 
-function db:QOSCheck() -- Quality of Service brother....
+function db:QOSCheck( data ) -- Quality of Service brother....
+	if data == nil then return nil end
+	
+	local d = data
 	local columnTypes = {}
 	for column, queryUsed in pairs( self.Columns ) do
 		columnTypes[ column ] = self:GetColumnType( column )
 	end
 	
-	for _, slot in ipairs( self.Cache._cache ) do
+	for _, slot in ipairs( data ) do
 		for column, value in pairs( slot ) do
+			if value == "NULL" then
+				d[_][ column ] = nil
+			end
+			
 			if columnTypes[ column ] == "number" then
-				self.Cache._cache[ _ ][ column ] = tonumber( value )
+				d[_][ column ] = tonumber( value )
 			elseif columnTypes[ column ] == "string" then
-				self.Cache._cache[ _ ][ column ] = tostring( value )
+				d[_][ column ] = tostring( value )
 			end
 		end
 	end
+	return d
 end
 
-function db:AddRow( data, options )
-	options = options or {}
+function db:AddRow( data, callback )
 	
 	-- I hate you inconsistencies; lets be redundant and check our data vs data types.
 	if !self:DataInconsistancies( data ) then return end
 	
-	-- Check our _new and _changed first brother.
-	if self:CheckCache( "_new", data ) then
-		table.Merge( self.Cache._new[ self._LastKey ], data )
-		self:PushSaves()
-		self:Think( true )
-		return
-	elseif self:CheckCache( "_changed", data ) then
-		table.Merge( self.Cache._changed[ self._LastKey ], data )
-		self:PushSaves()
-		self:Think( true )
-		return
-	end
+	if self._mysqlSuccess then
+	
+		if not callback then
+			self:Debug( "No callback given for '" .. self:GetName() .. ":AddRow()'  We are going to thread it anyways!  This 'might' cause issues.", 1 )
+		end
+		self:Query( self:ConstructQuery( "insert_duplicate", data ), true, callback )
 		
-	if self:CheckCache( "_cache", data ) then
-		if options.Update == false then return end	
-		table.Merge( self.Cache._cache[ self._LastKey ], data )		
-		self:TblInsert( self.Cache._changed, data )
-		self:PushSaves()
-		self:Think( true )
-		return
 	else
-		self:TblInsert( self.Cache._cache, data )
-		self:TblInsert( self.Cache._new, data )
-		self:PushSaves()
-		self:Think( true )
+	
+		-- We have the data we want to save.  Add in what we're missing.
+		local pk = self.Columns._PrimaryKey
+		local key = data[ pk ]
+		local d, slot = nil, nil
+		
+		if not key then
+			self:Error( "No primary key given for data save!  We have NO idea where to put this data. :(" )
+			return
+		end
+		
+		for _, row in ipairs( self.Cache._cache ) do
+			if key == row[ pk ] then d = row slot = _ break end
+		end
+
+		if not d then
+			self:Query( self:ConstructQuery( "new", data ), true, function( q, d )
+				if callback then
+					callback( q, d )
+				end
+				table.insert( self.Cache._cache, data )
+			end )
+			return
+		end
+		-- We have the cached data as d.  Fill in with our given data and save it all.
+		for k, v in pairs( data ) do
+			d[ k ] = v
+		end
+		
+		-- Update the cache.
+		self.Cache._cache[ slot ] = d;
+
+		self:Query( self:ConstructQuery( "new", d ), true, callback )
 	end
+
 end
 
 function db:TblInsert( tbl, data )
 	tbl[ #tbl + 1 ] = data
 end
 
-function db:GetAll()
-	return table.Copy( self.Cache._cache )
-end
-
--- Different from db:GetAll().  Just returns a reference table instead of a copied table.  Not as intensive, for use in think hooks.
-function db:ReadAll()
-	return self.Cache._cache
-end
-
-function db:GetRow( key )
-	for _, rowData in ipairs( self.Cache._cache ) do
-		if key == rowData[ self.Columns._PrimaryKey ] then return rowData end
-	end
-end
-
-function db:GetData( key, reqs )
-	local data = self:GetRow( key )
-	
-	if !data then return end
-	
-	local ret = {}
-	for _, req in ipairs( string.Explode( ", ", reqs ) ) do
-		table.insert( ret, data[ req:Trim() ] )
-	end
-	
-	return unpack( ret )
-end
-
-function db:DropRow( key )
-	for _, rowData in ipairs( self.Cache._cache ) do
-		if key == rowData[ self.Columns._PrimaryKey ] then 
-			table.remove( self.Cache._cache, _ )
-			
-			key = type( key ) == "string" and self:Escape( key ) or key
-			self:Query( string.format( self.Queries.Delete, self.dbName, self.Columns._PrimaryKey, key ), true )
-			break
+function db:GetAll( callback )
+	if not self._mysqlSuccess then
+		if callback then 
+			callback( nil, table.Copy( self.Cache._cache ) )
+			return
+		else
+			return table.Copy( self.Cache._cache )
 		end
 	end
 	
-	-- Check our queued data
+	if not callback then
+		self:Debug( "No callback on '" .. self:GetName() .. ":GetAll()', we are going to halt the server due to this!", 1 )
+		
+		return self:Query( "SELECT * FROM " .. self:GetName() .. ";", false )
+	end
+	
+	self:Query( "SELECT * FROM " .. self:GetName() .. ";", true, function( q, d ) callback( q, self:QOSCheck( d ) ) end )
+end
+
+function db:ReadAll()
+	return self:GetAll()
+end
+
+function db:GetRow( key, callback )
+	if not self._mysqlSuccess then
+		for _, rowData in ipairs( self.Cache._cache ) do
+			if key == rowData[ self.Columns._PrimaryKey ] then
+				if callback then
+					callback( nil, rowData )
+					return
+				else
+					return rowData
+				end
+			end
+		end
+		if callback then
+			callback( nil, nil )
+			return
+		else
+			return nil
+		end
+		return
+	end
+	
+	if not callback then
+		self:Debug( "No callback on '" .. self:GetName() .. ":GetRow()', we are going to halt the server due to this!", 1 )
+		
+		return self:Query( "SELECT * FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", false )
+	end
+	
+	self:Query( "SELECT * FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", true, function( q, d ) callback( q, self:QOSCheck( d[1] ) ) end )
+end
+
+function db:GetData( key, reqs, callback )
+	if not self._mysqlSuccess then
+		local data = self:GetRow( key )
+		
+		if !data then return end
+		
+		local ret = {}
+		for _, req in ipairs( string.Explode( ", ", reqs ) ) do
+			table.insert( ret, data[ req:Trim() ] )
+		end
+		
+		if callback then
+			callback( nil, ret )
+		else
+			return ret
+		end
+		return
+	end
+	
+	if not callback then
+		self:Debug( "No callback on '" .. self:GetName() .. ":GetData()', we are going to halt the server due to this!", 1 )
+		
+		return self:Query( "SELECT " .. reqs .. " FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", false )
+	end
+	
+	self:Query( "SELECT " .. reqs .. " FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", true, 
+		function( q, d )
+			callback( q, self:QOSCheck( d and d[1] or nil ) ) 
+		end 
+	)
+end
+
+function db:DropRow( key, callback )
+	if not self._mysqlSuccess then
+		for _, rowData in ipairs( self.Cache._cache ) do
+			if key == rowData[ self.Columns._PrimaryKey ] then 
+				table.remove( self.Cache._cache, _ )
+			end
+		end
+	end
+
+	key = type( key ) == "string" and self:Escape( key ) or key
+	self:Query( string.format( self.Queries.Delete, self.dbName, self.Columns._PrimaryKey, key ), true, callback )
+	
+	--[[ Check our queued data
 	for _, rowData in ipairs( self.Cache._new ) do
 		if key == rowData[ self.Columns._PrimaryKey ] then
 			table.remove( self.Cache._new, _ )
@@ -877,7 +1136,7 @@ function db:DropRow( key )
 		if key == rowData[ self.Columns._PrimaryKey ] then
 			table.remove( self.Cache._changed, _ )
 		end
-	end
+	end]]
 end
 
 function db:DropTable( threaded )
@@ -891,9 +1150,9 @@ function db:Reset()
 	self:DropTable( true )
 	self:Query( self:ConstructQuery( "create" ), false )
 	
-	self:GetCacheData( false )
+	--[[self:GetCacheData( false )
 	self:CheckIntegrity()	
-	self:QOSCheck()	
+	self:QOSCheck()	]]
 end
 
 -- Sets automatic backups as an interval of t

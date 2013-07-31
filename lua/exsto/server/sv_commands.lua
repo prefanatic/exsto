@@ -34,7 +34,7 @@ AddArg( "BOOLEAN", "boolean", function( bool ) return tobool( bool ) end )
 AddArg( "NIL", "nil", function( object ) return "" end )
 AddArg( "STEAMID", "table", function( str ) if str == "" then return str else return exsto.dbGetPlayerByID(str) end end )
 
-AddArg( "TIME", "number", function( num )
+AddArg( "TIME", "string", function( num )
 	local split = string.Explode( ":", num )
 	if #split == 1 then return tonumber( num ) end
 	
@@ -146,10 +146,44 @@ function exsto.AddChatCommand( ID, info )
 
 	if !ID or !info then exsto.Error( "No valid ID or Information for a chat command requesting initialization!" ) return end
 	
+	-- This is probably going to be very bad, with what we're about to do.  But we're going to hack in a new way to make commands into this until I have time to recode everything
+	-- It's pretty much a clash of 2013 stuff and 2009 stuff.  This was the FIRST thing I put into exsto, so, its OLD.
+	if not info.Args and info.Arguments then -- New style
+		exsto.Debug( "Commands --> Downconverting command style.  This will be fixed at one point!", 3 )
+	
+		info.ReturnOrder = {}
+		info.Args = {}
+		
+		-- Lets construct backwards to the old style from what we've gotten from the developer.
+		for _, data in ipairs( info.Arguments ) do -- Loop through the order
+			table.insert( info.ReturnOrder, data.Name )
+			
+			-- Convert data.Type
+			if type( data.Type ) == "number" then -- It's an enum, convert it.
+				if data.Type == COMMAND_PLAYER then
+					data.Type = "PLAYER"
+				elseif data.Type == COMMAND_STRING then
+					data.Type = "STRING"
+				elseif data.Type == COMMAND_NUMBER then
+					data.Type = "NUMBER"
+				elseif data.Type == COMMAND_BOOLEAN then
+					data.Type = "BOOLEAN"
+				end
+			end
+			
+			info.Args[ data.Name ] = data.Type
+			if data.Optional != nil then
+				if not info.Optional then info.Optional = {} end
+				info.Optional[ data.Name ] = data.Optional
+			end
+		end
+
+	end
+	
 	local returnOrder = {}
 	if type( info.ReturnOrder ) == "string" then
 		returnOrder = string.Explode( "-", info.ReturnOrder )
-	end
+	else returnOrder = info.ReturnOrder end
 
 	exsto.Commands[ID] = {
 		ID = ID,
@@ -159,20 +193,24 @@ function exsto.AddChatCommand( ID, info )
 		ReturnOrder = returnOrder or {},
 		Args = info.Args or {},
 		Optional = info.Optional or {},
+		Arguments = info.Arguments;
 		Plugin = info.Plugin or nil,
 		Category = info.Category or "Unknown",
 		DisallowCaller = info.DisallowCaller or false
 	}
 	
 	exsto.Commands[ID].Chat = {}
-	if !info.Chat then exsto.Error( ID .. " contains invalid chat commands!  Cannot continue register!" ) return end
-	for k,v in pairs( info.Chat ) do
-		exsto.AddChat( ID, v )
+	if info.Chat then
+		for k,v in pairs( info.Chat ) do
+			exsto.AddChat( ID, v )
+		end
 	end
 	
 	exsto.Commands[ID].Console = {}
-	for k,v in pairs( info.Console ) do
-		exsto.AddConsole( ID, v )
+	if info.Console then
+		for k,v in pairs( info.Console ) do
+			exsto.AddConsole( ID, v )
+		end
 	end
 	
 end
@@ -509,9 +547,9 @@ end
 exsto.ComImmuneStyle = exsto.CreateVariable( "ExComImmuneStyle",
 	"Command Immunity Style",
 	"remove",
-	"Changes how command immunity works, on a selection basis.\n - 'remove' : Removes players who cannot be accessed.\n - 'kill' : Stops the command from running if Exsto fails immune checks."
+	"Changes how command immunity works, on a selection basis.\n - 'remove' : Removes players who cannot be accessed.\n - 'kill' : Stops the command from running if Exsto fails immune checks.\n - 'ignore' : Ignores immunity and runs anyways."
 )
-exsto.ComImmuneStyle:SetPossible( "remove", "kill" )
+exsto.ComImmuneStyle:SetPossible( "remove", "kill", "ignore" )
 exsto.ComImmuneStyle:SetCategory( "Exsto General" )
 
 --[[ -----------------------------------
@@ -556,6 +594,9 @@ local function ExstoParseCommand( ply, command, args, style )
 							remTriggered = true
 						elseif exsto.ComImmuneStyle:GetValue() == "kill" then
 							break
+						elseif exsto.ComImmuneStyle:GetValue() == "ignore" then
+							-- Do nothing!  We should ignore this
+							allowed = true
 						end
 					end
 				end
@@ -803,13 +844,35 @@ end
      ----------------------------------- ]]
 function exsto.CommandCall( ply, _, args )
 	exsto._TMP = ply
-	if #args == 0 then ply:Print( exsto_CLIENT, "No command recieved!  Type 'exsto Commands' for the command list!" ) return end
+	if #args == 0 then
+		local comSearcher = exsto.GetPlugin( "com-search" )
+		if not comSearcher then
+			ply:Print( exsto_CLIENT, "No command received!  Also, it looks like the command search plugin is either disabled or not here, so enable it for command searching!" ) 
+			return 
+		end
+		
+		-- Assume they need help.
+		comSearcher:Search( ply )
+		return
+	end
 	
 	-- Copy the table so we can edit it clean.
 	local command = args[1]
 	
 	-- Remove the command, we don't need it.  It should leave us with the function arguments.
 	table.remove( args, 1 )
+	
+	-- For some reason the dedicated console rips apart anything with _ or : in it.  Meaning, we can't use STEAMID.  Fix this.
+	local id = ""
+	for i, arg in ipairs( args ) do
+		if arg == "STEAM_0" then -- We've got a steamid.
+			for I = 0, 4 do
+				id = id .. args[ i + I ]
+				args[ i + I ] = nil
+			end
+			args[ i ] = id
+		end
+	end
 
 	local finished = exsto.RunCommand( ply, command, args )
 	
@@ -844,19 +907,7 @@ function exsto.StringDist( s, t )
 end
 
 function exsto.OpenMenu( ply, _, args )
-
-	local menuAuthKey = math.random( -1000, 1000 )
-	ply.MenuAuthKey = menuAuthKey
-	
-	local bindPressed = false
-	if args then bindPressed = true end
-	
-	local sender = exsto.CreateSender( "ExOpenMenu", ply )
-		sender:AddShort( menuAuthKey )
-		sender:AddString( ply:GetRank() )
-		sender:AddShort( #exsto.GetRankData( ply:GetRank() ).FlagsAllow )
-		sender:AddBool( bindPressed )
-		sender:Send()
+	ply:QuickSend( "ExOpenMenu" )
 end
 exsto.AddChatCommand( "menu", {
 	Call = exsto.OpenMenu,

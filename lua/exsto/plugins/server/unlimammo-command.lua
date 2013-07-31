@@ -49,6 +49,6 @@ PLUGIN:AddCommand( "unlimitedammo", {
 	Args = {Target="PLAYER"},
 	Category = "Fun",
 })
-PLUGIN:RequestQuickmenuSlot( "unlimitedammo" )
+PLUGIN:RequestQuickmenuSlot( "unlimitedammo", "Unlimited Ammo" )
 
 PLUGIN:Register()

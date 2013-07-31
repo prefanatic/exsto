@@ -36,6 +36,7 @@ function exsto.CreatePlugin()
 	obj.Variables = {}
 	obj.Overrides = {}
 	obj.QuickmenuRequests = {}
+	obj.HookPriority = {}
 	
 	-- Set defaults for info.
 	obj.Info = {
@@ -93,7 +94,7 @@ function plugin:Register()
 	if SERVER then -- Server side plugin checking.
 		-- Do we exist in the settings db?
 		local f = false
-		for _, data in ipairs( exsto.PluginDB:ReadAll() ) do
+		for _, data in ipairs( exsto.PluginSettings ) do
 			if data.ID == self:GetID() then f = data end
 		end
 		
@@ -107,6 +108,8 @@ function plugin:Register()
 			} )
 		end
 	end
+	
+	exsto.LastPluginRegister = self
 	
 	-- Proper checks are done.  Check to make sure we can inject ourselves, if we're not disabled.
 	self:Debug( "Checking disabled state.", 2 )
@@ -157,7 +160,6 @@ function plugin:Inject()
 	
 	self:Init()
 	self.Initialized = true
-	exsto.LastPluginRegister = self
 	
 	hook.Call( "ExPluginRegister", nil, self )
 end
@@ -166,12 +168,12 @@ end
 	Function: plugin:Unload
 	Description: Unloads the plugin
      ----------------------------------- ]]
-function plugin:Unload()
+function plugin:Unload( reason )
 
-	self:Print( "Unloading!" )
+	self:Print( "Unloading" .. ( reason and (" - " .. reason) or "" ) )
 	
 	if !self.Info.CleanUnload then
-		self:Print( "Warning!  This plugin may not unload properly due to developmental error.  It is suggested you perform a server restart in order to cleanly unload." )
+		self:Debug( "Warning!  This plugin may not unload properly due to developmental error.  It is suggested you perform a server restart in order to cleanly unload." )
 	end
 	
 	-- TODO: Clean Unload Plugins
@@ -213,7 +215,7 @@ function plugin:IsEnabled()
 	if CLIENT then
 		if exsto.ServerPluginSettings[ self:GetID() ] == false then return false end
 	elseif SERVER then
-		for _, data in ipairs( exsto.PluginDB:ReadAll() ) do
+		for _, data in ipairs( exsto.PluginSettings ) do
 			if data.ID == self:GetID() then return tobool( data.Enabled ) end
 		end
 	end
@@ -227,6 +229,12 @@ function plugin:Enable()
 		Enabled = 1;
 	} )
 	
+	if SERVER then
+		for _, d in ipairs( exsto.PluginSettings ) do
+			if d.ID == self:GetID() then exsto.PluginSettings[ _ ].Enabled = 1 end
+		end
+	end
+	
 	self:Register()
 	
 	exsto.SendPluginSettings( player.GetAll() )
@@ -239,12 +247,15 @@ function plugin:Disable( r )
 		Enabled = 0;
 	} )
 	
-	if r == 1 then -- Disabling due to an error
-		self:Print( "Disabling plugin due to error related causes!" )
+	if SERVER then
+		for _, d in ipairs( exsto.PluginSettings ) do
+			if d.ID == self:GetID() then exsto.PluginSettings[ _ ].Enabled = 0 end
+		end
 	end
+	
 	self:Debug( "Disabling!" )
 	self.Disabled = true
-	self:Unload()
+	self:Unload( r )
 	
 	exsto.SendPluginSettings( player.GetAll() )
 end
@@ -255,8 +266,8 @@ function plugin:GetName() return self.Info.Name end
 function plugin:CanCleanlyUnload() return self.Info.CleanUnload end
 
 function plugin:Print( enum, ... )
-	if type( enum ) == "string" then
-		exsto.Print( exsto_CONSOLE, "Plugins --> " .. self.Info.Name .. " --> " .. enum )
+	if type( enum ) == "string" or type( enum ) == "table" then
+		exsto.Print( exsto_CONSOLE_LOGO, COLOR.EXSTO, self:GetName(), COLOR.WHITE, " --> ", enum, ... )
 		return
 	end
 
@@ -264,11 +275,11 @@ function plugin:Print( enum, ... )
 end
 
 function plugin:Debug( msg )
-	exsto.Debug( "Plugins --> " .. self:GetName() .. " --> " .. msg )
+	exsto.Debug( self:GetName() .. " --> " .. msg )
 end
 
 function plugin:Error( msg )
-	exsto.ErrorNoHalt( "Plugins --> " .. self.Info.Name .. " --> " .. msg )
+	exsto.ErrorNoHalt( self:GetName() .. " --> " .. msg )
 end
 
 function plugin:AddVariable( tbl )
@@ -315,6 +326,11 @@ end
 function plugin:RequestQuickmenuSlot( commandName, dispName, _data )
 	table.insert( self.QuickmenuRequests, { name = commandName, data = _data, disp = dispName } )
 end
+
+function plugin:SetHookPriority( name, p )
+	self.HookPriority[ name ] = p;
+end
+function plugin:GetHookPriority( name ) return self.HookPriority[ name ] or 10 end
 
 --[[ -----------------------------------
 	Function: plugin:AddHook

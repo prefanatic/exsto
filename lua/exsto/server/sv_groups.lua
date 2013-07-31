@@ -39,6 +39,10 @@ exsto.RankDB = FEL.CreateDatabase( "exsto_data_ranks" );
 		Color = "TEXT";							-- Color of the rank
 		Immunity = "INTEGER";					-- Immunity, we go from 0 as the highest and onward.
 	} )
+	exsto.RankDB.CacheUpdated = function()
+		exsto.aLoader.Initialize()
+		exsto.SendRanks( player.GetAll() )
+	end
 	
 -- And our user database.
 exsto.Debug( "aLoader --> Constructing exsto_data_users", 3 );
@@ -86,18 +90,45 @@ end
 	----------------------------------- ]]
 function exsto.aLoader.LoadRanks()
 	exsto.Debug( "aLoader --> Loading saved ranks.", 2 )
-	for _, data in ipairs( exsto.RankDB:GetAll() ) do
-		exsto.Debug( "aLoader --> Pushing data to load process: " .. data.ID, 3 )
-		exsto.aLoader.Loaded[ data.ID ] = {
-			Name = data.Name;
-			Description = data.Description;
-			ID = data.ID;
-			Parent = data.Parent;
-			FlagsAllow = von.deserialize( data.FlagsAllow );
-			Immunity = data.Immunity;
-			Color = von.deserialize( data.Color );
-		}
-	end
+	exsto.RankDB:GetAll( function( q, d )
+		-- Check to see if defaults need to be saved.
+		if not d or table.Count( d ) == 0 then exsto.aLoader.CreateDefaults() d = exsto.DefaultRanks end
+		
+		for _, data in ipairs( d ) do
+			exsto.Debug( "aLoader --> Pushing data to load process: " .. data.ID, 3 )
+			
+			-- Quality check
+			local succF, err = pcall( von.deserialize, data.FlagsAllow )
+			if not succF then
+				exsto.Debug( "aLoader --> Failed to load flags for '" .. data.ID .. "'", 1 )
+				exsto.aLoader.Error( data.ID, ALOADER_VON_FAILURE_FLAGS )
+			end
+			local succC, err = pcall( von.deserialize, data.Color )
+			if not succC then
+				exsto.Debug( "aLoader --> Failed to load color for '" .. data.ID .. "'", 1 )
+				exsto.aLoader.Error( data.ID, ALOADER_VON_FAILURE_COLOR )
+			end
+			
+			exsto.aLoader.Loaded[ data.ID ] = {
+				Name = data.Name;
+				Description = data.Description;
+				ID = data.ID;
+				Parent = data.Parent;
+				FlagsAllow = succF and von.deserialize( data.FlagsAllow ) or nil;
+				Immunity = tonumber( data.Immunity ) or nil;
+				Color = succC and von.deserialize( data.Color ) or nil;
+			}
+		end
+		
+		exsto.aLoader.Process()
+		exsto.aLoader.QualityCheck()
+		exsto.SendRanks( player.GetAll() )
+
+		exsto.Debug( "aLoader --> End main core sequence.", 2 )
+		
+		hook.Call( "ExRanksLoaded" )
+
+	end )
 end
 
 --[[ -----------------------------------
@@ -131,8 +162,8 @@ function exsto.aLoader.CheckParent( id, parent )
 		exsto.Debug( "aLoader --> Down " .. I .. " levels, checking: " .. ( current or "nothing" ), 3 )
 		if current == "NONE" then return true end -- End if we don't need a parent.
 		if id == current then exsto.aLoader.Error( current, ALOADER_SELF_PARENT ) return false end -- End if we parent off of ourselves.
-		if !exsto.aLoader.Loaded[ current ] then exsto.aLoader.Error( current, ALOADER_INVALID_PARENT ) return false end -- End if our parent doesn't exist.
-		if table.HasValue( checked, current ) then exsto.aLoader.Error( current, ALOADER_ENDLESS ) return false end -- We've already checked.  This would lead us into an inf.loop.
+		if !exsto.aLoader.Loaded[ current ] then exsto.aLoader.Error( id, ALOADER_INVALID_PARENT ) return false end -- End if our parent doesn't exist.
+		if table.HasValue( checked, current ) then exsto.aLoader.Error( id, ALOADER_ENDLESS ) return false end -- We've already checked.  This would lead us into an inf.loop.
 	
 		table.insert( checked, current )
 		current = exsto.aLoader.Loaded[ current ].Parent
@@ -177,6 +208,9 @@ function exsto.aLoader.SegmentRank( id, data )
 		-- Load his parent.  This "SHOULD" send aLoader into a loop all the way down to the last parent to load, then cycle back up.
 		exsto.Debug( "aLoader --> Cycling down to segment parent: " .. data.Parent, 3 )
 		exsto.aLoader.SegmentRank( data.Parent, exsto.aLoader.GrabLoadInfo( data.Parent ) )
+		
+		-- Check to see if our flags made it in.
+		if not exsto.aLoader.Processing[ data.Parent ].FlagsAllow then exsto.Debug( "aLoader --> Caught invalid flag table.  Removing.", 2 ) return end
 		
 		exsto.Debug( "aLoader --> Cycling up to merge flag tables from: " .. data.Parent .. " to " .. id, 3 )
 		
@@ -226,13 +260,25 @@ function exsto.aLoader.QualityCheck()
 				local rank;
 				for id, err in pairs( exsto.aLoader.Errors ) do
 					rank = exsto.aLoader.Processing[ id ];
-
+					
 					-- Our parent errors.  Just set the actual parent to NONE and try loading again.
 					if err == ALOADER_SELF_PARENT or err == ALOADER_INVALID_PARENT or err == ALOADER_ENDLESS then
 						exsto.Debug( "aLoader --> Errors found in '" .. id .. "' with parent '" .. rank.Parent .."'.  Solving with derive replacement 'NONE'", 1 )
 						exsto.RankDB:AddRow( {
 							ID = id;
 							Parent = "NONE";
+						} )
+					elseif err == ALOADER_VON_FAILURE_COLOR then
+						exsto.Debug( "aLoader --> Errors found in '" .. id .. "' with color.  Replacing with white.", 1 )
+						exsto.RankDB:AddRow( {
+							ID = id;
+							Color = von.serialize( Color( 255, 255, 255, 255 ) );
+						} )
+					elseif err == ALOADER_VON_FAILURE_FLAGS then
+						exsto.Debug( "aLoader --> Errors found in '" .. id .. "' with flags.  Replacing with empty table.", 1 )
+						exsto.RankDB:AddRow( {
+							ID = id;
+							FlagsAllow = von.serialize( {} );
 						} )
 					end
 				end
@@ -284,18 +330,7 @@ function exsto.aLoader.Initialize()
 		Description = "Owner of the server.",
 	}
 	
-	-- Check to see if defaults need to be saved.
-	if #exsto.RankDB:GetAll() == 0 then exsto.aLoader.CreateDefaults() end
-	exsto.aLoader.LoadRanks()
-	exsto.aLoader.Process()
-	exsto.aLoader.QualityCheck()
-
-	exsto.Debug( "aLoader --> End main core sequence.", 2 )
-	
-	hook.Call( "ExRanksLoaded" )
-	
-	local ed = SysTime() - start
-	--print( "Took " .. ed .. " seconds to load aLoader" )
+	exsto.aLoader.LoadRanks() -- Load ranks now needs to throw the rest of us into production, because we load threaded now.
 end
 exsto.aLoader.Initialize()
 
@@ -327,7 +362,7 @@ function exsto.SetAccess( ply, user, id )
 	
 	user:SetRank( rank.ID )
 	
-	return { COLOR.NAME, user:Nick(), COLOR.NORM, " has been given rank ", COLOR.NAME, rank.Name }
+	return { COLOR.NAME, ply:Nick(), COLOR.NORM, " has set ", COLOR.NAME, user:Nick(), COLOR.NORM, "'s rank to ", COLOR.NAME, rank.Name }
 	
 end
 exsto.AddChatCommand( "rank", {
@@ -348,26 +383,50 @@ exsto.SetQuickmenuSlot( "rank", "Rank", { } )
 	Description: Sets a SteamID's rank.
 	Used: Any time required; called normally through commands.
 	----------------------------------- ]]
-function exsto.SetAccessID( ply, user, id )
+function exsto.SetAccessID( caller, sid, id )
 		
 	local rank = exsto.Ranks[id]
-	
 	if !rank then
-		local closeRank = exsto.GetClosestString( id, exsto.Ranks, "ID", ply, "Unknown rank" )
+		local closeRank = exsto.GetClosestString( id, exsto.Ranks, "ID", caller, "Unknown rank" )
 		return
 	end
 	
-	local SelfIm = ply:EntIndex() > 0 and tonumber(exsto.Ranks[ply:GetRank()].Immunity) or -1
-	local RankIm  = tonumber(rank.Immunity)
+	if !string.match( sid, "STEAM_[0-5]:[0-9]:[0-9]+" ) then
+		return { owner, COLOR.NAME, "Invalid SteamID.", COLOR.NORM, "A normal SteamID looks like this, ", COLOR.NAME, "STEAM_0:1:123456" }
+	end
 	
-	if SelfIm > RankIm then return { ply,COLOR.NORM,"You cannot set yourself a higher rank" } end
+	local ply = exsto.GetPlayerByID( sid )
+	if not IsValid( ply ) then
+		
+		-- Take a look at our user database, see if we can access them.
+		local db = exsto.UserDB:ReadAll()
+		for _, data in pairs( db ) do
+			if data.SteamID == sid then
+				
+				-- We've found them.  Update their entry and go.
+				exsto.UserDB:AddRow( {
+					SteamID = sid;
+					Rank = rank.ID;
+				} )
+				
+				exsto.Print( exsto_CHAT_ALL, COLOR.NAME, caller:Nick(), COLOR.NORM, " has set ", COLOR.NAME, data.Name .. " (" .. sid .. ")", COLOR.NORM, "'s rank to ", COLOR.NAME, rank.Name )
+				return
+			end
+		end
+		
+		-- We've made it through the loop and couldn't find anything.  We should insert the ID into our user table and go from there.
+		exsto.UserDB:AddRow( {
+			SteamID = sid;
+			Rank = rank.ID;
+			Name = "Unknown";
+		} )
+		
+		exsto.Print( exsto_CHAT_ALL, COLOR.NAME, caller:Nick(), COLOR.NORM, " has set (", COLOR.NAME, sid, COLOR.NORM, ")'s rank to ", COLOR.NAME, rank.Name )
+		return
 	
-	exsto.UserDB:AddRow( {
-		SteamID = user.SteamID;
-		Rank = rank.ID;
-	} )
-	
-	exsto.Print( exsto_CHAT_ALL, COLOR.NAME, user.Name, COLOR.NORM, " has been given rank ", COLOR.NAME, rank.Name )
+	else -- The player is valid, set rank like we would normally.
+		return exsto.SetAccess( caller, ply, id )
+	end
 	
 end
 exsto.AddChatCommand( "rankid", {
@@ -376,7 +435,7 @@ exsto.AddChatCommand( "rankid", {
 	Console = { "rankid" },
 	Chat = { "!rankid" },
 	ReturnOrder = "SteamID-Rank",
-	Args = {SteamID = "STEAMID", Rank = "STRING"},
+	Args = {SteamID = "STRING", Rank = "STRING"},
 	Optional = { },
 	Category = "Administration",
 	DisallowOwner = true,
@@ -407,11 +466,7 @@ exsto.AddChatCommand( "getrank", {
 	Description: Monitors on join, and prints any relevant information to the chat.
 	----------------------------------- ]]
 function exsto.AddUsersOnJoin( ply, steamid, uniqueid )
-
-	local rank, userFlags = exsto.UserDB:GetData( steamid, "Rank, UserFlags" )
-
-	ply:SetRank( rank or "guest" )	
-	ply:UpdateUserFlags( type( userFlags ) == "string" and FEL.NiceDecode( userFlags ) or {} )
+	local rank = ply:GetRank()
 	
 	if !rank then
 		-- Its his first time here!  Welcome him to the beautiful environment of Exsto.
@@ -433,11 +488,7 @@ function exsto.AddUsersOnJoin( ply, steamid, uniqueid )
 		end
 	else
 		-- We are running a dedicated server, and someone joined.  Lets check to see if there are any admins.
-		if !exsto.AnyAdmins() then
-			ply:Print( exsto_CHAT, COLOR.NORM, "Exsto has detected this is a ", COLOR.NAME, "dedicated server environment", COLOR.NORM, ", and there are no server owners set yet." )
-			ply:Print( exsto_CHAT, COLOR.NORM, "If you are the owner of this server, please rcon the following command:" )
-			ply:Print( exsto_CHAT, COLOR.NORM, "exsto rank " .. ply:Name() .. " srv_owner" )
-		end
+		exsto.AdminCheck( ply )
 	end
 
 end
@@ -456,10 +507,7 @@ function exsto.UpdateOwnerRank( self )
 			return { self, COLOR.NORM, "You are not the host of this listen server!" }
 		end
 	else
-			
-		self:Print( exsto_CHAT, COLOR.NAME, "Hey!", COLOR.NORM, "  This command has been removed due to confusion.  If you want to make yourself owner:" )
-		self:Print( exsto_CHAT, COLOR.NORM, "Just run the command as rcon: ", COLOR.NAME, "exsto rank " .. self:Name() .. " srv_owner" )
-			
+		self:Print( exsto_CHAT, COLOR.NORM, "This command can only be run on a ", COLOR.NAME, "dedicated server!" )
 		return 
 	end
 end
@@ -506,13 +554,16 @@ exsto.AddChatCommand( "getsteamid", {
 	Function: player:SetRank
 	Description: Sets a player's rank.
 	----------------------------------- ]]
-function exsto.Registry.Player:SetRank( rank )
+function exsto.Registry.Player:SetRank( rank, s )
+	if self:GetRank() == rank then return end;
 	self:SetNetworkedString( "rank", rank )
-	exsto.UserDB:AddRow( {
-		SteamID = self:SteamID();
-		Rank = self:GetNWString( "rank" );
-		Name = self:Nick();
-	} )
+	if not s then
+		exsto.UserDB:AddRow( {
+			SteamID = self:SteamID();
+			Rank = rank;
+			Name = self:Nick();
+		} )
+	end
 	hook.Call( "ExSetRank", nil, self, rank )
 end
 
@@ -627,6 +678,18 @@ function exsto.AnyAdmins()
 	return false
 end
 
+function exsto.AdminCheck( ply )
+	exsto.UserDB:GetAll( function( q, d )
+		for _, p in ipairs( d ) do
+			if p.Rank == "srv_owner" then return true end
+		end
+	
+		ply:Print( exsto_CHAT, COLOR.NORM, "Exsto has detected this is a ", COLOR.NAME, "dedicated server environment", COLOR.NORM, ", and there are no server owners set yet." )
+		ply:Print( exsto_CHAT, COLOR.NORM, "If you are the owner of this server, please rcon the following command:" )
+		ply:Print( exsto_CHAT, COLOR.NORM, "exsto rank " .. ply:Name() .. " srv_owner" )
+	end )
+end
+
 --[[ -----------------------------------
 	Function: exsto.SendRankData
 	Description: Sends the rank table.
@@ -638,6 +701,31 @@ function exsto.SendRankData( ply, sid, uid )
 end
 hook.Add( "ExClientLoading", "exsto_SendRankData", exsto.SendRankData )
 concommand.Add( "_ResendRanks", exsto.SendRankData )
+
+function exsto.InitializePlayer( ply, sid, uid )
+	exsto.Debug( "Initializing player '" .. ply:Nick() .. "' for initspawn.", 1 )
+	ply.InitSpawn = true
+	
+	exsto.UserDB:GetRow( sid, function( q, d )
+		if game.SinglePlayer() then
+			ply:SetRank( "srv_owner" )
+		else
+			ply:SetRank( d and d.Rank or "guest", d and d.Rank and true )	
+		end
+		
+		ply:UpdateUserFlags( type( d and d.UserFlags ) == "string" and FEL.NiceDecode( d and d.UserFlags ) or {} )
+
+		hook.Call( "ExPlayerAuthed", nil, ply, sid, uid )
+	end )
+end
+hook.Add( "PlayerAuthed", "ExInitPlayer", exsto.InitializePlayer )
+
+hook.Add( "ExClientLoading", "ExSpawnPlayer", function( p )
+	hook.Call( "ExInitSpawn", nil, p, p:SteamID(), p:UniqueID() )
+	hook.Call( "exsto_InitSpawn", nil, p, p:SteamID(), p:UniqueID() ) -- Legacy
+end )
+
+-- Turns out we don't need this shit below anymore.
 
 --[[ -----------------------------------
 	Function: exsto.FixInitSpawn
@@ -666,20 +754,22 @@ local function Hang()
 	end
 	
 end
-hook.Add( "Think", "ExPlayingLoadThink", Hang )
+--hook.Add( "Think", "ExPlayingLoadThink", Hang )
 
 local function Hook( ply, sid, uid )
+	print( ply:Nick(), sid, uid )
 	table.insert( exsto.PlayersLoading, {
 		ply = ply,
 		sid = sid,
 		uid = uid,
 	} )
 end
-hook.Add( "PlayerAuthed", "FakeInitialSpawn", Hook )
+--hook.Add( "PlayerAuthed", "FakeInitialSpawn", Hook )
 
 concommand.Add( "_exstoInitSpawn", function( ply, _, args )
 	exsto.Print( exsto_CONSOLE_DEBUG, "InitSpawn --> " .. ply:Nick() .. " is ready for initSpawn!" )
 	ply.InitSpawn = true
 end )
 
+-- Get rid of Garry's auth.  Sorry.
 hook.Add( "PlayerInitialSpawn", "PlayerAuthSpawn", function() end )

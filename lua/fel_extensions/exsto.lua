@@ -40,7 +40,7 @@ if SERVER then
 				FEL.SetMySQLInformation( new )
 			end )
 			
-		exsto.MySQLPassword = exsto.CreateVariable( "ExMySQLPass", "Password", FEL.Config.mysql_pass, "Password for the MySQL server.  This will always reset to '******' after entry, for security reasons.", { FCVAR_PROTECTED } )
+		exsto.MySQLPassword = exsto.CreateVariable( "ExMySQLPass", "Password", FEL.Config.mysql_pass, "Password for the MySQL server.  This will always reset to '******' after entry, for security reasons." )
 			exsto.MySQLPassword:SetCategory( "MySQL" )
 			exsto.MySQLPassword:SetProtected()
 			exsto.MySQLPassword:SetCallback( function( old, new )
@@ -57,6 +57,13 @@ if SERVER then
 			exsto.MySQLHost:SetCategory( "MySQL" )
 			exsto.MySQLHost:SetCallback( function( old, new ) 
 				FEL.SetMySQLInformation( nil, nil, nil, new )
+			end )
+			
+		exsto.MySQLModule = exsto.CreateVariable( "ExMySQLModule", "Module", FEL.Config.mysql_module, "The module Exsto will use for MySQL communication." )
+			exsto.MySQLModule:SetCategory( "MySQL" )
+			exsto.MySQLModule:SetPossible( "mysqloo" )
+			exsto.MySQLModule:SetCallback( function( old, new )
+				FEL.SetMySQLModule( new )
 			end )
 	end )
 	

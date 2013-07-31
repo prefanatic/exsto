@@ -224,12 +224,6 @@ if SERVER then
 	
 elseif CLIENT then
 
-	function PLUGIN:Init()
-		for I = 1, 20 do
-			self:Print( "I'm very happy!" )
-		end
-	end
-
 end
 
 PLUGIN:Register()

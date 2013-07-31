@@ -23,6 +23,7 @@ exsto.NeedSaved = {}
 exsto.Plugins = {}
 exsto.LoadedPlugins = {}
 exsto.Hooks = {}
+exsto.PluginSettings = {}
 exsto.PlugLocation = "exsto/plugins/"
 exsto.PluginLocations = {
 	cl = "exsto/plugins/client/";
@@ -37,7 +38,7 @@ if SERVER then
 	Description: Sends the plugin settings to a player.
      ----------------------------------- ]]
 	function exsto.SendPluginSettings( ply )
-		local db = exsto.PluginDB:ReadAll()
+		local db = exsto.PluginSettings
 		local sender = exsto.CreateSender( "ExRecPlugSettings", ply )
 			sender:AddShort( #db )
 			for _, data in ipairs( db ) do
@@ -73,26 +74,38 @@ end
 	Function: exsto.HookCall
 	Description: Calls hooks for plugins.
      ----------------------------------- ]]
+local errCount, s = {}, {}
+local function sort( a, b ) return a[2] < b[2] end
 function exsto.HookCall( name, gm, ... )
+	s = {}
 	for _, plug in ipairs( exsto.Plugins ) do
 		if type( plug[ name ] ) == "function" and plug:IsEnabled() and plug.Initialized then
+			table.insert( s, { plug, plug:GetHookPriority( name ) } )
+		end
+	end
+	
+	table.sort( s, sort )
+	for _, d in ipairs( s ) do
+		local plug = d[1]
+		local data = { pcall( plug[ name ], plug, ... ) }
+		
+		-- data[1] == Status
+		-- data[2] == Error or First Return
+		-- data[3+] == Returns
+		
+		-- If we are returning something...
 
-			local data = { pcall( plug[ name ], plug, ... ) }
+		if data[1] == true and data[2] != nil then
+			table.remove( data, 1 )
+			return unpack( data )
+		elseif data[1] == false then -- It returned an error, catch it.
+			if not errCount[ name ] then errCount[ name ] = {} end
+			if not errCount[ name ][ plug:GetID() ] then errCount[ name ][ plug:GetID() ] = 0 end
 			
-			-- data[1] == Status
-			-- data[2] == Error or First Return
-			-- data[3+] == Returns
-			
-			-- If we are returning something...
-
-			if data[1] == true and data[2] != nil then
-				table.remove( data, 1 )
-				return unpack( data )
-			elseif data[1] == false then -- It returned an error, catch it.
-				exsto.ErrorNoHalt( "Hook '" .. name .. "' failed in plugin '" .. plug:GetID() .. "' error: " )
-				exsto.ErrorNoHalt( data[2] )
-				exsto.Plugins[ _ ]:Disable( 1 )
-			end
+			errCount[ name ][ plug:GetID() ] = errCount[ name ][ plug:GetID() ] + 1
+			exsto.ErrorNoHalt( "Hook '" .. name .. "' failed in plugin '" .. plug:GetID() .. "' error: " )
+			exsto.ErrorNoHalt( data[2] )
+			if SERVER and errCount[ name ][ plug:GetID() ] > 10 then exsto.Plugins[ _ ]:Disable( "Unloaded to prevent error spam." ) end
 		end
 	end
 	
@@ -101,10 +114,21 @@ end
 
 --[[ -----------------------------------
 	Function: exsto.LoadPlugins
-	Description: Reads all the plugins from the plugin folder.
+	Description: Sets up stuff.
      ----------------------------------- ]]
 function exsto.LoadPlugins()
-	-- Do nothin nomore
+	if SERVER then
+		-- Create the settings database.
+		exsto.Debug( "Plugins --> Creating settings table.", 2 );
+		exsto.PluginDB = FEL.CreateDatabase( "exsto_plugin_settings" )
+			exsto.PluginDB:SetDisplayName( "Plugin Settings" )
+			exsto.PluginDB:ConstructColumns( {
+				ID = "VARCHAR(255):not_null:primary";
+				Enabled = "TINYINT:not_null";
+			} )
+			
+		exsto.PluginDB:GetAll( function( q, d ) exsto.PluginSettings = d or {} end )
+	end
 end
 
 --[[ -----------------------------------
@@ -113,18 +137,8 @@ end
      ----------------------------------- ]]
 function exsto.InitPlugins()
 	exsto.Print( exsto_CONSOLE, "Plugins --> Starting load." );
+	local last = exsto.GetLastPluginRegister
 	
-	if SERVER then
-		-- Create the settings database.
-		exsto.Debug( "Plugins --> Creating settings table.", 2 );
-		exsto.PluginDB = FEL.CreateDatabase( "exsto_plugin_settings" )
-			exsto.PluginDB:SetDisplayName( "Plugin Settings" )
-			exsto.PluginDB:ConstructColumns( {
-				ID = "TEXT:not_null:primary";
-				Enabled = "TINYINT:not_null";
-			} )
-	end
-
 	exsto.Debug( "Plugins --> Looping into load process.", 2 );
 	
 	-- Client
@@ -132,6 +146,10 @@ function exsto.InitPlugins()
 	for _, name in pairs( loc ) do
 		exsto.Debug( "Plugins --> Including client: " .. name, 3 )
 		exstoClient( "plugins/client/" .. name )
+		if last() then
+			last().Location = "plugins/client/" .. name 
+			last().Side = "cl"
+		end
 	end
 	
 	-- Shared
@@ -139,6 +157,10 @@ function exsto.InitPlugins()
 	for _, name in pairs( loc ) do
 		exsto.Debug( "Plugins --> Including shared: " .. name, 3 )
 		exstoShared( "plugins/shared/" .. name )
+		if last() then
+			last().Location = "plugins/shared/" .. name 
+			last().Side = "sh"
+		end
 	end
 	
 	if SERVER then
@@ -146,6 +168,10 @@ function exsto.InitPlugins()
 		for _, name in pairs( loc ) do
 			exsto.Debug( "Plugins --> Including server: " .. name, 3 )
 			exstoServer( "plugins/server/" .. name )
+			if last() then
+				last().Location = "plugins/server/" .. name 
+				last().Side = "sv"
+			end
 		end
 	end
 	

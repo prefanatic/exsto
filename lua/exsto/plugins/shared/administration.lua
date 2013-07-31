@@ -28,6 +28,7 @@ if SERVER then
 
 	function PLUGIN:Init() 
 		exsto.CreateFlag( "banlist", "Allows users to access the ban list." )
+		exsto.CreateFlag( "banlistdetails", "Allows users to see the details of a ban in the ban page." )
 		
 		self.BanRefreshRate = exsto.CreateVariable( "ExBanRefreshRate",
 			"Ban Refresh Rate",
@@ -66,20 +67,15 @@ if SERVER then
 		
 		self:Debug( "Updating ban length for '" .. id .. "' to value '" .. val .. "' by player '" .. ply:Nick() .. "'", 1 )
 		
-		-- Little hack, I'll fix this later in FEL.
-		local name, by, at = exsto.BanDB:GetData( id, "Name, BannedBy, BannedAt" )
 		exsto.BanDB:AddRow( {
 			SteamID = id;
 			Length = val;
-			Name = name;
-			BannedBy = by;
-			BannedAt = at;
 		} )
 	end
 	PLUGIN:CreateReader( "ExUpdateBanLen", PLUGIN.UpdateBanLength )
 	
 	function PLUGIN:ExUnbanPlayer( reader )
-		return reader:ReadSender():IsAllowed( "banlist" ) 
+		return reader:ReadSender():IsAllowed( "banlist" ) and reader:ReadSender():IsAllowed( "unban" )
 	end
 	
 	function PLUGIN:MenuUnbanPlayer( reader )
@@ -87,7 +83,7 @@ if SERVER then
 		local steamid = reader:ReadString()
 		
 		self:Debug( "Unbanning player '" .. steamid .. "' triggered by '" .. ply:GetName() .. "'", 1 )
-		self:UnBan( "console", steamid )
+		self:UnBan( ply, steamid )
 	end
 	PLUGIN:CreateReader( "ExUnbanPlayer", PLUGIN.MenuUnbanPlayer )
 	
@@ -95,27 +91,35 @@ if SERVER then
 		game.ConsoleCommand( string.format( "kickid %d %s\n", uid, reason:gsub( ";|\n", "" ) ) ) -- Taken from Map in a box - http://facepunch.com/showthread.php?t=695636&p=38514535&viewfull=1#post38514535
 	end
 	
+	local function callHook( data )
+		hook.Call( "ExPlayerConnect", nil, data )
+	end
+	
 	function PLUGIN:player_connect( data )
+		if game.SinglePlayer() then return end -- Don't bother.  Theres only going to be one person on, and thats the host.
 		if !data.networkid then return end
 		
-		local bannedAt, banLen, banReason = exsto.BanDB:GetData( data.networkid, "BannedAt, Length, Reason" )
-		if !bannedAt or !banLen or !banReason then return end
+		exsto.BanDB:GetRow( data.networkid, function( q, d )
+			if not d then callHook( data ) return end
+			local bannedAt, banLen, banReason = tonumber( d.BannedAt ), tonumber( d.Length ), d.Reason
 
-		-- If hes perma banned, designated by length == 0
-		if banLen == 0 then self:Drop( data.userid, "You are perma-banned!" ) return end
-		
-		banLen = banLen * 60
-		
-		local timeleft = string.ToMinutesSeconds( ( banLen + bannedAt ) - os.time() ) 
-		
-		-- Make sure we remove his ban if it has expired.
-		if banLen + bannedAt <= os.time() then exsto.BanDB:DropRow( data.networkid ) self:ResendToAll() return end
-		if timeleft and banReason then self:Drop( data.userid, "BANNED! Time left: " .. timeleft .. " - Reason: " .. banReason ) return end
-		
-		-- Call our after-ban hook
-		hook.Call( "ExPlayerConnect", nil, data )
+			-- If hes perma banned, designated by length == 0
+			if banLen == 0 then self:Drop( data.userid, "You are perma-banned!" ) return end
+			
+			banLen = banLen * 60;
+
+			local timeleft = exsto.NiceTime( ( ( banLen + bannedAt ) - os.time() ) / 60 ) 
+			
+			-- Make sure we remove his ban if it has expired.
+			if banLen + bannedAt <= os.time() then exsto.BanDB:DropRow( data.networkid ) self:ResendBans() callHook( data ) return end
+			if timeleft and banReason then self:Drop( data.userid, "BANNED! Time left: " .. timeleft .. " - Reason: " .. banReason ) return end
+			
+			-- Call our after-ban hook
+			callHook( data )
+		end )
 	
 	end
+	PLUGIN:SetHookPriority( "player_connect", 1 )
 	
 	function PLUGIN:player_disconnect( data )
 		--PrintTable( data )
@@ -170,14 +174,14 @@ if SERVER then
 		exsto.BanDB:AddRow( {
 			Name = name;
 			SteamID = id;
-			SteamID64 = 0;
 			Reason = reason;
 			Length = len;
 			BannedBy = owner:Name() or "Console";
 			BannedAt = os.time();
 			BannerID = owner:SteamID() or "Console";
-			BannerID64 = owner:SteamID64();
 		} )
+		
+		self:ResendBans()
 
 		return {
 			Activator = owner,
@@ -193,7 +197,7 @@ if SERVER then
 		Console = { "banid" }, 
 		Chat = { "!banid" }, 
 		ReturnOrder = "SteamID-Length-Reason", 
-		Args = {SteamID = "STRING", Length = "TIME", Reason = "STRING"}, 
+		Args = {SteamID = "STRING", Length = "NUMBER", Reason = "STRING"}, 
 		Optional = {SteamID = "", Length = 0, Reason = "Banned by [self]"}, 
 		Category = "Administration", 
 	}) 
@@ -203,10 +207,13 @@ if SERVER then
 		
 		-- Quick hack to allow non-exsto things to use this.
 		local ownerNick, ownerID = "Console", "Console"
-		if not type( owner ) == "string" and owner:IsValid() then
+		if IsValid( owner ) and type( owner ) == "Player" then
 			ownerNick = owner:Nick()
 			ownerID = owner:SteamID()
 		end
+		
+		if game.SinglePlayer() then return { exsto_CHAT, COLOR.NORM, "You can't ban yourself in a ", COLOR.NAME, "single player", COLOR.NORM, " game." } end
+		if ply:IsListenServerHost() then return { exsto_CHAT, COLOR.NORM, "You can't ban the ", COLOR.NAME, "listen server host", COLOR.NORM, "." } end
 		
 		-- Save his stuff yo.		
 		exsto.BanDB:AddRow( {
@@ -220,6 +227,8 @@ if SERVER then
 		} )
 		
 		self:Drop( ply:UserID(), reason )
+		
+		self:ResendBans()
 
 		return { 
 			Activator = owner, 
@@ -235,7 +244,7 @@ if SERVER then
 		Console = { "ban" }, 
 		Chat = { "!ban" }, 
 		ReturnOrder = "Victim-Length-Reason", 
-		Args = {Victim = "ONEPLAYER", Length = "TIME", Reason = "STRING"}, 
+		Args = {Victim = "ONEPLAYER", Length = "NUMBER", Reason = "STRING"}, 
 		Optional = {Length = 0, Reason = "Banned by [self]"}, 
 		Category = "Administration", 
 		DisallowCaller = true, 
@@ -262,51 +271,57 @@ if SERVER then
 
 	function PLUGIN:UnBan( owner, steamid ) 
 	
-		local dataUsed = false
-		if !string.match( steamid, "STEAM_[0-5]:[0-9]:[0-9]+" ) and !string.match( steamid, "BOT" ) then
-			-- We don't have a match.  Try checking our ban list for his name like this.
-			for _, ban in ipairs( exsto.BanDB:GetAll() ) do
-				if ban.Name == steamid then
-					-- We found a name of a player; unban him like this.
-					dataUsed = true
-					steamid = ban.SteamID
-					break
+		-- Load up our ban database for reference.
+		exsto.BanDB:GetAll( function( q, data )
+			if not data or table.Count( data ) == 0 then
+				owner:Print( exsto_CHAT, COLOR.NAME, steamid, COLOR.NORM, " is not banned!" )
+				return
+			end
+	
+			local dataUsed = false
+			if !string.match( steamid, "STEAM_[0-5]:[0-9]:[0-9]+" ) and steamid != "BOT" then
+				-- We don't have a match.  Try checking our ban list for his name like this.
+				for _, ban in ipairs( data ) do
+					if ban.Name:lower() == steamid:lower() then
+						-- We found a name of a player; unban him like this.
+						dataUsed = true
+						steamid = ban.SteamID
+						break
+					end
+				end
+				
+				-- Check our match again
+				if !string.match( steamid, "STEAM_[0-5]:[0-9]:[0-9]+" ) and steamid != "BOT" then
+					owner:Print( exsto_CHAT, COLOR.NORM, "That is an invalid ", COLOR.NAME, "SteamID!", COLOR.NORM, "  A normal SteamID looks like this, ", COLOR.NAME, "STEAM_0:1:123456" )
+					return
 				end
 			end
 			
-			-- Check our match again
-			if !string.match( steamid, "STEAM_[0-5]:[0-9]:[0-9]+" ) and !string.match( steamid, "BOT" ) then
-				return { owner, COLOR.NORM, "That is an invalid ", COLOR.NAME, "SteamID!", COLOR.NORM, "  A normal SteamID looks like this, ", COLOR.NAME, "STEAM_0:1:123456" }
+			-- Check to see if this ban actually exists.
+			local found = false
+			for _, ban in ipairs( data ) do
+				if ban.SteamID == steamid then found = true break end
 			end
-		end
-		
-		-- Check to see if this ban actually exists.
-		local found = false
-		for _, ban in ipairs( exsto.BanDB:GetAll() ) do
-			if ban.SteamID == steamid then found = true break end
-		end
-		
-		if !found then
-			return { owner, COLOR.NAME, steamid, COLOR.NORM, " is not banned!" }
-		end
-		
-		game.ConsoleCommand( "removeid " .. steamid .. ";writeid\n" ) -- Do this regardless.
-		
-		local name = "Unknown"
-		for _, data in ipairs( exsto.BanDB:GetAll() ) do 
-			if data.SteamID == steamid then
-				name = data.Name
+			
+			if !found then
+				owner:Print( exsto_CHAT, COLOR.NAME, steamid, COLOR.NORM, " is not banned!" )
+				return
+			end
+			
+			game.ConsoleCommand( "removeid " .. steamid .. ";writeid\n" ) -- Do this regardless.
+			
+			local name = "Unknown"
+			for _, data in ipairs( data ) do 
+				if data.SteamID == steamid then
+					name = data.Name
+				end 
 			end 
-		end 
-		
-		exsto.BanDB:DropRow( steamid )
-		self:ResendBans()
-		
-		return { 
-			Activator = owner, 
-			Player = steamid .. " (" .. name .. ")",
-			Wording = " has unbanned ", 
-		} 
+			
+			exsto.BanDB:DropRow( steamid, function( q, d ) 
+				self:ResendBans()
+				exsto.Print( exsto_CHAT_ALL, COLOR.NAME, owner:Nick(), COLOR.NORM, " has unbanned ", COLOR.NAME, steamid .. " (" .. name .. ")" )
+			end )
+		end )
 
 	end 
 		PLUGIN:AddCommand( "unban", { 
@@ -386,7 +401,7 @@ if SERVER then
 			 return { owner,COLOR.NORM,"Player"..(Cnt>1 and "s" or "")..": ",RColor,Str,COLOR.NORM," looked up, check console for info." }
 			  
 	 end 
-	 PLUGIN:AddCommand( "lookup", { 
+	 --[[PLUGIN:AddCommand( "lookup", { 
 			 Call = PLUGIN.Lookup, 
 			 Desc = "Allows users to lookup a player's info.", 
 			 Console = { "lookup" }, 
@@ -395,8 +410,9 @@ if SERVER then
 			 Args = { FindWith = "STRING" }, 
 			 Category = "Administration", 
 	 })
-	PLUGIN:RequestQuickmenuSlot( "lookup", "Lookup Info" )
+	PLUGIN:RequestQuickmenuSlot( "lookup", "Lookup Info" )]]
 
+	-- Hobo's thing.
 	function timeToString(time)
 		local ttime = time or 0
 		local s = ttime % 60
@@ -408,16 +424,22 @@ if SERVER then
 		local d = ttime % 7
 		local w = math.floor(ttime / 7)
 		local str = ""
-		str = (w>0 and w.." week(s) " or "")..(d>0 and d.."day(s) " or "")
+		str = (w>0 and w.." week(s) " or "")..(d>0 and d.." day(s) " or "")
 		
 		return string.format( str.."%02i hour(s) %02i minute(s) %02i second(s)", h, m, s )
 	end	  
 	
-	function PLUGIN:ResendBans()
-		local plys = player.GetAll()
-		for _, data in pairs( exsto.BanDB:GetAll() ) do
-			self:SendBan( v, plys )
+	function PLUGIN:ResendBans( data )
+		local function h( d )
+			if not d then return end
+			local plys = player.GetAll()
+			for _, data in pairs( d ) do
+				self:SendBan( data, plys )
+			end
 		end
+		
+		if data then h( d ) return end
+		exsto.BanDB:GetAll( function( q, d ) h( d ) end )
 	end
 	
 	function PLUGIN:SendBan( tbl, ply )
@@ -434,9 +456,13 @@ if SERVER then
 
 	function PLUGIN:RequestBans( reader ) 
 		ply = reader:ReadSender()
-		for k,v in pairs( exsto.BanDB:GetAll() ) do 
-			self:SendBan( v, ply )
-		end 
+		exsto.BanDB:GetAll( function( q, d )
+			print( table.Count( d ) ) 
+			if not d then return end
+			for k,v in pairs( d ) do 
+				self:SendBan( v, ply )
+			end 
+		end )
 	end 
 	PLUGIN:CreateReader( "ExRequestBans", PLUGIN.RequestBans )
 
@@ -638,7 +664,6 @@ elseif CLIENT then
 			self.Page:SetIcon( "exsto/ban.png" )
 			self.Page:OnShowtime( onShowtime )
 		self.Details = exsto.Menu.CreatePage( "banlistdetails", banDetailsInit )
-			self.Details:SetFlag( "banlist" )
 			self.Details:SetTitle( "Details" )
 			self.Details:SetUnaccessable()
 			self.Details:SetBackFunction( backFunction )

@@ -27,8 +27,7 @@ function PLUGIN:Return( self, victim )
 	return {
 		Activator = self,
 		Player = victim,
-		Wording = " has gave back ",
-		Secondary = " his weapons"
+		Wording = " has given weapons back to "
 	}
 end
 PLUGIN:AddCommand( "returnweps", {
@@ -41,7 +40,7 @@ PLUGIN:AddCommand( "returnweps", {
 	Optional = { },
 	Category = "Fun",
 })
-PLUGIN:RequestQuickmenuSlot( "returnweps" )
+PLUGIN:RequestQuickmenuSlot( "returnweps", "Return Weapons" )
 
 function PLUGIN:Give( self, victim, weapon )
 	if string.find( weapon, "npc", 1, true ) then
@@ -62,7 +61,7 @@ PLUGIN:AddCommand( "give", {
 	Optional = { },
 	Category = "Fun",
 })
-PLUGIN:RequestQuickmenuSlot( "give", {
+PLUGIN:RequestQuickmenuSlot( "give", "Give", {
 	Weapon = {
 		{ Display = "AK-47", Data = "weapon_ak47" },
 		{ Display = "Deagle", Data = "weapon_deagle" },
@@ -89,8 +88,7 @@ function PLUGIN:Strip( self, victim )
 	return {
 		Activator = self,
 		Player = victim,
-		Wording = " has stripped ",
-		Secondary = " of his weapons"
+		Wording = " has taken all weapons from "
 	}
 end
 PLUGIN:AddCommand( "stripweps", {
@@ -103,6 +101,6 @@ PLUGIN:AddCommand( "stripweps", {
 	Optional = { },
 	Category = "Fun",
 })
-PLUGIN:RequestQuickmenuSlot( "stripweps" )
+PLUGIN:RequestQuickmenuSlot( "stripweps", "Strip Weapons" )
 
 PLUGIN:Register()

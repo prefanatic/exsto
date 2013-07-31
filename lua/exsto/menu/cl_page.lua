@@ -165,7 +165,7 @@ function page:Showtime( noAnim ) -- Wake him up!
 
 end
 
-function page:InputText( question, callbackYes, callbackNo )
+function page:InputText( tbl )
 	if !self.InputTextPanel then
 		self.InputTextPanel = vgui.Create( "DPanelList", self.Content )
 			self.InputTextPanel:SetPos( 0, self.Content:GetTall() + 1 )
@@ -198,18 +198,18 @@ function page:InputText( question, callbackYes, callbackNo )
 	end
 	
 	self.InputTextPanel:SetPos( 0, 0 )
-	self.InputTextPanel.Text:SetText( question )
+	self.InputTextPanel.Text:SetText( unpack( tbl.Text ) )
 	self.InputTextPanel.Text:SizeToContents()
 	self.InputTextPanel.OK.DoClick = function() 
 		self.InputTextPanel:SetPos( 0, self.InputTextPanel:GetTall() + 21 )
-		if callbackYes then
-			callbackYes( self.InputTextPanel.Entry:GetValue() ) 
+		if tbl.Yes then
+			tbl.Yes( self.InputTextPanel.Entry:GetValue() ) 
 		end
 	end
 	self.InputTextPanel.Cancel.DoClick = function()
 		self.InputTextPanel:SetPos( 0, self.InputTextPanel:GetTall() + 21 )
-		if callbackNo then
-			callbackNo()
+		if tbl.No then
+			tbl.No()
 		end
 	end
 	
@@ -218,7 +218,7 @@ function page:InputText( question, callbackYes, callbackNo )
 	self.InputTextPanel:SetVisible( true )
 end
 
-function page:Alert( question, callbackYes, callbackNo )
+function page:Alert( tbl )
 	if !self.AlertPanel then
 		self.AlertPanel = vgui.Create( "DPanelList", self.Content )
 			self.AlertPanel:SetPos( 0, self.Content:GetTall() + 1 )
@@ -226,7 +226,7 @@ function page:Alert( question, callbackYes, callbackNo )
 			self.AlertPanel:SetPadding( 26 )
 			self.AlertPanel:SetSpacing( 8 )
 			self.AlertPanel.Paint = function( pnl )
-				surface.SetDrawColor( 245, 245, 245, 180 )
+				surface.SetDrawColor( 245, 245, 245, 195 )
 				surface.DrawRect( 0, 0, pnl:GetWide(), pnl:GetTall() )
 			end
 			
@@ -247,18 +247,19 @@ function page:Alert( question, callbackYes, callbackNo )
 	end
 	
 	self.AlertPanel:SetPos( 0, 0 )
-	self.AlertPanel.Text:SetText( question )
+	--self.AlertPanel.Text:SetWide( self.AlertPanel:GetWide() - 26 )
+	self.AlertPanel.Text:SetText( unpack( tbl.Text ) )
 	self.AlertPanel.Text:SizeToContents()
 	self.AlertPanel.OK.DoClick = function() 
 		self.AlertPanel:SetPos( 0, self.AlertPanel:GetTall() + 21 )
-		if callbackYes then
-			callbackYes() 
+		if tbl.Yes then
+			tbl.Yes() 
 		end
 	end
 	self.AlertPanel.Cancel.DoClick = function()
 		self.AlertPanel:SetPos( 0, self.AlertPanel:GetTall() + 21 )
-		if callbackNo then
-			callbackNo()
+		if tbl.No then
+			tbl.No()
 		end
 	end
 	

@@ -30,12 +30,23 @@ ALOADER_SELF_PARENT = enum();  -- Parenting off themself.
 ALOADER_INVALID_PARENT = enum(); -- Non-existant parent.
 ALOADER_ENDLESS = enum(); -- Endless derive.
 ALOADER_NO_IMMUNITY = enum();
+ALOADER_VON_FAILURE_COLOR = enum();
+ALOADER_VON_FAILURE_FLAGS = enum();
 
 --[[ -----------------------------------
 	Animations
 	----------------------------------- ]]
 ANIM_BLIND_UP = enum();
 ANIM_POP_UP = enum();
+
+--[[ -----------------------------------
+	Command Types
+	----------------------------------- ]]
+COMMAND_STRING = enum();
+COMMAND_PLAYER = enum();
+COMMAND_NUMBER = enum();
+COMMAND_BOOL = enum();
+COMMAND_BOOLEAN = COMMAND_BOOL
 
 --[[ -----------------------------------
 	Misc

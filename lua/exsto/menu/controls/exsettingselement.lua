@@ -50,6 +50,10 @@ function PANEL:Init()
 
 end
 
+function PANEL:SetClientside()
+	self.Clientside = true
+end
+
 function PANEL:SetMultiChoice()
 	self.Active = self.Choice.MULTI;
 	
@@ -90,7 +94,7 @@ function PANEL:SetTextEntry()
 		self.Button:Dock( TOP )
 		self.Button:SetTall( 40 )
 		self.Button:SetFont( "ExGenericText14" )
-		self.Button.OnValueChanged = function( o ) self:OnValueSet( o:GetValue() ) end
+		self.Button.OnTextChanged = function( o ) self:OnValueSet( o:GetValue() ) end
 		self.Button.OnEnter = function( o ) self:OnValueSet( o:GetValue() ) end
 end
 
@@ -116,7 +120,7 @@ function PANEL:Paint()
 end
 
 function PANEL:SetTitle( txt )
-	self.Title:SetText( txt )
+	self.Title:SetText( self.Clientside and "Client: " .. txt or txt )
 end
 
 function PANEL:SetHelp( txt )

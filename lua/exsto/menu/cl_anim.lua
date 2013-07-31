@@ -315,7 +315,7 @@ function exsto.Animations.Create( obj )
 		
 		-- Alpha
 		{
-			{ a, a, OnUpdate = function( val ) obj:SetAnimationAlpha( val ) end };
+			{ a, a, OnUpdate = function( val ) obj:SetAnimationAlpha( math.Clamp( val, 0, 255 ) ) end };
 			OnComplete = function( val )
 				obj._Old.SetVisible( obj, ( val > 200 ) and true or false )
 			end;

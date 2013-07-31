@@ -1,4 +1,3 @@
-
 -- Prefan Access Controller
 -- ULX Style Printing
 
@@ -12,9 +11,8 @@ PLUGIN:SetInfo({
 } )
 
 function PLUGIN:ChatNotify( ply, text )
-	for k,v in pairs( player.GetAll() ) do
-		exsto.Print( exsto_CHAT_NOLOGO, v, text )
-	end
+	local msg = exsto.CreateColoredPrint( text )
+	exsto.Print( exsto_CHAT_ALL, COLOR.NAME, ply:Nick(), COLOR.NORM, ": ", unpack( msg ) )
 end
 PLUGIN:AddCommand( "chatnotify", {
 	Call = PLUGIN.ChatNotify,
@@ -28,9 +26,26 @@ PLUGIN:AddCommand( "chatnotify", {
 })
 
 function PLUGIN:ChatNotify2( ply, text )
-	for _, ply in ipairs( player.GetAll() ) do
-		ply:PrintMessage( HUD_PRINTCENTER, text )
+	-- Lets do something fancy.
+	local advert = exsto.GetPlugin( "adverts" )
+	if not advert then
+		for _, ply in ipairs( player.GetAll() ) do
+			ply:PrintMessage( HUD_PRINTCENTER, text )
+		end
+		return
 	end
+	
+	local msg = "[c=COLOR,NAME] " .. ply:Nick() .. " [c=COLOR,NORM] : " .. text
+	advert:RunAdvert( {
+		ID = "chat-printing-notify";
+		Display = "chat-printing-notify";
+		Contents = exsto.CreateColoredPrint( msg );
+		StringContents = msg;
+		Location = 3;
+		Delay = 0;
+		Data = data;
+		Enabled = 1;
+	} )
 end
 PLUGIN:AddCommand( "chatnotify2", {
 	Call = PLUGIN.ChatNotify2,
@@ -54,7 +69,7 @@ PLUGIN:AddCommand( "adminsay", {
 	Call = PLUGIN.AdminSay,
 	Desc = "Allows users to talk to admins privately.",
 	Console = { "adminsay" },
-	Chat = { "@", "!admin" },
+	Chat = { "@", "!admin", "!a" },
 	ReturnOrder = "Text",
 	Args = { Text = "STRING" },
 	Optional = { },

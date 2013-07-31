@@ -54,9 +54,14 @@ function PANEL:Init()
 		self.Entry:Dock( RIGHT )
 		self.Entry:SetNumeric( true )
 		self.Entry:SetFont( "ExGenericText14" )
-		self.Entry.OnTextChanged = function( o, val )
-			self.Scratch:SetValue( o:GetValue() )
-			self:OnValueSet( o:GetValue() )
+		self.Entry.OnTextChanged = function( o )
+			local val = o:GetValue()
+			if val == "" or val == nil then
+				self:SetValue( 0 )
+				return
+			end
+			self.Scratch:SetValue( val )
+			self:OnValueSet( val )
 		end
 
 end

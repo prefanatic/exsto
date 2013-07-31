@@ -11,7 +11,17 @@ PLUGIN:SetInfo({
 
 if !SERVER then return end
 
-function PLUGIN.Respawn(self, ply, target)
+function PLUGIN.Respawn(self, ply, target)	
+	if exsto.CurrentGamemode == "terrortown" then 
+		v:SpawnForRound( true )
+		return {
+			Activator = ply,
+			Player = target,
+			Wording = " respawned ",
+			Secondary = ""
+		}
+	end
+	
 	target:Spawn()
 	
 	return {
@@ -31,6 +41,6 @@ PLUGIN:AddCommand( "respawn", {
 	Args = {Target="PLAYER"},
 	Category = "Administration",
 })
-PLUGIN:RequestQuickmenuSlot( "respawn" )
+PLUGIN:RequestQuickmenuSlot( "respawn", "Spawn" )
 
 PLUGIN:Register()

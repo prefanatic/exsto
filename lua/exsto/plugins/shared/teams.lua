@@ -23,7 +23,7 @@ if SERVER then
 			PLUGIN:ExRanksLoaded()
 			return true
 		elseif val == 0 then
-			PLUGIN:Unload()
+			PLUGIN:Unload( "Disabled in settings." )
 			return true
 		end
 	end
@@ -46,7 +46,7 @@ if SERVER then
 		if self.Enabled:GetValue() == 1 then
 			self:ExRanksLoaded()
 		else
-			self:Unload()
+			self:Unload( "Disabled in settings." )
 		end
 	
 	end
@@ -76,6 +76,8 @@ if SERVER then
 	end
 	
 	function PLUGIN:ExSetRank( ply )
+		if self.Enabled:GetValue() == 0 then return end
+		
 		local rank = ply:GetRank()
 		local info = self.Teams[rank]
 
@@ -103,6 +105,8 @@ if SERVER then
 	end
 
 	function PLUGIN:ExRanksLoaded()
+		if self.Enabled:GetValue() == 0 then return end
+		
 		-- We are apparently called by the resend rank hook
 		self:BuildTeams() -- They need to be updated again with new ranks.
 		

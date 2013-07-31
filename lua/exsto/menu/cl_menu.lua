@@ -22,7 +22,7 @@ exsto.Menu = {
 	Objects = {};
 	PageWidth = ScrW();
 	PageTall = ScrH() - 280;
-	StartTime = 0;
+	StartTime = nil;
 	BottomPadding = 200;
 	Sizes = {
 		FrameW = 268;
@@ -57,6 +57,11 @@ end
 	Description: Initializes Exsto's Menu system.
 	----------------------------------- ]]
 function exsto.Menu.Initialize()
+
+	-- Create the page retaining variable
+	exsto.Menu.PageRetain = exsto.CreateVariable( "ExPageRetain", "Open Last Page", 0, "When opening the quick menu, it goes the to the last page you were currently working on." )
+		exsto.Menu.PageRetain:SetCategory( "Quickmenu" )
+		exsto.Menu.PageRetain:SetBoolean()
 		
 	-- Create the holding frame.  I'm excited!
 	exsto.Menu.Frame = exsto.CreateFrame( 0, 0, exsto.Menu.Sizes.FrameW, exsto.Menu.Sizes.FrameH )
@@ -78,6 +83,7 @@ function exsto.Menu.Initialize()
 		exsto.Menu.Logo:SetPos( exsto.Menu.Frame:GetWide() - 129, 1 )
 		exsto.Menu.Logo:SetSize( 128, 32 )
 		exsto.Menu.Logo:SetImage( "exsto/exlogo_qmenu.png" )
+		exsto.Menu.Logo.DoClick = function() exsto.Menu.Close() end 
 		
 	-- Create our scroller.
 	exsto.Menu.FrameScroller = exsto.CreatePanel( 1, 32, exsto.Menu.Frame:GetWide() - 2, exsto.Menu.Frame:GetTall() - 32, nil, exsto.Menu.Frame )
@@ -290,7 +296,7 @@ function exsto.Menu.OpenPage( obj ) -- I don't know if there is anything that we
 	end
 	
 	-- Close back button if its online and we're moving away from a child page.
-	if exsto.Menu.ActivePage and exsto.Menu.ActivePage._Hide == true and ( obj:GetID() == "pagelist" or obj._Hide == false ) then
+	if ( exsto.Menu.ActivePage and exsto.Menu.ActivePage._Hide == true and ( obj:GetID() == "pagelist" or obj._Hide == false ) ) or not obj._BackFunction then
 		exsto.Menu.DisableBackButton()
 	end
 	
@@ -372,8 +378,13 @@ function exsto.Menu.Open()
 	exsto.Menu.Frame:SetVisible( true )
 	exsto.Menu.Frame:SetKeyboardInputEnabled( true )
 	
+	if exsto.Menu.StartTime and exsto.Menu.PageRetain:GetValue() == 1 and posInfo[ "last" ] then -- Only do this when we've started before.  We don't want to reopen something from a last session.
+		exsto.Menu.OpenPage( exsto.Menu.GetPageByID( posInfo[ "last" ] ) )
+	else
+		exsto.Menu.OpenPage( exsto.Menu.GetPageByID( "quickmenu" ) )
+	end
+	
 	exsto.Menu.StartTime = CurTime();
-	exsto.Menu.OpenPage( exsto.Menu.GetPageByID( "quickmenu" ) )
 
 	-- Set our window pos.
 	local qmpos = posInfo[ "menu" ]
@@ -404,6 +415,9 @@ function exsto.Menu.Close()
 	
 	local qmx, qmy = exsto.Menu.Frame:GetSeriousPos()
 		posInfo[ "menu" ] = {x = qmx, y = qmy}
+		if IsValid( exsto.Menu.ActivePage ) then
+			posInfo[ "last" ] = exsto.Menu.ActivePage:GetID() 
+		end
 		
 	-- Save the position info
 	file.Write( "exsto_windows.txt", von.serialize( posInfo ) )
@@ -412,7 +426,13 @@ function exsto.Menu.Close()
 	exsto.Menu._Opened = false
 	
 	-- Backstage our open page.  Just for OnBackstage.
-	exsto.Menu.ActivePage:Backstage()
+	if IsValid( exsto.Menu.ActivePage ) then
+		exsto.Menu.ActivePage:Backstage()
+		exsto.Menu.ActivePage = nil
+	end
+	
+	-- Close off any excess derma menus
+	CloseDermaMenus()
 	
 	-- Goodbye!
 	exsto.CreateSender( "ExMenuUserLeft" ):Send()
@@ -422,16 +442,16 @@ function exsto.Menu.Toggle()
 	if exsto.Menu._Opened then exsto.Menu.Close() else exsto.Menu.Open() end
 end
 
-local function commandMenuHandler( reader )
-	--hangdata.key = reader:ReadShort()
-	--hangdata.rank = reader:ReadString()
-	--hangdata.flagCount = reader:ReadShort()
+hook.Add( "ExNetworkingReady", "ExHookMenu", function()
+
+	local function commandMenuHandler( reader )
+		if exsto.Menu.Objects.Content and exsto.Menu.Objects.Content:IsVisible() then exsto.Menu.Close() return end
+		
+		exsto.Menu.Open()
+	end
+	exsto.CreateReader( "ExOpenMenu", commandMenuHandler )
 	
-	if exsto.Menu.Objects.Content and exsto.Menu.Objects.Content:IsVisible() then exsto.Menu.Close() return end
-	
-	exsto.Menu.Open()
-end
---exsto.CreateReader( "ExOpenMenu", commandMenuHandler )
+end )
 
 concommand.Add( "+ExQuick", function() exsto.Menu.Open() exsto.Menu._BindPressed = true end )
 concommand.Add( "-ExQuick", function() exsto.Menu.Close() exsto.Menu._BindPressed = false end )

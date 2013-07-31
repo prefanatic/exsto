@@ -29,6 +29,11 @@ function PANEL:Init()
 	
 	self:SetTextColor( Color( 85, 85, 85, 255 ) )
 	self:SetTextHoverColor( Color( 255, 255, 255 ) )
+	
+	self.Materials = {
+		Red = Material( "exsto/red.png" );
+		Green = Material( "exsto/green.png" );
+	}
 
 end
 
@@ -37,9 +42,34 @@ function PANEL:Clear()
 	DListView.Clear( self )
 end
 
-function PANEL:SetQuickList()
+function PANEL:EnableOverlay( txt, icon )
+	self.OverlayEnabled = true
+	self.OverlayIcon = icon
+	self.OverlayText = txt
+end
+
+function PANEL:SetQuickList( cat )
 	self.Paint = function() end
 	self.OnMouseWheeled = nil
+	self.CatParent = cat
+end
+
+function PANEL:Validate()	
+	self:SetDirty( true )
+	self:InvalidateLayout( true )
+	
+	self:SizeToContents()
+	
+	self.CatParent:InvalidateLayout( true )
+end
+
+function PANEL:SetEnableDisable()
+	local function lineOver( line )
+		surface.SetDrawColor( 255, 255, 255, 255 )
+		if not line.Info.Data.Enabled then surface.SetMaterial( self.Materials.Red ) else surface.SetMaterial( self.Materials.Green ) end
+		surface.DrawTexturedRect( 5, (line:GetTall() / 2 ) - 3, 8, 8 )
+	end
+	self:LinePaintOver( lineOver )
 end
 
 function PANEL:SetTextColor( col ) self._TextCol = col end
@@ -66,6 +96,25 @@ function PANEL:LinePaintOver( func )
 	self._LinePaintOver = func
 end
 
+-- So gay things don't happen.
+local function mouseClick( l, mcode )
+	if mcode == MOUSE_RIGHT then
+		l:GetListView():OnRowRightClick( l:GetID(), l )
+		l:OnRightClick()
+		return
+	end
+	l:GetListView():OnClickLine( l, true )
+	l:OnSelect()
+end
+
+local function lineThink( l )
+	if !l.Hovered and l.HoverThinked then l.Columns[ 1 ]:SetTextColor( l:GetListView()._TextCol ) l.HoverThinked = false end
+	if l.Hovered and !l.HoverThinked then l.Columns[ 1 ]:SetTextColor( l:GetListView()._TextHover ) l.HoverThinked = true end
+	if l.__OLDTHINK then
+		return l.__OLDTHINK()
+	end
+end
+
 function PANEL:AddRow( cols, data )
 	
 	local line = self:AddLine( unpack( cols ) )
@@ -85,12 +134,15 @@ function PANEL:AddRow( cols, data )
 	
 	-- I hate this :(
 	line.__OLDTHINK = line.Think
-	line.Think = function( l )
-		if !l.Hovered and l.HoverThinked then l.Columns[ 1 ]:SetTextColor( self._TextCol ) l.HoverThinked = false end
-		if l.Hovered and !l.HoverThinked then l.Columns[ 1 ]:SetTextColor( self._TextHover ) l.HoverThinked = true end
-		if l.__OLDTHINK then
-			return l.__OLDTHINK()
-		end
+	line.Think = lineThink
+	
+	-- This also, is deeply tragic.  Modify the line's OnMousePressed behavior, because fuck everything.
+	line.OnMousePressed = mouseClick
+	
+	if self.OverlayEnabled then -- We've got an overlay to do
+		line.Overlay = vgui.Create( "ExQuickOverlay", line )
+			line.Overlay:Dock( RIGHT )
+			line.Overlay:Text( self.OverlayText )
 	end
 	
 	return line

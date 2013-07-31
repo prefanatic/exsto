@@ -11,12 +11,21 @@ if SERVER then
 
 	function PLUGIN:Init()
 		exsto.CreateFlag( "rankeditor", "Allows users to edit ranks in the menu." )
-		exsto.CreateFlag( "immunity", "Allows users access to edit immunity in the editor subpage." )
 		
 		util.AddNetworkString( "ExPushRankToSrv" )
 		util.AddNetworkString( "ExRecImmuneChange" )
 		util.AddNetworkString( "ExDelRankFromClient" )
 		util.AddNetworkString( "ExUpImmunity" )
+		
+		self.Echo = exsto.CreateVariable( "ExEchoGroupChanges", "Echo Changes", 0, "Print messages to the chat to all players to notify of group editing in progress." )
+			self.Echo:SetBoolean()
+			self.Echo:SetCategory( "Group Editor" )
+	end
+	
+	function PLUGIN:PrintEcho( msgTbl )
+		if self.Echo:GetValue() == 1 then
+			exsto.Print( exsto_CHAT_ALL, unpack( msgTbl ) )
+		end
 	end
 	
 	-- Security
@@ -33,50 +42,35 @@ if SERVER then
 		return reader:ReadSender():IsAllowed( "rankeditor" )
 	end
 
-	function PLUGIN.DeleteRank( reader )
-		-- Add Flag.
+	
+	function PLUGIN:DeleteRank( reader )
+		local id = reader:ReadString()
+		local rank = exsto.Ranks[ id ]
 		
-		-- Remove exsto rank error data if we are removing the rank
-		//exsto.RankErrors[ args[ 1 ] ] = nil
-
-		-- Remove the data.
-		exsto.RankDB:DropRow( reader:ReadString() )
+		self:PrintEcho( { COLOR.NAME, reader:ReadSender():Nick(), COLOR.NORM, " has deleted the rank ", COLOR.NAME, rank.Name } )
 		
-		timer.Simple( 0.1, function()
-		
-			-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
+		exsto.RankDB:DropRow( id, function() 
 			exsto.aLoader.Initialize()
-			
-			-- Reload the rank editor.
-			exsto.SendRanks( player.GetAll() )
-
 		end )
 		
 	end
-	exsto.CreateReader( "ExDelRankFromClient", PLUGIN.DeleteRank )
+	PLUGIN:CreateReader( "ExDelRankFromClient", PLUGIN.DeleteRank )
 	
-	function PLUGIN.CommitChanges( reader )
+	function PLUGIN:CommitChanges( reader )
 		local id = reader:ReadString()
 		local ply = reader:ReadSender()
+		
+		-- Echo
+		PLUGIN:PrintEcho( { COLOR.NAME, ply:Nick(), COLOR.NORM, " has updated the rank ", COLOR.NAME, exsto.Ranks[ id ] and exsto.Ranks[ id ].Name or id } )
 
 		-- Write the data
-		PLUGIN:WriteAccess( id, reader:ReadString(), reader:ReadString(), reader:ReadColor(), reader:ReadTable() )
-		
-		-- Give him immunity.
-		if !exsto.Ranks[ id ] then
-			PLUGIN:WriteImmunity( id, 10 )
-		end
-		
-		-- Give FEL some time to save shit.
-		--timer.Simple( 0.1, function()
-
+		PLUGIN:WriteAccess( id, reader:ReadString(), reader:ReadString(), reader:ReadColor(), reader:ReadTable(), function( q, d )
+			
 			-- Reload Exsto's access controllers.  I really hope this doesn't break anything.
 			exsto.aLoader.Initialize()
 			
 			-- If everything is successful, lets reload.
 			if exsto.aLoader.Errors and table.Count( exsto.aLoader.Errors ) == 0 then
-				-- We sadly have to resend everything, with flags and stuff being the way they are.
-				exsto.SendRanks( player.GetAll() )
 				
 				-- Reload the rank editor.
 				hook.Call( "ExOnRankCreate", nil, id )
@@ -85,15 +79,15 @@ if SERVER then
 				exsto.SendRankErrors( ply )
 			end
 			
-		--end )
+		end )
 	end
-	exsto.CreateReader( "ExPushRankToSrv", PLUGIN.CommitChanges )
+	PLUGIN:CreateReader( "ExPushRankToSrv", PLUGIN.CommitChanges )
 	
 	function PLUGIN:UpdateImmunity( reader )
 		local id = reader:ReadString()
 		local im = reader:ReadShort()
 		
-		self:Debug( "Updating immunity for '" .. id .. "' to '" .. im .. "'" )
+		self:Debug( "Updating immunity for '" .. id .. "' to '" .. im .. "'", 1 )
 		exsto.RankDB:AddRow( {
 			ID = id;
 			Immunity = im;
@@ -107,7 +101,7 @@ if SERVER then
 			Immunity = reader:ReadShort();
 		} )
 	end
-	exsto.CreateReader( "ExRecImmuneChange", PLUGIN.WriteImmunityData )
+	--exsto.CreateReader( "ExRecImmuneChange", PLUGIN.WriteImmunityData )
 	
 	function PLUGIN:ExClientData( hook, ply, data )
 		if hook == "ExRecImmuneChange" or hook == "ExRecRankData" then
@@ -122,14 +116,15 @@ if SERVER then
 		} )
 	end
 	
-	function PLUGIN:WriteAccess( id, name, derive, color, flagsallow )
+	function PLUGIN:WriteAccess( id, name, derive, color, flagsallow, callback )
 		exsto.RankDB:AddRow( {
 			Name = name;
 			ID = id;
 			Parent = derive;
 			Color = von.serialize( color );
 			FlagsAllow = von.serialize( flagsallow );
-		} )
+			Immunity = exsto.Ranks[ id ] and exsto.Ranks[ id ].Immunity or 10;
+		}, callback )
 	end
 
 elseif CLIENT then
@@ -161,6 +156,7 @@ elseif CLIENT then
 		updateDerives( rank.ID )
 		
 		pnl.RankSelect:SetValue( rank.Name )
+		pnl.RankSelect:SetToolTip( "Exsto Identifier: " .. rank.ID )
 		pnl.RankName:SetText( rank.Name )
 		pnl.Derive:SetValue( rank.Parent .. " (" .. parentName .. ")" )
 		pnl.RankColor:SetColor( rank.Color )
@@ -191,7 +187,7 @@ elseif CLIENT then
 		pnl.RankSelect:Clear()
 		pnl.OverlayPanel:SetVisible( true )
 		-- Populate the RankSelect with our ranks.
-		for ID, data in pairs( exsto.Ranks ) do
+		for ID, data in SortedPairsByMemberValue( exsto.Ranks, "Immunity", false )  do
 			if ID != "srv_owner" then 
 				pnl.RankSelect:AddChoice( data.Name, data ) 
 			end
@@ -299,8 +295,9 @@ elseif CLIENT then
 	end
 	
 	local function createNewRank()		
-		PLUGIN.Page:InputText( "Please type a unique identifyer for your rank.  It must not contain any spaces, and it should be accurate based on the rank you are creating.  This cannot be changed later.",
-			function( val ) 
+		PLUGIN.Page:InputText( {
+			Text = { COLOR.MENU, "Please create an ", COLOR.NAME, "unique ID", COLOR.MENU, " for your rank.  It must not contain any spaces, and it should be accurate based on the rank you are creating.  ", COLOR.NAME, "This cannot be changed later." },
+			Yes = function( val ) 
 				val = val:lower():Replace( " ", "_" )
 				
 				exsto.Ranks[ val ] = {
@@ -314,8 +311,8 @@ elseif CLIENT then
 				PLUGIN.WorkingRank = exsto.Ranks[ val ];
 				refreshEditor()		
 			end,
-			function() end
-		)
+			No = function() end
+		} )
 	end
 
 	local function deleteRank( self )
@@ -492,6 +489,7 @@ elseif CLIENT then
 			self.Page:SetIcon( "exsto/rank.png" )
 			
 		self.ImmunityPage = exsto.Menu.CreatePage( "immunity", immunityInit )
+			self.ImmunityPage:SetFlag( "rankeditor" )
 			self.ImmunityPage:SetTitle( "Immunity" )
 			self.ImmunityPage:SetChildOf( self.Page )
 			self.ImmunityPage:OnShowtime( updateImm )

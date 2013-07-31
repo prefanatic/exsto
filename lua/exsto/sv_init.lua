@@ -19,8 +19,10 @@
 --[[ -----------------------------------
 	Category:  Script Loading/Resources
     ----------------------------------- ]]
-	resource.AddFile( "materials/gwenskin/exsto_main.png")
+	--resource.AddFile( "materials/gwenskin/exsto_main.png")  We've moved our resources to workshop, now that we can do resource.AddWorkshop.  Thanks garry!
 	exstoResources()
+	
+	resource.AddWorkshop( "157864671" )
 	
 	-- Includes!
 	exstoShared( "shared/fel.lua" ) -- The main data-saving backend.  Has no ties with Exsto.  Can be loaded first!
@@ -53,6 +55,9 @@
 	exstoClient( "menu/cl_skin.lua" )
 	exstoClient( "menu/cl_page.lua" )
 	exstoClient( "menu/cl_menu.lua" )
+	
+	-- This is fucking annoying. 
+	RunConsoleCommand( "sv_kickerrornum", 0 )
 
 --[[ -----------------------------------
 	Category:  Player Utils
@@ -204,13 +209,25 @@ function exsto.dbGetPlayerByID( id )
 	return nil
 end
 
+function exsto.MonitorGamemode()
+	if not exsto.CurrentGamemode and GAMEMODE then
+		-- Detect the gamemode we're in.
+		local exp = string.Explode( "/", GAMEMODE.Folder )
+		exsto.CurrentGamemode = exp[#exp]
+		exsto.Debug( "Running under gamemode: " .. exsto.CurrentGamemode, 1 )
+		
+		hook.Call( "ExGamemodeFound", nil, exsto.CurrentGamemode )
+	end
+end
+hook.Add( "Think", "ExFindGamemode", exsto.MonitorGamemode )
+
 local succ, err = pcall( require, "json" );
 if !succ then
 	exsto.Debug( "Failed to load json.  Oh well.  No ping!", 1 )
-	return
 end
 
-timer.Create( "ExPing", 60, 0, function()
+-- Google Analytics
+local function ping()
 	if !json then return end
 
 	-- Ping up to our server that we've init.
@@ -225,19 +242,32 @@ timer.Create( "ExPing", 60, 0, function()
 		
 		if contents and decode and ip then
 			-- lol.
-			http.Fetch( "http://www.exstomod.co.uk/ping.php?p=1&h=" .. hostname .. "&ip=" .. ip, function( contents )
-				if contents:find( "Checking" ) then
-					exsto.Debug( "Server ping success!  Updated Hostname = " .. hostname .. ", IP = " .. ip .. ", LastSeen = " .. os.time(), 1 )
-				else
-					exsto.Debug( "Server ping failure!  Callback: " .. contents, 1 )
-				end
+			
+			local g = {
+				"v=1&"; 
+				"tid=UA-41810744-1&";
+				"cid=" .. ip .. "&";
+				"t=event&";
+				"ec=" .. ip .. "-".. hostname .. "&";
+			}
+			
+			http.Fetch( "http://www.google-analytics.com/collect?" .. g[ 1 ] .. g[ 2 ] .. g[ 3 ] .. g[ 4 ].. g[ 5 ], function( contents )
+				exsto.Debug( "Server ping success!  Updated Hostname = " .. hostname .. ", IP = " .. ip .. ", LastSeen = " .. os.time(), 1 )
 			end )
 		else
 			exsto.Debug( "Server ping failure!  Callback: " .. contents, 1 )
 		end
-	end )			
+	end )
+end	
 
-end )	
+local pingUpdate = exsto.CreateVariable( "ExPingInfo", "Ping Statistics", 1, "Pings statistical information to Google Analytics." )
+	pingUpdate:SetBoolean()
+	pingUpdate:SetCategory( "Exsto General" )
+	pingUpdate:SetCallback( function( old, new )
+		if new == 1 then timer.Create( "ExPing", 60, 0, ping ) else timer.Remove( "ExPing" ) end
+	end )
+
+if pingUpdate:GetValue() == 1 then timer.Create( "ExPing", 60, 0, ping ) end
 
 -- Init some items.
 	exsto.LoadPlugins()

@@ -10,51 +10,43 @@ PLUGIN:SetInfo({
 	ID = "goto-bring",
 	Desc = "A plugin that allows bringing and goto player commands!",
 	Owner = "Prefanatic",
+	CleanUnload = true;
 } )
 
--- I was told to rewrite this by the lovely Megiddo; so I did.  Love: Prefanatic.
--- Hated: hatred says you are now lower life form then a scene whore... hi overv
-function PLUGIN:SendPlayer( ply, megiddo, force )
+function PLUGIN:Init()
+	-- Construct send positions
+	local cos, sin, rad = math.cos, math.sin, math.rad
 
-	local isvec = false
-	if type( megiddo ) == "Vector" then isvec = true end
-
-	if !isvec and !megiddo:IsInWorld() and !force then return false end
-	
-	local fuck
-	local umegiddo
-	if isvec then
-		umegiddo = 0
-		fuck = megiddo
-	else
-		umegiddo = megiddo:EyeAngles().yaw
-		fuck = megiddo:GetPos()
+	self.Pos = {}
+	for I = 0, 360, 30 do
+		table.insert( self.Pos, Vector( cos( rad( I ) ), sin( rad( I ) ), 0 ) )
 	end
+	-- Check above and below too.
+	table.insert( self.Pos, Vector( 0, 0, 1 ) )
+	table.insert( self.Pos, Vector( 0, 0, -1 ) )
 	
-	local ulx_sucks = {
-		math.NormalizeAngle( umegiddo - 180 ),
-		math.NormalizeAngle( umegiddo + 90 ),
-		math.NormalizeAngle( umegiddo - 90 ),
-		umegiddo,
-	}
-
-	local lol_creative_commons_on_code = {}
-	lol_creative_commons_on_code.start = fuck + Vector( 0, 0, 32 )
-	lol_creative_commons_on_code.filter = { megiddo, ply }
-
-	local loveyou
-	for I = 1, #ulx_sucks do
-		lol_creative_commons_on_code.endpos = fuck + Angle( 0, ulx_sucks[ I ], 0 ):Forward() * 47
-		loveyou = util.TraceEntity( lol_creative_commons_on_code, ply )
-		if !loveyou.Hit then return loveyou.HitPos end
-	end
-	
-	if force then
-		return fuck + Angle( 0, ulx_sucks[ 1 ], 0 ):Forward() * 47
-	end
-	
+	self.Sizes = Vector( 40, 40, 77 )
 end
 
+-- Sends 'send' to 'to'.  Checks in a circle around 'to' to prevent going into walls.
+function PLUGIN:SendPlayer( send, to, force )
+	local pos = IsValid( to ) and to:GetPos() or to
+	if force and IsValid( to ) and to:IsInWorld() then return pos end
+	
+	-- Do a trace for each point in the circle.
+	local trace = {
+		start = pos;
+		filter = { send, IsValid( to ) and to or false };
+	}
+	local traceData = nil; -- Reference
+	for I = 1, #self.Pos do
+		trace.endpos = pos + ( self.Pos[ I ] * self.Sizes )
+		traceData = util.TraceEntity( trace, send )
+		if not traceData.Hit then return traceData.HitPos end
+	end
+	
+	if force then return traceData.HitPos end
+end
 
 function PLUGIN:Teleport( owner )
 	local pos = self:SendPlayer( owner, owner:GetEyeTrace().HitPos )
@@ -67,7 +59,6 @@ PLUGIN:AddCommand( "teleport", {
 	Desc = "Allows users to teleport to their cursor.",
 	Console = { "teleport", "tp" },
 	Chat = { "!tp", "!teleport" },
-	Args = {},
 	Category = "Teleportation",
 })
 
@@ -91,9 +82,11 @@ PLUGIN:AddCommand( "send", {
 	Desc = "Allows users to send other players to places.",
 	Console = { "send" },
 	Chat = { "!send" },
-	ReturnOrder = "Victim-To-Force",
-	Args = { Victim = "PLAYER", To = "PLAYER", Force = "BOOLEAN" },
-	Optional = { Force = false },
+	Arguments = {
+		{ Name = "Victim", Type = COMMAND_PLAYER };
+		{ Name = "To", Type = COMMAND_PLAYER };
+		{ Name = "Force", Type = COMMAND_BOOLEAN, Optional = false };
+	};
 	Category = "Teleportation",
 })
 
@@ -103,7 +96,7 @@ function PLUGIN:Goto( owner, ply, force )
 	
 	local pos = self:SendPlayer( owner, ply, force )
 	
-	if !pos then exsto.Print( exsto_CHAT, owner, COLOR.NORM, "Not enough room to goto ", COLOR.NAME, ply:Nick(), COLOR.NORM, "!" ) return end
+	if !pos then exsto.Print( exsto_CHAT, owner, COLOR.NORM, "Not enough room to go to ", COLOR.NAME, ply:Nick(), COLOR.NORM, "!" ) return end
 	
 	owner:SetPos( pos )
 	
@@ -119,12 +112,13 @@ PLUGIN:AddCommand( "goto", {
 	Desc = "Allows users to teleport to a player.",
 	Console = { "goto" },
 	Chat = { "!goto" },
-	ReturnOrder = "Victim-Force",
-	Args = {Victim = "PLAYER", Force = "BOOLEAN"},
-	Optional = { Force = false },
+	Arguments = {
+		{ Name = "Victim", Type = COMMAND_PLAYER };
+		{ Name = "Force", Type = COMMAND_BOOLEAN, Optional = false };
+	};
 	Category = "Teleportation",
 })
-PLUGIN:RequestQuickmenuSlot( "goto", "Goto", {
+PLUGIN:RequestQuickmenuSlot( "goto", "Go to", {
 	Force = {
 		{ Display = "Force Teleport", Data = true },
 	},
@@ -152,9 +146,10 @@ PLUGIN:AddCommand( "bring", {
 	Desc = "Allows users to bring other players.",
 	Console = { "bring" },
 	Chat = { "!bring" },
-	ReturnOrder = "Victim-Force",
-	Args = {Victim = "PLAYER", Force = "BOOLEAN"},
-	Optional = { Force = false },
+	Arguments = {
+		{ Name = "Victim", Type = COMMAND_PLAYER };
+		{ Name = "Force", Type = COMMAND_BOOLEAN, Optional = false };
+	};
 	Category = "Teleportation",
 })
 PLUGIN:RequestQuickmenuSlot( "bring", "Bring", {
