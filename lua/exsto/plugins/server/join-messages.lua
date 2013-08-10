@@ -51,7 +51,7 @@ function PLUGIN:ExPlayerConnect( data )
 	local append = "has connected!"
 	local name = data.name
 	local addr = data.address
-
+	
 	exsto.UserDB:GetRow( data.networkid, function( q, d )
 		if !d then append = "has connected for the first time!" end
 		
