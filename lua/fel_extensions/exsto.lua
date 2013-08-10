@@ -83,8 +83,10 @@ hook.Add( "ExPrintingInit", "ExFELIntegration", function()
 	end
 
 	function FEL.Debug( msg, level )
-		if exsto.FELDebug:GetValue() >= level then
-			exsto.Debug( msg, 0 )
+		if exsto.FELDebug then -- Ignore debug if we don't have this.
+			if exsto.FELDebug:GetValue() >= level then
+				exsto.Debug( msg, 0 )
+			end
 		end
 	end
 end )
