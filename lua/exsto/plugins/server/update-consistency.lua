@@ -68,7 +68,7 @@ function PLUGIN:CompareCRC()
 		-- Notify those who have the crcinvalnotify flag
 		for _, ply in ipairs( player.GetAll() ) do
 			if ply:IsAllowed( "crcinvalnotify" ) then 
-				ply:Print( exsto_CHAT, COLOR.NAME, "Warning, ", COLOR.NORM, "CRC checks failed.  An update is availible, or Exsto has been modified.  ", COLOR.NAME, "Suspect files have been printed to your console." )
+				ply:Print( exsto_CHAT, COLOR.NAME, "Warning, ", COLOR.NORM, "CRC checks failed.  An update is available, or Exsto has been modified.  ", COLOR.NAME, "Suspect files have been printed to your console." )
 				local msg = "Invalid files:\n"
 				for I = 1, #invalid do
 					msg = msg .. invalid[ I ].File .. "\n"
