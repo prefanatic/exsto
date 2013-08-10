@@ -97,6 +97,14 @@ elseif CLIENT then
 
 end
 
+-- We need to construct a table to save these values.  Used a FEL Sqlite table.  It doesn't need to be accessible anywhere else.
+local database = FEL.CreateDatabase( "exsto_data_variables", true )
+	database:SetDisplayName( "Variables" )
+	database:ConstructColumns( {
+		Variable = "VARCHAR(255):primary:not_null";
+		Value = "TEXT";
+	} )
+
 -- Variable Object
 local var = {}
 	var.__index = var
@@ -179,6 +187,14 @@ function exsto.CreateVariable( id, display, default, help, eVars )
 		if SERVER then exsto.SendVariable( obj, player.GetAll() ) end
 		hook.Call( "ExVariableChanged", nil, obj, obj:GetValue() )
 		
+		if !obj._IgnoreSave then
+			database:AddRow( {
+				Variable = obj:GetID();
+				Value = tostring( obj:GetValue() );
+			} )
+			obj._IgnoreSave = false
+		end
+		
 		if !obj.Callback then return end
 		local succ, err = pcall( obj.Callback, oldval, obj:GetValue() )
 		if !succ then
@@ -192,6 +208,15 @@ function exsto.CreateVariable( id, display, default, help, eVars )
 	
 	-- If we make one, we need to send it!
 	if SERVER then exsto.SendVariable( obj, player.GetAll() ) end
+	
+	-- Check and see if we can load values up into this.
+	database:GetRow( obj:GetID(), function( q, d )	
+		if not d then return end
+		
+		obj._IgnoreSave = true
+		exsto.Debug( "Variables --> Loading saved value for '" .. obj:GetID() .. "' as '" .. d.Value, 3 )
+		RunConsoleCommand( obj:GetID(), d.Value )
+	end )
 	
 	return obj
 end
