@@ -555,15 +555,14 @@ exsto.AddChatCommand( "getsteamid", {
 	Description: Sets a player's rank.
 	----------------------------------- ]]
 function exsto.Registry.Player:SetRank( rank, s )
-	if self:GetRank() == rank then return end;
 	self:SetNetworkedString( "rank", rank )
-	if not s then
+	--if not s then
 		exsto.UserDB:AddRow( {
 			SteamID = self:SteamID();
 			Rank = rank;
 			Name = self:Nick();
 		} )
-	end
+	--end
 	hook.Call( "ExSetRank", nil, self, rank )
 end
 
@@ -710,11 +709,11 @@ function exsto.InitializePlayer( ply, sid, uid )
 		if game.SinglePlayer() then
 			ply:SetRank( "srv_owner" )
 		else
-			ply:SetRank( d and d.Rank or "guest", d and d.Rank and true )	
+			ply:SetRank( d and d.Rank or "guest" )	
 		end
-		
-		ply:UpdateUserFlags( type( d and d.UserFlags ) == "string" and FEL.NiceDecode( d and d.UserFlags ) or {} )
 
+		ply:UpdateUserFlags( type( d and d.UserFlags ) == "string" and FEL.NiceDecode( d and d.UserFlags ) or {} )
+		
 		hook.Call( "ExPlayerAuthed", nil, ply, sid, uid )
 	end )
 end
