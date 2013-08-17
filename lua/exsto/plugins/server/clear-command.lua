@@ -38,7 +38,8 @@ function PLUGIN:Think()
 	if (time - lastThink) > 5 and self.DCTable[1] and dcClearTime >= 0 then
 		local clearData = self.DCTable[1]
 		if (time - clearData.StartTime) > dcClearTime then
-			for _, group in pairs(cleanup.GetList()[clearData.UID]) do
+			local lst = cleanup.GetList()[ clearData.UID ] or {}
+			for _, group in pairs(lst) do
 				for _, ent in ipairs(group) do
 					if ent:IsValid() then ent:Remove() end
 				end
