@@ -98,8 +98,17 @@ end
 
 function PLUGIN:Think()
 	for _, ply in pairs( self.Rocketeers ) do
-		
-		if ply.Stage == 1 then
+				
+		if !ply.Player:IsValid() then
+			timer.Destroy( "ExRocket" .. ply.EntID )
+			for _, ply in ipairs( PLUGIN.Rocketeers ) do
+				if !ply then
+					ply.Text:Remove()
+					table.remove( PLUGIN.Rocketeers, _ )
+					break
+				end
+			end		
+		elseif ply.Stage == 1 then
 			if ply.NextRocketTick <= CurTime() then
 				ply.NextRocketTick = CurTime() + 1
 				
@@ -122,7 +131,7 @@ function PLUGIN:Think()
 				end
 			end
 		elseif ply.Stage == 2 then -- We are flying!
-			if ply.NextRocketTick <= CurTime() then
+			if ply.NextRocketTick <= CurTime() and ply.Player:IsValid() then
 				ply.NextRocketTick = CurTime() + 0.1
 				ply.Player:SetVelocity( ply.RandomLaunchVec )
 				ply.RandomLaunchVec.z = ply.RandomLaunchVec.z + 3
@@ -130,9 +139,12 @@ function PLUGIN:Think()
 				
 				-- If we hit something, stop
 				if ply.Player:GetVelocity().z <= 60 and ply.NumberTicksSinceLaunch >= 20 or ply.Player:Health() <= 0 then 
-					timer.Destroy( "ExRocket" .. ply.Player:EntIndex() )
+					timer.Destroy( "ExRocket" .. ply.EntID )
 					ply.Player:RocketExplode()
 				end
+			else
+					timer.Destroy( "ExRocket" .. ply.EntID )
+					ply.Player:RocketExplode()				
 			end
 		end
 		
@@ -154,6 +166,7 @@ function PLUGIN:RocketMan( owner, ply, delay )
 	
 	table.insert( self.Rocketeers, {
 		Player = ply,
+		EntID = ply:EntIndex(),
 		Stage = 1,
 		Text = text,
 		Delay = delay,
