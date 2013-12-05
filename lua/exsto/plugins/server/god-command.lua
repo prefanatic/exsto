@@ -13,6 +13,12 @@ function PLUGIN:PlayerSpawn( ply )
 	end
 end
 
+function PLUGIN:PlayerDeath( ply )
+	if ply.God and not ply.ForceGod then
+		ply.God = false;
+	end
+end
+
 function PLUGIN:UnGod( self, victim )
 	if not victim.God then
 		self:Print( exsto_CHAT, COLOR.NAME, victim:Nick(), COLOR.NORM, " is not godded." )
