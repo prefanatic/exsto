@@ -21,7 +21,7 @@ if SERVER then
 		return true
 	end
 	
-	exsto.CreateFlag("afkkkickignore","Makes the group immune to the AFK Plugin's auto-kicker")
+	exsto.CreateFlag("afkkickignore","Makes the group immune to the AFK Plugin's auto-kicker")
 	
 	function PLUGIN:Init()
 		self.AFKTime = exsto.CreateVariable( "ExAFKDelay",
@@ -74,7 +74,7 @@ if SERVER then
 		
 		if time < 0 then
 			if !ply.isAFK then
-				if mode == "kick" and !ply:HasFlag("afkkickignore") then
+				if mode == "kick" and !ply:IsAllowed("afkkickignore") then
 					ply:Kick("You have been kicked for being afk")
 				elseif mode == "message" then
 					ply:SendLua("GAMEMODE:AddNotify(\"You have been marked as AFK.\", NOTIFY_ERROR, 10)")

@@ -1078,7 +1078,7 @@ function db:GetRow( key, callback )
 		return self:Query( "SELECT * FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", false )
 	end
 	
-	self:Query( "SELECT * FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", true, function( q, d ) callback( q, self:QOSCheck( d[1] ) ) end )
+	self:Query( "SELECT * FROM " .. self:GetName() .. " WHERE " .. self.Columns._PrimaryKey .. " = '" .. key .. "';", true, function( q, d ) callback( q, self:QOSCheck( d and d[1] or nil ) ) end )
 end
 
 function db:GetData( key, reqs, callback )
