@@ -134,9 +134,11 @@ elseif CLIENT then
 		if !pnl then return end
 		
 		pnl.Derive:Clear()
-		for ID, data in pairs( exsto.Ranks ) do
-			if ID != "srv_owner" and ( avoid and ID != avoid ) then 
-				pnl.Derive:AddChoice( data.ID .. " (" .. data.Name .. ")" )
+		if avoid != "srv_owner" then
+			for ID, data in pairs( exsto.Ranks ) do
+				if ID != "srv_owner" and ( avoid and ID != avoid ) then 
+					pnl.Derive:AddChoice( data.ID .. " (" .. data.Name .. ")" )
+				end
 			end
 		end
 		pnl.Derive:AddChoice( "NONE" )
@@ -170,7 +172,7 @@ elseif CLIENT then
 		pnl.DeleteRank:SetImage( "exsto/trash.png" )
 		
 		for id, rdata in pairs( exsto.Ranks ) do
-			if rdata.Parent == rank.ID then -- Oh noes
+			if rdata.Parent == rank.ID or (rank.ID == "srv_owner") then -- Oh noes
 				pnl.DeleteRank._Disabled = true
 				pnl.DeleteRank:SetImage( "exsto/trash_disabled.png" )
 				return
@@ -188,7 +190,7 @@ elseif CLIENT then
 		pnl.OverlayPanel:SetVisible( true )
 		-- Populate the RankSelect with our ranks.
 		for ID, data in SortedPairsByMemberValue( exsto.Ranks, "Immunity", false )  do
-			if ID != "srv_owner" then 
+			if (ID != "srv_owner" or LocalPlayer():GetRank() == "srv_owner") then 
 				pnl.RankSelect:AddChoice( data.Name, data ) 
 			end
 		end
@@ -282,21 +284,23 @@ elseif CLIENT then
 	local function flagPopulate( lst, rank )
 
 		lst:Clear()
-		local status = "open"
-		for flag, desc in SortedPairs( exsto.Flags ) do
-			-- Do some flag status checking first.
-			if table.HasValue( exsto.GetRankFlags( rank.ID ), flag ) then status = "allowed" end
-			if table.HasValue( exsto.GetInheritedFlags( rank.ID ), flag ) then status = "locked" end
-			
-			local line = lst:AddRow( { flag }, {Desc = desc, Status = status } )
-				line:SetToolTip( desc )
-			status = "open" -- reset.  Why didn't I realize this earlier :/
+		if rank.ID != "srv_owner" then
+			local status = "open"
+			for flag, desc in SortedPairs( exsto.Flags ) do
+				-- Do some flag status checking first.
+				if table.HasValue( exsto.GetRankFlags( rank.ID ), flag ) then status = "allowed" end
+				if table.HasValue( exsto.GetInheritedFlags( rank.ID ), flag ) then status = "locked" end
+				
+				local line = lst:AddRow( { flag }, {Desc = desc, Status = status } )
+					line:SetToolTip( desc )
+				status = "open" -- reset.  Why didn't I realize this earlier :/
+			end
 		end
 	end
 	
 	local function createNewRank()		
 		PLUGIN.Page:InputText( {
-			Text = { COLOR.MENU, "Please create an ", COLOR.NAME, "unique ID", COLOR.MENU, " for your rank.  It must not contain any spaces, and it should be accurate based on the rank you are creating.  ", COLOR.NAME, "This cannot be changed later." },
+			Text = { COLOR.MENU, "Please create a ", COLOR.NAME, "unique ID", COLOR.MENU, " for your rank.  It must not contain any spaces, and it should be accurate based on the rank you are creating.  ", COLOR.NAME, "This cannot be changed later." },
 			Yes = function( val ) 
 				val = val:lower():Replace( " ", "_" )
 				

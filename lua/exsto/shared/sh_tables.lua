@@ -456,6 +456,17 @@ end
 	Exsto Default Ranks.
      ----------------------------------- ]]
 exsto.DefaultRanks = {
+	srv_owner = {
+		Name = "Server Owner",
+		Description  = "THE Guy.",
+		ID = "srv_owner",
+		Color = von.serialize( Color( 200, 74, 74, 200 ) ),
+		Parent = "NONE",
+		Immunity = -1,
+		FlagsAllow = von.serialize( {} );
+		FlagsDeny = von.serialize( {} );
+	},
+	
 	superadmin = {
 		Name = "Super Admin",
 		Description  = "Head Honcho",

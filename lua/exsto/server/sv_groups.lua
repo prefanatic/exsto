@@ -109,15 +109,20 @@ function exsto.aLoader.LoadRanks()
 				exsto.aLoader.Error( data.ID, ALOADER_VON_FAILURE_COLOR )
 			end
 			
-			exsto.aLoader.Loaded[ data.ID ] = {
-				Name = data.Name;
-				Description = data.Description;
-				ID = data.ID;
-				Parent = data.Parent;
-				FlagsAllow = succF and von.deserialize( data.FlagsAllow ) or nil;
-				Immunity = tonumber( data.Immunity ) or nil;
-				Color = succC and von.deserialize( data.Color ) or nil;
-			}
+			if data.ID == "srv_owner" then
+				exsto.aLoader.Processing[ data.ID ].Name = data.Name;
+				exsto.aLoader.Processing[ data.ID ].Color = succC and von.deserialize( data.Color ) or nil;
+			else
+				exsto.aLoader.Loaded[ data.ID ] = {
+					Name = data.Name;
+					Description = data.Description;
+					ID = data.ID;
+					Parent = data.Parent;
+					FlagsAllow = succF and von.deserialize( data.FlagsAllow ) or nil;
+					Immunity = tonumber( data.Immunity ) or nil;
+					Color = succC and von.deserialize( data.Color ) or nil;
+				}
+			end
 		end
 		
 		exsto.aLoader.Process()

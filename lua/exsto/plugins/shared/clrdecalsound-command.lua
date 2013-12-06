@@ -15,7 +15,7 @@ usermessage.Hook("exsto_cleardecals", function()
 end)
 
 usermessage.Hook("exsto_stopsounds", function()
-	RunConsoleCommand("stopsounds")
+	RunConsoleCommand("stopsound")
 end)
 end
 
@@ -59,8 +59,8 @@ end
 PLUGIN:AddCommand( "stopsounds", {
 	Call = PLUGIN.StopSounds,
 	Desc = "Allows a player to stop all sounds on the server",
-	Console = { "stopsounds", },
-	Chat = { "!stopsounds" },
+	Console = { "stopsounds","stopsound" },
+	Chat = { "!stopsounds","!stopsound" },
 	Args = {},
 	Category = "Utilities",
 })
