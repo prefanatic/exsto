@@ -324,8 +324,8 @@ function exsto.aLoader.Initialize()
 		Inherit = {},
 		Immunity = -1,
 		ID = "srv_owner",
-		Color = Color( 60, 200, 124, 200 ),
-		Name = "Server Owner",
+		Color = Color( 89, 144, 222, 200 ),
+		Name = "Owner",
 		Parent = "NONE",
 		Description = "Owner of the server.",
 	}

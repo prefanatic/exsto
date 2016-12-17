@@ -61,7 +61,7 @@ if CLIENT then
 				rcol = exsto.GenerateComplementaryColor( rankData.Color )
 			end
 				
-			chat.AddText( rcol, "[", rankData.Name, "] ", team.GetColor( ply:Team() ), ply:Nick(), Color( 255, 255, 255, 255 ), ": ", str )
+			chat.AddText( rcol, "(", rankData.Name, ") ", team.GetColor( ply:Team() ), ply:Nick(), Color( 255, 255, 255, 255 ), ": ", str )
 			return true
 		end
 	end
